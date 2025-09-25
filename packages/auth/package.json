@@ -1,0 +1,34 @@
+{
+    "name": "@saas/auth",
+    "version": "0.0.0",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "devDependencies": {
+        "@saas/eslint": "workspace:*",
+        "@saas/prettier": "workspace:*",
+        "@saas/tsconfig": "workspace:*",
+        "@types/express": "^5.0.3",
+        "@types/jsonwebtoken": "^9.0.10",
+        "@types/node": "^24.4.0",
+        "express": "^5.1.0",
+        "jsonwebtoken": "^9.0.2"
+    },
+    "eslintConfig": {
+        "extends": [
+            "@saas/eslint/next-js"
+        ]
+    },
+    "prettier": "@saas/prettier",
+    "tsconfig": "./tsconfig.json",
+    "scripts": {
+        "dev": "next dev",
+        "build": "next build",
+        "start": "next start",
+        "lint": "eslint . --ext .ts,.tsx",
+        "check-types": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@casl/ability": "^6.7.3",
+        "zod": "^4.1.8"
+    }
+}
