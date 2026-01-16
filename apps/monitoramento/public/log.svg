@@ -1,0 +1,21 @@
+<svg width="300" height="250" viewBox="0 0 300 250" xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <!-- Folhas verdes -->
+    <path d="M150 40 C140 10, 100 30, 120 80 C130 100, 150 90, 150 60 Z" fill="#0a910f"/>
+    <path d="M160 50 C180 20, 210 40, 190 80 C180 100, 160 90, 160 60 Z" fill="#5ecf3e"/>
+    
+    <!-- Veios das folhas -->
+    <path d="M150 40 Q145 60, 150 80" stroke="white" stroke-width="2" fill="none"/>
+    <path d="M160 50 Q165 65, 160 80" stroke="white" stroke-width="2" fill="none"/>
+
+    <!-- Texto "Ambiental" -->
+    <text x="50" y="150" font-family="Arial, sans-serif" font-size="36" fill="#0a910f" font-weight="bold">
+      Ambiental
+    </text>
+
+    <!-- Slogan -->
+    <text x="40" y="180" font-family="Arial, sans-serif" font-size="16" fill="#4d4d4d">
+      Meio Ambiente e Segurança no Trabalho
+    </text>
+  </g>
+</svg>

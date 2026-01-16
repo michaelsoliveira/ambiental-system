@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+  development:
+    volumes:
+      - ..:/app
+      - /app/node_modules
+
+  test:
+    volumes: []
+
+  production:
+    volumes: []

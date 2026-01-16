@@ -18,7 +18,6 @@ export const auth = fastifyPlugin(async (app: FastifyInstance) => {
 
     request.getUserMembership = async (slug: string) => {
       const userId = await request.getCurrentUserId()
-
       const member = await prisma.member.findFirst({
         where: {
           user_id: userId,
@@ -31,6 +30,11 @@ export const auth = fastifyPlugin(async (app: FastifyInstance) => {
           members_roles: {
             include: {
               roles: true
+            }
+          },
+          members_permissions: {
+            include: {
+              permissions: true
             }
           }
         },

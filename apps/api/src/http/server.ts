@@ -4,49 +4,96 @@ import fastifySwaggerUI from "@fastify/swagger-ui";
 import fastifyJwt from "@fastify/jwt";
 import { fastify } from "fastify";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
-import { createAccount } from "./routes/auth/create-account";
+import { createAccount } from "./routes/common/auth/create-account";
 import { jsonSchemaTransform } from "fastify-type-provider-zod";
 
 import { errorHandler } from '@/http/error-handler'
-import { authenticateWithGithub } from '@/http/routes/auth/authenticate-with-github'
-import { authenticateWithPassword } from '@/http/routes/auth/authenticate-with-password'
-import { getProfile } from '@/http/routes/auth/get-profile'
-import { requestPasswordRecover } from '@/http/routes/auth/request-password-recover'
-import { resetPassword } from '@/http/routes/auth/reset-password'
-import { getOrganizationBilling } from '@/http/routes/billing/get-organization-billing'
-import { acceptInvite } from '@/http/routes/invites/accept-invite'
-import { createInvite } from '@/http/routes/invites/create-invite'
-import { getInvite } from '@/http/routes/invites/get-invite'
-import { getPendingInvites } from '@/http/routes/invites/get-pending-invites'
-import { rejectInvite } from '@/http/routes/invites/reject-invite'
-import { revokeInvite } from '@/http/routes/invites/revoke-invite'
-import { getMembers } from '@/http/routes/members/get-members'
-import { removeMember } from '@/http/routes/members/remove-member'
-import { updateMember } from '@/http/routes/members/update-member'
-import { createOrganization } from '@/http/routes/orgs/create-organization'
-import { getMembership } from '@/http/routes/orgs/get-membership'
-import { getOrganization } from '@/http/routes/orgs/get-organization'
-import { getOrganizations } from '@/http/routes/orgs/get-organizations'
-import { shutdownOrganization } from '@/http/routes/orgs/shutdown-organization'
-import { transferOrganization } from '@/http/routes/orgs/transfer-organization'
-import { updateOrganization } from '@/http/routes/orgs/update-organization'
-import { createProject } from '@/http/routes/projects/create-project'
-import { deleteProject } from '@/http/routes/projects/delete-project'
-import { getProject } from '@/http/routes/projects/get-project'
-import { getProjects } from '@/http/routes/projects/get-projects'
-import { updateProject } from '@/http/routes/projects/update-project'
-import { getInvites } from './routes/invites/get-invites'
-import { getRoles } from "./routes/auth/get-roles";
+import { authenticateWithGithub } from '@/http/routes/common/auth/authenticate-with-github'
+import { authenticateWithPassword } from '@/http/routes/common/auth/authenticate-with-password'
+import { getProfile } from '@/http/routes/common/auth/get-profile'
+import { requestPasswordRecover } from '@/http/routes/common/auth/request-password-recover'
+import { resetPassword } from '@/http/routes/common/auth/reset-password'
+import { getOrganizationBilling } from '@/http/routes/common/billing/get-organization-billing'
+import { acceptInvite } from '@/http/routes/common/invites/accept-invite'
+import { createInvite } from '@/http/routes/common/invites/create-invite'
+import { getInvite } from '@/http/routes/common/invites/get-invite'
+import { getPendingInvites } from '@/http/routes/common/invites/get-pending-invites'
+import { rejectInvite } from '@/http/routes/common/invites/reject-invite'
+import { revokeInvite } from '@/http/routes/common/invites/revoke-invite'
+import { getMembers } from '@/http/routes/common/members/get-members'
+import { removeMember } from '@/http/routes/common/members/remove-member'
+import { updateMember } from '@/http/routes/common/members/update-member'
+import { createOrganization } from '@/http/routes/common/orgs/create-organization'
+import { getMembership } from '@/http/routes/common/orgs/get-membership'
+import { getOrganization } from '@/http/routes/common/orgs/get-organization'
+import { getOrganizations } from '@/http/routes/common/orgs/get-organizations'
+import { shutdownOrganization } from '@/http/routes/common/orgs/shutdown-organization'
+import { transferOrganization } from '@/http/routes/common/orgs/transfer-organization'
+import { updateOrganization } from '@/http/routes/common/orgs/update-organization'
+import { createParceiro } from '@/http/routes/financeiro/parceiro/create-parceiro'
+import { deleteParceiro } from '@/http/routes/financeiro/parceiro/delete-parceiro'
+import { getParceiro } from '@/http/routes/financeiro/parceiro/get-parceiro'
+import { getParceiros } from '@/http/routes/financeiro/parceiro/get-parceiros'
+import { updateParceiro } from '@/http/routes/financeiro/parceiro/update-parceiro'
+import { getInvites } from './routes/common/invites/get-invites'
+import { getRoles } from "./routes/common/auth/get-roles";
+import { createContaBancaria } from "./routes/financeiro/conta-bancaria/create-conta";
+import { deleteContaBancaria } from "./routes/financeiro/conta-bancaria/delete-conta";
+import { getContaBancaria } from "./routes/financeiro/conta-bancaria/get-conta";
+import { getContasBancarias } from "./routes/financeiro/conta-bancaria/get-contas";
+import { updateContaBancaria } from "./routes/financeiro/conta-bancaria/update-conta";
+import { createCentroCusto } from "./routes/financeiro/centro-custo/create-centro-custo";
+import { deleteCentroCusto } from "./routes/financeiro/centro-custo/delete-centro-custo";
+import { getCentroCusto } from "./routes/financeiro/centro-custo/get-centro-custo";
+import { getCentrosCusto } from "./routes/financeiro/centro-custo/get-centros-custo";
+import { updateCentroCusto } from "./routes/financeiro/centro-custo/update-centro-custo";
+import { createCategoriaFinanceira } from "./routes/financeiro/categoria/create-categoria";
+import { deleteCategoriaFinanceira } from "./routes/financeiro/categoria/delete-categoria";
+import { getCategoriaFinanceira } from "./routes/financeiro/categoria/get-categoria";
+import { getCategorias } from "./routes/financeiro/categoria/get-categorias";
+import { updateCategoriaFinanceira } from "./routes/financeiro/categoria/update-categoria";
+import { createPessoa } from "./routes/common/pessoa/create-pessoa";
+import { deletePessoa } from "./routes/common/pessoa/delete-pessoa";
+import { getPessoa } from "./routes/common/pessoa/get-pessoa";
+import { getPessoas } from "./routes/common/pessoa/get-pessoas";
+import { PessoaService } from "../services/pessoa-service";
+import { getMunicipiosByEstado } from "./routes/common/estado/get-municipios-by-estado";
+import { estadoRoutes } from "./routes/common/estado/get-estados";
+import { createLancamento } from "./routes/financeiro/lancamento/create-lancamento";
+import { deleteLancamento } from "./routes/financeiro/lancamento/delete-lancamento";
+import { getLancamento } from "./routes/financeiro/lancamento/get-lancamento";
+import { getLancamentos } from "./routes/financeiro/lancamento/get-lancamentos";
+import { getLancamentosRelatorio } from "./routes/financeiro/lancamento/get-lancamentos-relatorio";
+import { updateLancamento } from "./routes/financeiro/lancamento/update-lancamento";
+import { CategoriaFinanceiraService } from "@/services/categoria-financeira-service";
+import { CentroCustoService } from "@/services/centro-custo-service";
+import { ContaBancariaService } from "@/services/conta-bancaria-service";
+import multipart from '@fastify/multipart'
+import { updatePessoa } from "./routes/common/pessoa/update-pessoa";
+import { getLancamentoStatistics } from "./routes/financeiro/lancamento/lancamento-statistics";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
+
 app.setSerializerCompiler(serializerCompiler);
 app.setValidatorCompiler(validatorCompiler);
+
+app.decorate('pessoaService', new PessoaService());
+app.decorate('categoriaFinanceiraService', new CategoriaFinanceiraService());
+app.decorate('centroCustoService', new CentroCustoService());
+app.decorate('contaBancariaService', new ContaBancariaService());
+// app.decorate('estadoService', new EstadoService());
+
+app.register(multipart, {
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB
+  },
+});
 
 app.register(fastifySwagger, {
   openapi: {
     info: {
-      title: 'Next.js SaaS',
-      description: 'Full-Stack Sass app with Multi-Tenancy',
+      title: 'Ambiental SaaS',
+      description: 'Sistemas Integrados de Gestão Empresarial',
       version: '1.0.0'
     },
     servers: [],
@@ -75,7 +122,15 @@ app.register(fastifySwaggerUI, {
 app.register(fastifyJwt, {
   secret: 'my-jwt-secret'
 })
-app.register(fastifyCors);
+app.register(fastifyCors, {
+  // origin: true,
+  origin: ['http://localhost:3000', 'https://ambiental.bomanejo.com.br', 'https://financeiro.bomanejo.com.br'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+});
 app.register(createAccount)
 app.register(authenticateWithPassword)
 app.register(authenticateWithGithub)
@@ -92,11 +147,45 @@ app.register(updateOrganization)
 app.register(shutdownOrganization)
 app.register(transferOrganization)
 
-app.register(createProject)
-app.register(deleteProject)
-app.register(getProject)
-app.register(getProjects)
-app.register(updateProject)
+app.register(createPessoa)
+app.register(deletePessoa)
+app.register(getPessoa)
+app.register(getPessoas)
+app.register(updatePessoa)
+app.register(getMunicipiosByEstado)
+app.register(estadoRoutes)
+
+app.register(createParceiro)
+app.register(deleteParceiro)
+app.register(getParceiro)
+app.register(getParceiros)
+app.register(updateParceiro)
+
+app.register(createContaBancaria)
+app.register(deleteContaBancaria)
+app.register(getContaBancaria)
+app.register(getContasBancarias)
+app.register(updateContaBancaria)
+
+app.register(createLancamento)
+app.register(deleteLancamento)
+app.register(getLancamento)
+app.register(getLancamentos)
+app.register(getLancamentosRelatorio)
+app.register(updateLancamento)
+app.register(getLancamentoStatistics)
+
+app.register(createCentroCusto)
+app.register(deleteCentroCusto)
+app.register(getCentroCusto)
+app.register(getCentrosCusto)
+app.register(updateCentroCusto)
+
+app.register(createCategoriaFinanceira)
+app.register(deleteCategoriaFinanceira)
+app.register(getCategoriaFinanceira)
+app.register(getCategorias)
+app.register(updateCategoriaFinanceira)
 
 app.register(getMembers)
 app.register(updateMember)

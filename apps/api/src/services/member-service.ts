@@ -148,7 +148,6 @@ export const getOrganizationOwners = async (organizationId: string) => {
   }
 
 export const transferOrganizationOwnership = async (organizationId: string, newOwnerUserId: string) => {
-    // Remover o papel de OWNER do membro atual
     const updatedMember = await prisma.member.updateMany({
       data: {
         organization_id: organizationId,

@@ -1,8 +1,7 @@
 {
     "extends": ["@saas/tsconfig/library.json"],
-    "include": ["src/**/*"],
+    "include": ["src/**/*", "scripts"],
     "compilerOptions": {
-        "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"]
         },
