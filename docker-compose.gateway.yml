@@ -1,0 +1,42 @@
+# Nginx (80/443) + Certbot — sempre use com docker-compose.prod.yml na mesma invocação:
+#   docker compose -f docker-compose.prod.yml -f docker-compose.gateway.yml ...
+#
+# Na mesma VPS do licencas (nginx já em 80/443): NÃO use este arquivo; veja docker/README-GATEWAY.txt
+
+services:
+  nginx:
+    image: nginx:stable-alpine
+    container_name: ambiental_nginx_gateway
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./docker/certbot/conf/letsencrypt:/etc/letsencrypt:ro
+      - ./docker/certbot/www:/var/www/certbot:ro
+    networks:
+      - ambiental
+    depends_on:
+      - api
+      - financeiro
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: ambiental_certbot
+    restart: unless-stopped
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --webroot -w /var/www/certbot --quiet; sleep 12h & wait $${!}; done'"
+    volumes:
+      - ./docker/certbot/conf/letsencrypt:/etc/letsencrypt
+      - ./docker/certbot/www:/var/www/certbot
+    networks:
+      - ambiental
+
+  certbot_init:
+    image: certbot/certbot:latest
+    volumes:
+      - ./docker/certbot/conf/letsencrypt:/etc/letsencrypt
+      - ./docker/certbot/www:/var/www/certbot
+    networks:
+      - ambiental

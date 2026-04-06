@@ -4,7 +4,8 @@
   "scripts": {
     "build": "turbo run build",
     "docker:prod": "docker compose -f docker-compose.prod.yml --env-file .env up -d --build",
-    "docker:prod:logs": "docker compose -f docker-compose.prod.yml logs -f",
+    "docker:prod:gateway": "docker compose -f docker-compose.prod.yml -f docker-compose.gateway.yml --env-file .env up -d --build",
+    "docker:prod:logs": "docker compose -f docker-compose.prod.yml -f docker-compose.gateway.yml logs -f",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",

@@ -1,15 +1,14 @@
-# Produção: PostgreSQL + API + frontend financeiro
+# Stack da aplicação: Postgres + API + Next (financeiro)
 #
 # Uso:
 #   cp docker/env.example .env
-#   # edite .env (URLs públicas, segredos, GitHub OAuth)
 #   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 #
-# Migrações rodam na subida do container da API (entrypoint). Para pular: SKIP_MIGRATE=1
+# HTTPS (nginx + certbot): use também docker-compose.gateway.yml (ver docker/README-GATEWAY.txt).
 #
-# Mesma VPS que outro stack (ex.: licencas): 3000 e 3333 no host podem estar ocupados.
-# Padrão aqui: host 3001 → financeiro, host 3334 → API (ajuste API_PORT / FINANCEIRO_PORT no .env).
-# Com nginx/caddy na frente, costuma não publicar essas portas — use proxy para os containers.
+# Migrações: rodam no entrypoint da API. SKIP_MIGRATE=1 para pular.
+
+name: ambiental
 
 services:
   postgres:
@@ -50,8 +49,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    ports:
-      - "${API_PORT:-3334}:3333"
+    expose:
+      - "3333"
     networks:
       - ambiental
 
@@ -71,8 +70,8 @@ services:
       INTERNAL_API_URL: http://api:3333
     depends_on:
       - api
-    ports:
-      - "${FINANCEIRO_PORT:-3001}:3000"
+    expose:
+      - "3000"
     networks:
       - ambiental
 
@@ -81,4 +80,5 @@ volumes:
 
 networks:
   ambiental:
+    name: bomanejo_ambiental
     driver: bridge

@@ -36,3 +36,7 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Certificados e desafios ACME (docker)
+docker/certbot/conf/
+docker/certbot/www/
