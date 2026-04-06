@@ -1,0 +1,25 @@
+# Dependências e artefatos locais
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+**/coverage
+
+# Git e IDE
+.git
+.gitignore
+**/.DS_Store
+.idea
+.vscode
+
+# Logs e env locais (use ARG/ENV no build ou env_file no compose)
+.env
+.env.*
+!.env.example
+
+# Docs e testes (opcional — reduz contexto)
+**/*.md
+**/test
+**/__tests__
+**/*.spec.ts
+**/*.test.ts

@@ -1,0 +1,44 @@
+# Next.js (standalone) — build a partir da raiz do monorepo
+# docker build -f docker/Dockerfile.financeiro -t ambiental-financeiro \
+#   --build-arg NEXT_PUBLIC_API_URL=https://api.seudominio.com .
+
+FROM node:22-alpine AS base
+RUN apk add --no-cache libc6-compat openssl && \
+    corepack enable && corepack prepare pnpm@9.0.0 --activate
+WORKDIR /app
+
+FROM base AS builder
+# URL pública da API (browser + validação @saas/env no build). Sobrescreva no compose/build.
+ARG NEXT_PUBLIC_API_URL=http://localhost:3333
+ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY config ./config
+
+RUN pnpm install --frozen-lockfile
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm turbo run build --filter=@saas/financeiro
+
+FROM base AS runner
+RUN apk add --no-cache libc6-compat openssl && \
+    addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001 -G nodejs
+
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
+
+COPY --from=builder /app/apps/financeiro/.next/standalone ./
+COPY --from=builder /app/apps/financeiro/.next/static ./apps/financeiro/.next/static
+COPY --from=builder /app/apps/financeiro/public ./apps/financeiro/public
+
+RUN chown -R nextjs:nodejs /app
+USER nextjs
+EXPOSE 3000
+
+CMD ["node", "apps/financeiro/server.js"]

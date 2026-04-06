@@ -6,6 +6,7 @@ import { fastify } from "fastify";
 import { serializerCompiler, validatorCompiler, ZodTypeProvider } from "fastify-type-provider-zod";
 import { createAccount } from "./routes/common/auth/create-account";
 import { jsonSchemaTransform } from "fastify-type-provider-zod";
+import { env } from "@saas/env";
 
 import { errorHandler } from '@/http/error-handler'
 import { authenticateWithGithub } from '@/http/routes/common/auth/authenticate-with-github'
@@ -234,8 +235,8 @@ app.register(getPendingInvites)
 app.register(getOrganizationBilling)
 
 
-app.listen({ port: 3333 }).then(() => {
-  console.log("HTTP server running on http://localhost:3333");
+app.listen({ port: env.SERVER_PORT, host: "0.0.0.0" }).then(() => {
+  console.log(`HTTP server running on http://0.0.0.0:${env.SERVER_PORT}`);
 });
 
 export default app;
