@@ -1,28 +1,34 @@
 import { notFound } from 'next/navigation';
 
-import { fetchAPI } from '@/lib/utils';
+import { api } from '@/http/api-client';
 
 import { PessoaForm } from './pessoa-form';
 
 type TPessoaViewPageProps = {
+  slug: string;
   pessoaId: string;
 };
 
 export default async function DiretorViewPage({
-  pessoaId
+  slug,
+  pessoaId,
 }: TPessoaViewPageProps) {
-  let pessoa = undefined;
-  let pageTitle = 'Cadastrar Pessoa';
+  let pessoa: unknown = undefined;
 
   if (pessoaId !== 'new') {
-    const data = await fetchAPI(`/pessoa/${pessoaId}`)
-    pessoa = data;
-    
+    try {
+      const res = await api.get(
+        `organizations/${slug}/pessoas/${pessoaId}`,
+      );
+      pessoa = await res.json();
+    } catch {
+      notFound();
+    }
+
     if (!pessoa) {
       notFound();
     }
-    pageTitle = `Editar Pessoa`;
   }
 
-  return <PessoaForm initialData={pessoa} />;
+  return <PessoaForm slug={slug} initialData={pessoa} />;
 }

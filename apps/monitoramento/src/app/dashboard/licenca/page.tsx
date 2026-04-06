@@ -7,11 +7,7 @@ import { ExportButtonCsvLicenca } from '@/features/licenca/components/export-but
 import { LicencaHeaderPage } from '@/features/licenca/components/licenca-header';
 import LicencaListingPage from '@/features/licenca/components/licenca-listing';
 import LicencaTableAction from '@/features/licenca/components/licenca-tables/licenca-table-action';
-import ExportLicencaPdfButton from '@/features/licenca/components/pdf/export-licenca-pdf-button';
 import { searchParamsCache, serialize } from '@/lib/searchparams';
-import { cn, fetchAPI } from '@/lib/utils';
-import { Download, Plus } from 'lucide-react';
-import Link from 'next/link';
 import { SearchParams } from 'nuqs/server';
 import { Suspense } from 'react';
 
