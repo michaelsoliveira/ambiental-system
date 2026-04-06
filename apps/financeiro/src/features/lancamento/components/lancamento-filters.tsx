@@ -12,7 +12,8 @@ import {
   CreditCard,
   Users,
   Layers,
-  Receipt
+  Receipt,
+  Truck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +37,7 @@ interface LancamentoFiltersProps {
   contasBancarias?: Array<{ id: string; nome: string }>;
   centrosCusto?: Array<{ id: string; nome: string }>;
   parceiros?: Array<{ id: string; pessoa: any }>;
+  veiculos?: Array<{ id: string; placa: string; modelo: string; marca: string }>;
 }
 
 export function LancamentoFilters({ 
@@ -43,7 +45,8 @@ export function LancamentoFilters({
   categorias = [],
   contasBancarias = [],
   centrosCusto = [],
-  parceiros = []
+  parceiros = [],
+  veiculos = [],
 }: LancamentoFiltersProps) {
   const {
     search,
@@ -68,6 +71,8 @@ export function LancamentoFilters({
     setCentroCustoId,
     parceiroId,
     setParceiroId,
+    veiculoId,
+    setVeiculoId,
     formaParcelamento,
     setFormaParcelamento,
     valorMin,
@@ -94,6 +99,7 @@ export function LancamentoFilters({
     contaBancariaId: contaBancariaId ?? '',
     centroCustoId: centroCustoId ?? '',
     parceiroId: parceiroId ?? '',
+    veiculoId: veiculoId ?? '',
     formaParcelamento: formaParcelamento ?? 'todos',
     valorMin: valorMin ?? '',
     valorMax: valorMax ?? '',
@@ -129,6 +135,13 @@ export function LancamentoFilters({
     }));
   }, [parceiros]);
 
+  const veiculosOptions = useMemo(() => {
+    return veiculos.map((v) => ({
+      label: `${v.placa} — ${v.marca} ${v.modelo}`.trim(),
+      value: v.id,
+    }));
+  }, [veiculos]);
+
   const activeFiltersCount = () => {
     let count = 0;
     if (tempFilters.tipoLancamento !== 'todos') count++;
@@ -140,6 +153,7 @@ export function LancamentoFilters({
     if (tempFilters.contaBancariaId) count++;
     if (tempFilters.centroCustoId) count++;
     if (tempFilters.parceiroId) count++;
+    if (tempFilters.veiculoId) count++;
     if (tempFilters.formaParcelamento !== 'todos') count++;
     if (tempFilters.valorMin) count++;
     if (tempFilters.valorMax) count++;
@@ -159,6 +173,7 @@ export function LancamentoFilters({
     setContaBancariaId(tempFilters.contaBancariaId);
     setCentroCustoId(tempFilters.centroCustoId);
     setParceiroId(tempFilters.parceiroId);
+    setVeiculoId(tempFilters.veiculoId);
     setFormaParcelamento(tempFilters.formaParcelamento);
     setValorMin(tempFilters.valorMin);
     setValorMax(tempFilters.valorMax);
@@ -179,6 +194,7 @@ export function LancamentoFilters({
       contaBancariaId: '',
       centroCustoId: '',
       parceiroId: '',
+      veiculoId: '',
       formaParcelamento: 'todos',
       valorMin: '',
       valorMax: '',
@@ -422,8 +438,8 @@ export function LancamentoFilters({
               </div>
             </div>
 
-            {/* Linha 4: Parceiro e Forma de Parcelamento */}
-            <div className="grid grid-cols-2 gap-4">
+            {/* Linha 4: Parceiro, Veículo e Forma de Parcelamento */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <Label className="flex items-center gap-2 mb-2">
                   <Users className="h-4 w-4" />
@@ -435,6 +451,21 @@ export function LancamentoFilters({
                   onValueChange={(value) => setTempFilters({...tempFilters, parceiroId: value})}
                   placeholder="Todos os parceiros"
                   searchPlaceholder="Buscar parceiro..."
+                />
+              </div>
+
+              <div>
+                <Label className="flex items-center gap-2 mb-2">
+                  <Truck className="h-4 w-4" />
+                  Veículo
+                </Label>
+                <SelectSearchable
+                  options={[{label: 'Todos', value: ''}, ...veiculosOptions]}
+                  value={tempFilters.veiculoId}
+                  onValueChange={(value) => setTempFilters({...tempFilters, veiculoId: value})}
+                  placeholder="Todos os veículos"
+                  searchPlaceholder="Buscar por placa ou modelo..."
+                  emptyText="Nenhum veículo encontrado"
                 />
               </div>
 

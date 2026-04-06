@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 
-import { isAuthenticated } from '@/auth/auth'
+import { auth } from '@/auth/auth'
 
 export default async function AppLayout({
   children,
@@ -9,11 +9,12 @@ export default async function AppLayout({
   children: React.ReactNode
   sheet: React.ReactNode
 }>) {
-    
-    return (
-        <>
-        {children}
-        {sheet}
-        </>
-    )
+  await auth()
+
+  return (
+    <>
+      {children}
+      {sheet}
+    </>
+  )
 }

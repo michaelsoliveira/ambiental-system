@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { LancamentoListing } from '@/features/lancamento/components/lancamento-listing';
 import { useGetCategorias, useGetContas, useGetCentrosCusto, useGetParceiros } from '@/hooks/use-lancamentos';
+import { useVeiculos } from '@/hooks/use-frota';
 import { Loader, PlusIcon } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import LancamentoTableAction from '@/features/lancamento/components/lancamento-tables/lancamento-table-action';
@@ -21,6 +22,7 @@ export default function LancamentosPage() {
     const { data: contasData, isLoading: loadingContas } = useGetContas(slug);
     const { data: centrosCustoData, isLoading: loadingCentros } = useGetCentrosCusto(slug);
     const { data: parceirosData, isLoading: loadingParceiros } = useGetParceiros(slug);
+    const { data: veiculosData } = useVeiculos(slug!, { limit: 100, ativo: true });
 
     useEffect(() => {
       setMounted(true);
@@ -36,6 +38,7 @@ export default function LancamentosPage() {
     const contas = contasData?.contas || [];
     const centrosCusto = centrosCustoData?.centros || [];
     const parceiros = parceirosData?.parceiros || [];
+    const veiculos = veiculosData?.veiculos || [];
 
     return (
       <>
@@ -79,6 +82,7 @@ export default function LancamentosPage() {
           contas={contas}
           centrosCusto={centrosCusto}
           parceiros={parceiros}
+          veiculos={veiculos}
         />
       </div>
       </>

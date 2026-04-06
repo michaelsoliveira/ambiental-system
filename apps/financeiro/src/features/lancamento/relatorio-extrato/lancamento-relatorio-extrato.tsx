@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import {
@@ -28,11 +27,14 @@ import { getContas } from '@/http/conta/get-contas'
 import { getCategorias } from '@/http/categoria/get-categorias'
 import { getCentrosCusto } from '@/http/centro-custo/get-centros-custo'
 import { getParceiros } from '@/http/parceiro/get-parceiros'
+import { getVeiculos } from '@/http/frota/get-veiculos'
 import { Printer, Download, FileText, FileSpreadsheet } from 'lucide-react'
 import { exportToCSV, exportToXLS, formatCurrency, formatDate } from '@/lib/export-utils'
 import { RelatorioExtratoTable } from './relatorio-extrato-table'
 import { RelatorioExtratoPrint } from './relatorio-extrato-print'
 import { RelatorioExtratoPDF } from './relatorio-extrato-pdf'
+import { toast } from 'sonner'
+import { zodV4Resolver } from '@/lib/zod-v4-resolver'
 
 const relatorioSchema = z.object({
   periodo_tipo: z.enum(['datas', 'mes_ano']).default('datas'),
@@ -43,6 +45,7 @@ const relatorioSchema = z.object({
   conta_bancaria_id: z.string().optional().or(z.literal('all-contas')),
   categoria_id: z.string().optional().or(z.literal('all-categorias')),
   centro_custo_id: z.string().optional().or(z.literal('all-centros')),
+  veiculo_id: z.string().optional().or(z.literal('all-veiculos')),
   parceiro_id: z.string().optional().or(z.literal('all-parceiros')),
   tipo: z.enum(['RECEITA', 'DESPESA', 'TRANSFERENCIA']).optional().or(z.literal('all-tipos')),
   pago: z.boolean().optional(),
@@ -88,6 +91,12 @@ export function LancamentoRelatorioExtrato() {
     enabled: !!slug,
   })
 
+  const { data: veiculosData } = useQuery({
+    queryKey: ['veiculos-relatorio', slug],
+    queryFn: () => getVeiculos(slug!, { limit: 100, ativo: true }),
+    enabled: !!slug,
+  })
+
   const { data: relatorioData, isLoading } = useQuery({
     queryKey: ['lancamentos-relatorio', slug, filters],
     queryFn: () => {
@@ -114,6 +123,7 @@ export function LancamentoRelatorioExtrato() {
         conta_bancaria_id: filters.conta_bancaria_id === 'all-contas' ? undefined : filters.conta_bancaria_id,
         categoria_id: filters.categoria_id === 'all-categorias' ? undefined : filters.categoria_id,
         centro_custo_id: filters.centro_custo_id === 'all-centros' ? undefined : filters.centro_custo_id,
+        veiculo_id: filters.veiculo_id === 'all-veiculos' ? undefined : filters.veiculo_id,
         parceiro_id: filters.parceiro_id === 'all-parceiros' ? undefined : filters.parceiro_id,
         tipo: filters.tipo === 'all-tipos' ? undefined : filters.tipo as 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA' | undefined,
         pago: filters.pago,
@@ -124,7 +134,7 @@ export function LancamentoRelatorioExtrato() {
   })
 
   const form = useForm<RelatorioFormData>({
-    resolver: zodResolver(relatorioSchema),
+    resolver: zodV4Resolver(relatorioSchema) as any,
     defaultValues: {
       periodo_tipo: 'datas',
       data_inicio: '',
@@ -134,6 +144,7 @@ export function LancamentoRelatorioExtrato() {
       conta_bancaria_id: 'all-contas',
       categoria_id: 'all-categorias',
       centro_custo_id: 'all-centros',
+      veiculo_id: 'all-veiculos',
       parceiro_id: 'all-parceiros',
       tipo: 'all-tipos',
       pago: undefined,
@@ -177,10 +188,22 @@ export function LancamentoRelatorioExtrato() {
       conta_bancaria_id: data.conta_bancaria_id === 'all-contas' ? undefined : data.conta_bancaria_id,
       categoria_id: data.categoria_id === 'all-categorias' ? undefined : data.categoria_id,
       centro_custo_id: data.centro_custo_id === 'all-centros' ? undefined : data.centro_custo_id,
+      veiculo_id: data.veiculo_id === 'all-veiculos' ? undefined : data.veiculo_id,
       parceiro_id: data.parceiro_id === 'all-parceiros' ? undefined : data.parceiro_id,
       tipo: data.tipo === 'all-tipos' ? undefined : data.tipo,
     }
     setFilters(cleanData)
+  }
+
+  const onInvalidSubmit = (errors: any) => {
+    const firstErrorMessage =
+      errors?.data_inicio?.message ||
+      errors?.data_fim?.message ||
+      errors?.mes?.message ||
+      errors?.ano?.message ||
+      'Verifique os campos obrigatórios'
+
+    toast.error(firstErrorMessage)
   }
 
   const handleExportCSV = () => {
@@ -245,6 +268,7 @@ export function LancamentoRelatorioExtrato() {
   const categorias = categoriasData?.categorias || []
   const centrosCusto = centrosCustoData?.centros || []
   const parceiros = parceirosData?.parceiros || []
+  const veiculos = veiculosData?.veiculos || []
 
   // Gerar lista de anos (últimos 10 anos até o próximo)
   const anos = Array.from({ length: 11 }, (_, i) => {
@@ -272,7 +296,7 @@ export function LancamentoRelatorioExtrato() {
       <div className="border rounded-lg p-6 bg-card print:hidden">
         <h2 className="text-lg font-semibold mb-4">Filtros do Relatório</h2>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit, onInvalidSubmit)} className="space-y-4">
             {/* Tipo de Período */}
             <FormField
               control={form.control}
@@ -487,6 +511,37 @@ export function LancamentoRelatorioExtrato() {
                         {centrosCusto.map((centro) => (
                           <SelectItem key={centro.id} value={centro.id}>
                             {centro.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="veiculo_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Veículo</FormLabel>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === 'all-veiculos' ? undefined : value)
+                      }
+                      value={field.value || 'all-veiculos'}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Todos os veículos" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="all-veiculos">Todos os veículos</SelectItem>
+                        {veiculos.map((veiculo) => (
+                          <SelectItem key={veiculo.id} value={veiculo.id}>
+                            {veiculo.placa} · {veiculo.marca} {veiculo.modelo}
                           </SelectItem>
                         ))}
                       </SelectContent>

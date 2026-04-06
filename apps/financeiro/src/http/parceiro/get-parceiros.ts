@@ -1,6 +1,6 @@
 import { api } from "../api-client"
 
-interface GetParceirosResponse {
+export interface GetParceirosResponse {
     parceiros: Array<{
       id: string
       tipo_parceiro: string
@@ -24,12 +24,14 @@ interface GetParceirosResponse {
         } | null
       }
     }>
-  }
-  
-  export async function getParceiros(org: string) {
-    const result = await api
-      .get(`organizations/${org}/financeiro/parceiros`)
-      .json<GetParceirosResponse>()
-  
-    return result
-  }
+}
+
+export type ParceiroListRecord = GetParceirosResponse['parceiros'][number]
+
+export async function getParceiros(org: string) {
+  const result = await api
+    .get(`organizations/${org}/financeiro/parceiros`)
+    .json<GetParceirosResponse>()
+
+  return result
+}

@@ -7,7 +7,13 @@ import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { prisma } from '@/lib/prisma'
 import { getUserPermissions } from '@/utils/get-user-permissions'
-import { parceiroSchema } from '@saas/auth'
+
+const updateParceiroBodySchema = z.object({
+  tipo_parceiro: z.enum(['CLIENTE', 'FORNECEDOR', 'AMBOS']).optional(),
+  observacoes: z.string().nullable().optional(),
+  ativo: z.boolean().optional(),
+  pessoa_id: z.string().uuid().optional(),
+})
 
 export async function updateParceiro(app: FastifyInstance) {
   app
@@ -21,7 +27,7 @@ export async function updateParceiro(app: FastifyInstance) {
           summary: 'Atualizar parceiro',
           security: [{ bearerAuth: [] }],
           params: z.object({ slug: z.string(), parceiroId: z.string().uuid() }),
-          body: parceiroSchema.partial(),
+          body: updateParceiroBodySchema,
           response: { 204: z.null() },
         },
       },
@@ -47,9 +53,30 @@ export async function updateParceiro(app: FastifyInstance) {
           throw new BadRequestError('Parceiro não encontrado.')
         }
 
+        const body = updateParceiroBodySchema.parse(request.body)
+
+        if (body.pessoa_id && body.pessoa_id !== parceiro.pessoa_id) {
+          const dupe = await prisma.parceiro.findUnique({
+            where: {
+              organization_id_pessoa_id: {
+                organization_id: organization.id,
+                pessoa_id: body.pessoa_id,
+              },
+            },
+          })
+          if (dupe && dupe.id !== parceiroId) {
+            throw new BadRequestError('Já existe um parceiro vinculado a esta pessoa.')
+          }
+        }
+
         await prisma.parceiro.update({
           where: { id: parceiroId },
-          data: request.body,
+          data: {
+            ...(body.tipo_parceiro !== undefined && { tipo_parceiro: body.tipo_parceiro }),
+            ...(body.observacoes !== undefined && { observacoes: body.observacoes }),
+            ...(body.ativo !== undefined && { ativo: body.ativo }),
+            ...(body.pessoa_id !== undefined && { pessoa_id: body.pessoa_id }),
+          },
         })
 
         return reply.status(204).send()

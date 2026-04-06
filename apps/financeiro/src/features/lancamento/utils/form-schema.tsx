@@ -20,6 +20,10 @@ export const lancamentoSchema = z.object({
     .refine(val => !isNaN(parseInt(val)) && parseInt(val) > 0, 'Número de parcelas deve ser maior que 0'),
   pago: z.boolean().default(false),
   status_lancamento: z.enum(['PENDENTE', 'CONFIRMADO', 'PAGO', 'CANCELADO', 'ATRASADO']).default('PENDENTE'),
+  // Controle interno e integração Asaas
+  controle_interno: z.boolean().default(false),
+  gerar_boleto: z.boolean().default(false),
+  permitir_pix: z.boolean().default(false),
   observacoes: z.string().optional(),
   parcelas: z.array(z.object({
     id: z.string().optional(),

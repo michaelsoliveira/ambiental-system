@@ -1,4 +1,5 @@
 'use client';
+
 import { AlertModal } from '@/components/modal/alert-modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,8 +10,8 @@ import {
 } from "@/components/ui/tooltip";
 import { useAuthContext } from '@/context/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
-import { Edit, Trash, Copy, Download } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Edit, Trash, Copy } from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -23,23 +24,27 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit }) => {
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
+  const params = useParams<{ slug: string }>();
+  const slug = params.slug;
   const { client } = useAuthContext();
   const queryClient = useQueryClient();
   
   const onConfirm = async () => {
+    if (!slug) {
+      toast.error('Organização não encontrada')
+      return
+    }
     try {
       setLoading(true)
-      await client.delete(`/lancamento/${data.id}`).then((res: any) => {
-        const { error, message } = res.data;
-        if (!error) {
-          toast.success(message)
-          router.refresh();
-        } else {
-          toast.error(message)
-        }
-      })
+      await client.delete(
+        `/organizations/${slug}/financeiro/lancamentos/${data.id}`,
+      )
+      toast.success('Lançamento excluído com sucesso!')
+      router.refresh()
     } catch (error: any) {
-      toast.error(error.message)
+      const message =
+        error?.response?.data?.message ?? error?.message ?? 'Erro ao excluir lançamento'
+      toast.error(message)
     } finally {
       setLoading(false);
       setOpen(false);
@@ -48,19 +53,21 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit }) => {
   };
 
   const handleDuplicate = async () => {
+    if (!slug) {
+      toast.error('Organização não encontrada')
+      return
+    }
     try {
-      await client.post(`organizations/${data.organization_id}/lancamentos/${data.id}/duplicate`).then((res: any) => {
-        const { error, message } = res.data;
-        if (!error) {
-          toast.success(message)
-          router.refresh();
-          queryClient.invalidateQueries({ queryKey: ["lancamentos"] })
-        } else {
-          toast.error(message)
-        }
-      })
+      await client.post(
+        `/organizations/${slug}/financeiro/lancamentos/${data.id}/duplicate`,
+      )
+      toast.success('Lançamento duplicado com sucesso!')
+      router.refresh();
+      queryClient.invalidateQueries({ queryKey: ["lancamentos"] })
     } catch (error: any) {
-      toast.error('Erro ao duplicar lançamento')
+      const message =
+        error?.response?.data?.message ?? 'Erro ao duplicar lançamento'
+      toast.error(message)
     }
   };
 
@@ -86,66 +93,37 @@ export const CellAction: React.FC<CellActionProps> = ({ data, onEdit }) => {
         >
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-full"
-                onClick={handleEdit}
-              >
+              <Button variant="ghost" className="h-8 w-8 p-0" onClick={handleEdit}>
+                <span className="sr-only">Editar lançamento</span>
                 <Edit className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Editar</p>
-            </TooltipContent>
+            <TooltipContent>Editar</TooltipContent>
           </Tooltip>
-          
+
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-full"
-                onClick={handleDuplicate}
-              >
+              <Button variant="ghost" className="h-8 w-8 p-0" onClick={handleDuplicate}>
+                <span className="sr-only">Duplicar lançamento</span>
                 <Copy className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Duplicar</p>
-            </TooltipContent>
+            <TooltipContent>Duplicar</TooltipContent>
           </Tooltip>
-          
+
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-foreground cursor-pointer rounded-full"
-                onClick={() => {/* Download de documento */}}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Download</p>
-            </TooltipContent>
-          </Tooltip>
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground hover:text-destructive cursor-pointer rounded-full"
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-600"
                 onClick={() => setOpen(true)}
+                disabled={loading}
               >
+                <span className="sr-only">Excluir lançamento</span>
                 <Trash className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>
-              <p>Excluir</p>
-            </TooltipContent>
+            <TooltipContent>Excluir</TooltipContent>
           </Tooltip>
         </div>
       </TooltipProvider>

@@ -71,6 +71,21 @@ import { ContaBancariaService } from "@/services/conta-bancaria-service";
 import multipart from '@fastify/multipart'
 import { updatePessoa } from "./routes/common/pessoa/update-pessoa";
 import { getLancamentoStatistics } from "./routes/financeiro/lancamento/lancamento-statistics";
+import { asaasPaymentsWebhook } from "./routes/webhooks/asaas-payments";
+import { getVeiculos } from "./routes/financeiro/frota/get-veiculos";
+import { getVeiculo } from "./routes/financeiro/frota/get-veiculo";
+import { createVeiculo } from "./routes/financeiro/frota/create-veiculo";
+import { updateVeiculo } from "./routes/financeiro/frota/update-veiculo";
+import { deleteVeiculo } from "./routes/financeiro/frota/delete-veiculo";
+import { postAbastecimento } from "./routes/financeiro/frota/post-abastecimento";
+import { postManutencao } from "./routes/financeiro/frota/post-manutencao";
+import { postViagem } from "./routes/financeiro/frota/post-viagem";
+import { putAbastecimento } from "./routes/financeiro/frota/put-abastecimento";
+import { deleteAbastecimento } from "./routes/financeiro/frota/delete-abastecimento";
+import { putManutencao } from "./routes/financeiro/frota/put-manutencao";
+import { deleteManutencao } from "./routes/financeiro/frota/delete-manutencao";
+import { putViagem } from "./routes/financeiro/frota/put-viagem";
+import { deleteViagem } from "./routes/financeiro/frota/delete-viagem";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -124,7 +139,7 @@ app.register(fastifyJwt, {
 })
 app.register(fastifyCors, {
   // origin: true,
-  origin: ['http://localhost:3000', 'https://ambiental.bomanejo.com.br', 'https://financeiro.bomanejo.com.br'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'https://ambiental.bomanejo.com.br', 'https://financeiro.bomanejo.com.br'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -174,6 +189,23 @@ app.register(getLancamentos)
 app.register(getLancamentosRelatorio)
 app.register(updateLancamento)
 app.register(getLancamentoStatistics)
+
+app.register(getVeiculos)
+app.register(getVeiculo)
+app.register(createVeiculo)
+app.register(updateVeiculo)
+app.register(deleteVeiculo)
+app.register(postAbastecimento)
+app.register(postManutencao)
+app.register(postViagem)
+app.register(putAbastecimento)
+app.register(deleteAbastecimento)
+app.register(putManutencao)
+app.register(deleteManutencao)
+app.register(putViagem)
+app.register(deleteViagem)
+
+app.register(asaasPaymentsWebhook)
 
 app.register(createCentroCusto)
 app.register(deleteCentroCusto)

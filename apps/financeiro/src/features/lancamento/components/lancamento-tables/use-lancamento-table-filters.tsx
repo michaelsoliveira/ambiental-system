@@ -77,6 +77,12 @@ export function useLancamentoTableFilters() {
     parseAsString.withOptions({ shallow: false }).withDefault('')
   );
 
+  // Filtro de veículo (frota)
+  const [veiculoId, setVeiculoId] = useQueryState(
+    'veiculo_id',
+    parseAsString.withOptions({ shallow: false }).withDefault('')
+  );
+
   // Filtro de forma de parcelamento
   const [formaParcelamento, setFormaParcelamento] = useQueryState(
     'forma_parcelamento',
@@ -118,6 +124,7 @@ export function useLancamentoTableFilters() {
       !!contaBancariaId ||
       !!centroCustoId ||
       !!parceiroId ||
+      !!veiculoId ||
       (formaParcelamento && formaParcelamento !== 'todos') ||
       !!valorMin ||
       !!valorMax ||
@@ -135,6 +142,7 @@ export function useLancamentoTableFilters() {
     contaBancariaId,
     centroCustoId,
     parceiroId,
+    veiculoId,
     formaParcelamento,
     valorMin,
     valorMax,
@@ -154,6 +162,7 @@ export function useLancamentoTableFilters() {
     setContaBancariaId('');
     setCentroCustoId('');
     setParceiroId('');
+    setVeiculoId('');
     setFormaParcelamento('todos');
     setValorMin('');
     setValorMax('');
@@ -189,6 +198,8 @@ export function useLancamentoTableFilters() {
     setCentroCustoId,
     parceiroId,
     setParceiroId,
+    veiculoId,
+    setVeiculoId,
     formaParcelamento,
     setFormaParcelamento,
     valorMin,

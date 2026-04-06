@@ -1,7 +1,7 @@
 import { ChevronsUpDown, PlusCircle } from 'lucide-react'
 import Link from 'next/link'
 
-import { getCurrentOrg } from '@/auth/auth'
+import { getCurrentOrg, isAuthenticated } from '@/auth/auth'
 import { getOrganizations } from '@/http/get-organizations'
 
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar'
@@ -17,15 +17,18 @@ import {
 
 export async function OrganizationSwitcher() {
   const currentOrg = await getCurrentOrg()
+  const authenticated = await isAuthenticated()
 
   let organizations: { id: string; name: string; slug: string; avatarUrl: string | null }[] = []
   
-  try {
-    const result = await getOrganizations()
-    organizations = result.organizations || []
-  } catch (error) {
-    console.error('[OrganizationSwitcher] ❌ Erro ao carregar organizações:', error)
-    // Continuar com array vazio para não quebrar a aplicação
+  if (authenticated) {
+    try {
+      const result = await getOrganizations()
+      organizations = result.organizations || []
+    } catch (error) {
+      console.error('[OrganizationSwitcher] ❌ Erro ao carregar organizações:', error)
+      // Continuar com array vazio para não quebrar a aplicação
+    }
   }
 
   const currentOrganization = organizations.find(

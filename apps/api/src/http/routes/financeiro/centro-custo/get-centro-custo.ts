@@ -13,7 +13,7 @@ export async function getCentroCusto(app: FastifyInstance) {
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .get(
-      '/organizations/:slug/financial/centros-custo/:centroId',
+      '/organizations/:slug/financeiro/centros-custo/:centroId',
       {
         schema: {
           tags: ['Financeiro - Centros de Custo'],

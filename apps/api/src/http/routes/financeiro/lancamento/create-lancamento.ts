@@ -45,6 +45,11 @@ export const lancamentoCreateSchema = z.object({
     .refine(val => val === '' || z.string().uuid().safeParse(val).success, 'ID do parceiro inválido')
     .transform(val => val === '' ? undefined : val)
     .optional(),
+  veiculo_id: z.string()
+    .transform(val => val.trim())
+    .refine(val => val === '' || z.string().uuid().safeParse(val).success, 'ID do veículo inválido')
+    .transform(val => val === '' ? undefined : val)
+    .optional(),
   pago: z.boolean().default(false),
   data_pagamento: z.string()
     .transform(val => val?.trim())
@@ -52,6 +57,19 @@ export const lancamentoCreateSchema = z.object({
     .transform(val => val === '' ? undefined : val)
     .optional(),
   status_lancamento: z.enum(['PENDENTE', 'CONFIRMADO', 'PAGO', 'CANCELADO', 'ATRASADO']).default('PENDENTE'),
+  // Controle interno e integração Asaas
+  controle_interno: z.preprocess(
+    (v) => (v === true || v === 'true' || v === '1' ? true : false),
+    z.boolean()
+  ).default(false),
+  gerar_boleto: z.preprocess(
+    (v) => (v === true || v === 'true' || v === '1'),
+    z.boolean()
+  ).optional().default(false),
+  permitir_pix: z.preprocess(
+    (v) => (v === true || v === 'true' || v === '1'),
+    z.boolean()
+  ).optional().default(false),
 })
 
 export async function createLancamento(app: FastifyInstance) {

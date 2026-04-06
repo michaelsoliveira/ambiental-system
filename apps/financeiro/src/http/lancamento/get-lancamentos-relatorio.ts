@@ -41,6 +41,7 @@ export async function getLancamentosRelatorio(
     conta_bancaria_id?: string
     categoria_id?: string
     centro_custo_id?: string
+    veiculo_id?: string
     parceiro_id?: string
     tipo?: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA'
     pago?: boolean
@@ -52,6 +53,7 @@ export async function getLancamentosRelatorio(
   if (params?.conta_bancaria_id) searchParams.append('conta_bancaria_id', params.conta_bancaria_id)
   if (params?.categoria_id) searchParams.append('categoria_id', params.categoria_id)
   if (params?.centro_custo_id) searchParams.append('centro_custo_id', params.centro_custo_id)
+  if (params?.veiculo_id) searchParams.append('veiculo_id', params.veiculo_id)
   if (params?.parceiro_id) searchParams.append('parceiro_id', params.parceiro_id)
   if (params?.tipo) searchParams.append('tipo', params.tipo)
   if (params?.pago !== undefined) searchParams.append('pago', String(params.pago))

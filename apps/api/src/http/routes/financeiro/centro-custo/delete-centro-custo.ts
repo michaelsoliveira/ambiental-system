@@ -14,7 +14,7 @@ export async function deleteCentroCusto(app: FastifyInstance) {
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .delete(
-      '/organizations/:slug/financial/centros-custo/:centroId',
+      '/organizations/:slug/financeiro/centros-custo/:centroId',
       {
         schema: {
           tags: ['Financeiro - Centros de Custo'],

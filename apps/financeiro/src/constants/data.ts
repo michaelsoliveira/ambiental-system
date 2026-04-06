@@ -51,6 +51,10 @@ const baseNavItems: Array<NavItem> = [
         title: 'Relatório de Financeiro',
         url: '/lancamentos/relatorio-extrato',
       },
+      {
+        title: 'Frota',
+        url: '/frota',
+      },
     ]
   },
   {

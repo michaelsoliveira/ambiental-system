@@ -3,6 +3,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { CellAction } from './cell-action';
 import { formatCurrency, formatDate, formatDateShort } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
+import { StatusQuickAction } from './status-quick-action';
 
 
 export type ColumnsProps = {
@@ -10,6 +11,16 @@ export type ColumnsProps = {
 };
 
 export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] => [
+  {
+    id: 'quick-status',
+    header: '',
+    cell: ({ row }) => (
+      <div className="flex justify-center" onClick={(e) => e.stopPropagation()}>
+        <StatusQuickAction data={row.original} />
+      </div>
+    ),
+    size: 40
+  },
   {
     header: 'Parceiro',
     cell: ({ row }) => {
@@ -156,7 +167,7 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
           </span>
           
           {/* Overlay com ícones - sobrepõe ambas as colunas */}
-          <div className="absolute -left-[calc(100%+50px)] top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto z-10">
+          <div className="absolute -left-[50px] top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto z-10">
             <CellAction 
               data={row.original} 
               onEdit={onRowClick}

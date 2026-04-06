@@ -110,7 +110,7 @@ export function useLancamento(org: string, lancamentoId: string, enabled: boolea
   return useQuery({
     queryKey: ['lancamento', lancamentoId],
     queryFn: async () => {
-      const result = await api.get(`organizations/${org}/lancamento/${lancamentoId}`).json<any>()
+      const result = await api.get(`organizations/${org}/financeiro/lancamentos/${lancamentoId}`).json<any>()
       return result
     },
     enabled: !!lancamentoId && enabled,
@@ -165,7 +165,7 @@ export function useUpdateLancamento(org: string) {
 export function useDeleteLancamento(org: string) {
   return useMutation({
     mutationFn: async (lancamentoId: string) => {
-      const result = await api.delete(`organizations/${org}/lancamento/${lancamentoId}`)
+      const result = await api.delete(`organizations/${org}/financeiro/lancamentos/${lancamentoId}`)
       return result
     },
     onSuccess: () => {
@@ -182,7 +182,7 @@ export function useDeleteLancamento(org: string) {
 export function useDuplicateLancamento(org: string) {
   return useMutation({
     mutationFn: async (lancamentoId: string) => {
-      const result = await api.post(`organizations/${org}/lancamento/${lancamentoId}/duplicate`).json()
+      const result = await api.post(`organizations/${org}/financeiro/lancamentos/${lancamentoId}/duplicate`).json()
       return result
     },
     onSuccess: () => {

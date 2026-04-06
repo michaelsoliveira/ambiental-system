@@ -14,6 +14,7 @@ export interface LancamentoFilters {
   categoria_id?: string
   conta_bancaria_id?: string
   centro_custo_id?: string
+  veiculo_id?: string
   parceiro_id?: string
   forma_parcelamento?: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'todos'
   valor_min?: string
@@ -40,11 +41,16 @@ export interface CreateLancamentoData {
   categoria_id: string
   conta_bancaria_id: string
   centro_custo_id?: string
+  veiculo_id?: string
   parceiro_id?: string
   pago: boolean
   status_lancamento: 'PENDENTE' | 'CONFIRMADO' | 'PAGO' | 'CANCELADO' | 'ATRASADO'
   valor_pago?: number
   data_pagamento?: string
+  // Controle interno e integração Asaas
+  controle_interno?: boolean
+  gerar_boleto?: boolean
+  permitir_pix?: boolean
   // Recorrência
   tipo_repeticao?: 'NENHUMA' | 'RECORRENTE' | 'PARCELADO'
   periodicidade?: 'DIARIA' | 'SEMANAL' | 'QUINZENAL' | 'MENSAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL'
@@ -74,6 +80,12 @@ export interface LancamentoWithRelations extends Lancamento {
   centro_custo?: {
     id: string
     nome: string
+  } | null
+  veiculo?: {
+    id: string
+    placa: string
+    modelo: string
+    marca: string
   } | null
 }
 
@@ -154,6 +166,10 @@ export class LancamentoService {
     // Filtro de parceiro
     if (filters.parceiro_id) {
       where.parceiro_id = filters.parceiro_id
+    }
+
+    if (filters.veiculo_id) {
+      where.veiculo_id = filters.veiculo_id
     }
 
     // Filtro de forma de parcelamento
@@ -238,6 +254,14 @@ export class LancamentoService {
               nome: true,
             },
           },
+          veiculo: {
+            select: {
+              id: true,
+              placa: true,
+              modelo: true,
+              marca: true,
+            },
+          },
         },
         orderBy: filters.orderBy === 'data' 
           ? { data: filters.order === 'asc' ? 'asc' : 'desc' }
@@ -297,6 +321,14 @@ export class LancamentoService {
         conta_bancaria: true,
         categoria: true,
         centro_custo: true,
+        veiculo: {
+          select: {
+            id: true,
+            placa: true,
+            modelo: true,
+            marca: true,
+          },
+        },
         parcelas: {
           orderBy: { numero_parcela: 'asc' },
         },
@@ -405,6 +437,24 @@ export class LancamentoService {
       )
     }
 
+    if (data.veiculo_id) {
+      validations.push(
+        prisma.veiculo
+          .findFirst({
+            where: {
+              id: data.veiculo_id,
+              organization_id: organizationId,
+            },
+          })
+          .then((result) => {
+            if (!result) {
+              throw new BadRequestError('Veículo não encontrado.')
+            }
+            return result
+          })
+      )
+    }
+
     await Promise.all(validations)
   }
 
@@ -460,10 +510,114 @@ export class LancamentoService {
         conta_bancaria_id: data.conta_bancaria_id,
         centro_custo_id: data.centro_custo_id ?? null,
         parceiro_id: data.parceiro_id ?? null,
+        veiculo_id: data.veiculo_id ?? null,
+        controle_interno: data.controle_interno ?? false,
+        gerar_boleto: data.gerar_boleto ?? false,
+        permitir_pix: data.permitir_pix ?? false,
       },
     })
 
-    return lancamento
+    // Integração Asaas: criar cobrança quando não for controle interno e for receita
+    const deveCriarCobranca =
+      !(data.controle_interno ?? false) &&
+      data.tipo === 'RECEITA' &&
+      ((data.gerar_boleto ?? false) || (data.permitir_pix ?? false))
+
+    if (deveCriarCobranca && data.parceiro_id && data.data_vencimento) {
+      try {
+        const asaasResult = await this.criarCobrancaAsaas(
+          organizationId,
+          lancamento,
+          data
+        )
+        if (asaasResult) {
+          await prisma.lancamento.update({
+            where: { id: lancamento.id },
+            data: {
+              asaas_payment_id: asaasResult.id,
+              invoice_url: asaasResult.invoiceUrl ?? null,
+              boleto_url: asaasResult.bankSlipUrl ?? null,
+              boleto_linha_digitavel: asaasResult.identificationField ?? null,
+              pix_qrcode_url: asaasResult.billingType === 'PIX' ? asaasResult.invoiceUrl ?? null : null,
+            },
+          })
+        }
+      } catch (err) {
+        console.error('[LancamentoService] Erro ao criar cobrança Asaas:', err)
+        // Não falha a criação - lançamento é salvo sem integração
+      }
+    }
+
+    return prisma.lancamento.findUniqueOrThrow({
+      where: { id: lancamento.id },
+    })
+  }
+
+  private static async criarCobrancaAsaas(
+    organizationId: string,
+    lancamento: { id: string; valor: any; descricao: string; data_vencimento: Date | null },
+    data: CreateLancamentoData
+  ): Promise<{ id: string; invoiceUrl?: string; bankSlipUrl?: string; identificationField?: string; billingType: string } | null> {
+    const { prisma } = await import('@/lib/prisma')
+    const { AsaasService } = await import('@/services/asaas.service')
+
+    const config = await prisma.configuracaoFinanceira.findUnique({
+      where: { organization_id: organizationId },
+    })
+    const asaasApiKey = config?.asaas_api_key ?? process.env.ASAAS_API_KEY
+    if (!asaasApiKey) return null
+
+    const parceiro = await prisma.parceiro.findFirst({
+      where: { id: data.parceiro_id!, organization_id: organizationId },
+      include: {
+        pessoa: {
+          include: {
+            fisica: true,
+            juridica: true,
+            endereco: true,
+          },
+        },
+      },
+    })
+    if (!parceiro?.pessoa) return null
+
+    const asaas = new AsaasService(asaasApiKey, (process.env.ASAAS_ENV as 'sandbox' | 'production') || 'sandbox')
+
+    let customerId = parceiro.pessoa.asaas_customer_id
+    if (!customerId) {
+      const nome = parceiro.pessoa.fisica?.nome ?? parceiro.pessoa.juridica?.nome_fantasia ?? parceiro.pessoa.juridica?.razao_social ?? 'Cliente'
+      const cpfCnpj = parceiro.pessoa.fisica?.cpf ?? parceiro.pessoa.juridica?.cnpj ?? undefined
+      const { id } = await asaas.criarCliente({
+        name: nome,
+        email: parceiro.pessoa.email ?? undefined,
+        cpfCnpj: cpfCnpj ?? undefined,
+        phone: parceiro.pessoa.telefone ?? undefined,
+      })
+      customerId = id
+      await prisma.pessoa.update({
+        where: { id: parceiro.pessoa_id },
+        data: { asaas_customer_id: id },
+      })
+    }
+
+    const billingType = (data.gerar_boleto ? 'BOLETO' : 'PIX') as 'BOLETO' | 'PIX'
+    const dueDate = (data.data_vencimento ?? '').split('T')[0] || new Date().toISOString().split('T')[0]
+    const response = await asaas.criarCobranca({
+      customer: customerId,
+      value: data.valor,
+      dueDate,
+      description: data.descricao,
+      billingType,
+      externalReference: lancamento.id,
+    })
+
+    return {
+      id: response.id,
+      invoiceUrl: response.invoiceUrl,
+      bankSlipUrl: response.bankSlipUrl,
+      identificationField: response.identificationField,
+      billingType: response.billingType,
+    }
   }
 
   /**
@@ -498,6 +652,7 @@ export class LancamentoService {
         conta_bancaria_id: data.conta_bancaria_id,
         centro_custo_id: data.centro_custo_id ?? null,
         parceiro_id: data.parceiro_id ?? null,
+        veiculo_id: data.veiculo_id ?? null,
       },
     })
 
@@ -527,6 +682,7 @@ export class LancamentoService {
           conta_bancaria_id: data.conta_bancaria_id,
           centro_custo_id: data.centro_custo_id ?? null,
           parceiro_id: data.parceiro_id ?? null,
+          veiculo_id: data.veiculo_id ?? null,
         },
       })
       parcelas.push(parcela)
@@ -584,6 +740,7 @@ export class LancamentoService {
         conta_bancaria_id: data.conta_bancaria_id,
         centro_custo_id: data.centro_custo_id ?? null,
         parceiro_id: data.parceiro_id ?? null,
+        veiculo_id: data.veiculo_id ?? null,
       },
     })
 
@@ -649,13 +806,43 @@ export class LancamentoService {
       updateData.centro_custo_id = data.centro_custo_id ?? null
     if (data.parceiro_id !== undefined)
       updateData.parceiro_id = data.parceiro_id ?? null
+    if (data.veiculo_id !== undefined)
+      updateData.veiculo_id = data.veiculo_id ?? null
 
     const lancamento = await prisma.lancamento.update({
       where: { id: lancamentoId },
       data: updateData,
     })
 
+    await LancamentoService.syncFrotaValorFromLancamento(
+      lancamento.id,
+      lancamento.valor,
+    )
+
     return lancamento
+  }
+
+  /**
+   * Mantém o valor espelhado em abastecimento / manutenção / viagem alinhado ao lançamento (fonte financeira).
+   */
+  private static async syncFrotaValorFromLancamento(
+    lancamentoId: string,
+    valor: Decimal,
+  ) {
+    await prisma.$transaction([
+      prisma.abastecimento.updateMany({
+        where: { lancamento_id: lancamentoId },
+        data: { valor },
+      }),
+      prisma.manutencao.updateMany({
+        where: { lancamento_id: lancamentoId },
+        data: { valor },
+      }),
+      prisma.viagem.updateMany({
+        where: { lancamento_id: lancamentoId },
+        data: { valor },
+      }),
+    ])
   }
 
   /**

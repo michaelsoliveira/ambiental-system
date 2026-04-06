@@ -31,6 +31,7 @@ export function DadosLancamentoTab({
   const { watch, setValue } = form
   
   const tipoLancamento = watch('tipo')
+  const controleInterno = watch('controle_interno')
   const formaParcelamento = watch('forma_parcelamento')
   const numeroParcelas = watch('numero_parcelas')
   const valor = watch('valor')
@@ -337,7 +338,72 @@ export function DadosLancamentoTab({
         </div>
       </div>
 
-      {/* Seção 5: Parcelamento */}
+      {/* Seção 5: Controle interno e integração Asaas */}
+      <div>
+        <FormField
+          control={form.control}
+          name="controle_interno"
+          render={({ field }) => (
+            <FormItem className="flex items-center gap-2">
+              <FormControl>
+                <Checkbox 
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                />
+              </FormControl>
+              <FormLabel className="font-normal cursor-pointer mb-0">
+                Apenas controle interno (não gera cobrança no Asaas)
+              </FormLabel>
+              <FormDescription>
+                Marque para registrar apenas internamente, sem integrar com boleto ou PIX.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {tipoLancamento === 'RECEITA' && !controleInterno && (
+          <div className="mt-4 flex flex-wrap gap-6">
+            <FormField
+              control={form.control}
+              name="gerar_boleto"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2">
+                  <FormControl>
+                    <Checkbox 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal cursor-pointer mb-0">
+                    Gerar boleto
+                  </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="permitir_pix"
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2">
+                  <FormControl>
+                    <Checkbox 
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <FormLabel className="font-normal cursor-pointer mb-0">
+                    Permitir PIX
+                  </FormLabel>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Seção 6: Parcelamento */}
       <div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
           <FormField
@@ -382,7 +448,7 @@ export function DadosLancamentoTab({
         </div>
       </div>
 
-      {/* Seção 6: Status */}
+      {/* Seção 7: Status */}
       <div>
         <FormField
           control={form.control}
@@ -404,7 +470,7 @@ export function DadosLancamentoTab({
         />
       </div>
 
-      {/* Seção 7: Observações */}
+      {/* Seção 8: Observações */}
       <div>
         <FormField
           control={form.control}

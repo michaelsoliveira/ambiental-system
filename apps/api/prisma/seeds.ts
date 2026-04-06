@@ -1,6 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hash } from "bcrypt";
 import { faker } from "@faker-js/faker";
+import { ensureFrotaFinanceiroDefaults } from "../src/lib/frota-financeiro-seed";
 const prisma = new PrismaClient();
 
 async function seed() {
@@ -125,6 +126,8 @@ async function seed() {
         },
     });
 
+    await ensureFrotaFinanceiroDefaults(prisma, organization1.id);
+
     const membersData1 = [
         { user_id: user.id!, organization_id: organization1.id, role_id: admin.id!, permission_id: monitoramento.id },
         { user_id: memberUser.id!, organization_id: organization1.id, role_id: member.id!, permission_id: monitoramento.id },
@@ -157,6 +160,8 @@ async function seed() {
             shouldAttachDomain: true,
         },
     });
+
+    await ensureFrotaFinanceiroDefaults(prisma, organization2.id);
 
     const membersData2 = [
         { user_id: user.id!, organization_id: organization2.id, role_id: member.id! },

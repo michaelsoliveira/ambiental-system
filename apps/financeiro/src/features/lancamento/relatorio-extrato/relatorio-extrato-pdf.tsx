@@ -7,6 +7,20 @@ import { Button } from '@/components/ui/button'
 import { FileText } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/export-utils'
 
+/**
+ * react-pdf não faz overflow-wrap em sequências longas sem espaço; o texto
+ * “vaza” para a coluna ao lado. Quebramos em linhas de N caracteres.
+ */
+function hardWrapForPdf(value: string, maxChars: number): string {
+  const s = String(value ?? '')
+  if (s.length <= maxChars) return s
+  const lines: string[] = []
+  for (let i = 0; i < s.length; i += maxChars) {
+    lines.push(s.slice(i, i + maxChars))
+  }
+  return lines.join('\n')
+}
+
 interface RelatorioData {
   lancamentos: Array<{
     id: string
@@ -65,36 +79,47 @@ const styles = StyleSheet.create({
   },
   table: {
     marginTop: 10,
+    width: '100%',
   },
   tableHeader: {
     flexDirection: 'row',
+    width: '100%',
+    alignItems: 'flex-start',
     backgroundColor: '#e5e5e5',
-    padding: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     fontWeight: 'bold',
-    fontSize: 8,
+    fontSize: 7,
   },
   tableRow: {
     flexDirection: 'row',
-    padding: 6,
+    width: '100%',
+    alignItems: 'flex-start',
+    paddingVertical: 5,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
     borderBottomStyle: 'solid',
-    fontSize: 8,
+    fontSize: 7,
   },
-  tableCell: {
-    flex: 1,
-  },
-  tableCellSmall: {
-    flex: 0.8,
-  },
-  tableCellLarge: {
-    flex: 1.5,
-  },
+  /** Larguras fixas (% da linha) evitam sobreposição de colunas no react-pdf */
+  colData: { width: '10%', paddingRight: 4, minWidth: 0 },
+  colCodigo: { width: '13%', paddingRight: 4, minWidth: 0 },
+  colClassif: { width: '14%', paddingRight: 4, minWidth: 0 },
+  colPessoa: { width: '14%', paddingRight: 4, minWidth: 0 },
+  colDesc: { width: '25%', paddingRight: 4, minWidth: 0 },
+  colValor: { width: '12%', paddingRight: 4, minWidth: 0 },
+  colSaldo: { width: '12%', paddingLeft: 2, minWidth: 0 },
   textRight: {
     textAlign: 'right',
   },
   textCenter: {
     textAlign: 'center',
+  },
+  cellText: {
+    fontSize: 7,
+    /** obrigatório para o motor de texto respeitar a largura da coluna */
+    width: '100%',
   },
   footer: {
     marginTop: 20,
@@ -139,25 +164,53 @@ function PDFDocument({ data }: RelatorioExtratoPDFProps) {
 
         <View style={styles.table}>
           <View style={styles.tableHeader}>
-            <Text style={[styles.tableCellSmall, styles.textCenter]}>Data</Text>
-            <Text style={[styles.tableCellSmall, styles.textCenter]}>Código</Text>
-            <Text style={styles.tableCell}>Classificação</Text>
-            <Text style={styles.tableCell}>Pessoa</Text>
-            <Text style={styles.tableCellLarge}>Descrição</Text>
-            <Text style={[styles.tableCellSmall, styles.textRight]}>Valor</Text>
-            <Text style={[styles.tableCellSmall, styles.textRight]}>Saldo</Text>
+            <View style={styles.colData}>
+              <Text style={[styles.cellText, styles.textCenter]}>Data</Text>
+            </View>
+            <View style={styles.colCodigo}>
+              <Text style={[styles.cellText, styles.textCenter]}>Código</Text>
+            </View>
+            <View style={styles.colClassif}>
+              <Text style={styles.cellText}>Classificação</Text>
+            </View>
+            <View style={styles.colPessoa}>
+              <Text style={styles.cellText}>Pessoa</Text>
+            </View>
+            <View style={styles.colDesc}>
+              <Text style={styles.cellText}>Descrição</Text>
+            </View>
+            <View style={styles.colValor}>
+              <Text style={[styles.cellText, styles.textRight]}>Valor</Text>
+            </View>
+            <View style={styles.colSaldo}>
+              <Text style={[styles.cellText, styles.textRight]}>Saldo</Text>
+            </View>
           </View>
 
           <View style={[styles.tableRow, styles.saldoAnteriorRow]}>
-            <Text style={[styles.tableCellSmall, styles.textCenter]}>-</Text>
-            <Text style={[styles.tableCellSmall, styles.textCenter]}>-</Text>
-            <Text style={styles.tableCell}>-</Text>
-            <Text style={styles.tableCell}>-</Text>
-            <Text style={styles.tableCellLarge}>Saldo anterior:</Text>
-            <Text style={[styles.tableCellSmall, styles.textRight]}>-</Text>
-            <Text style={[styles.tableCellSmall, styles.textRight]}>
-              {formatCurrency(data.saldo_anterior)}
-            </Text>
+            <View style={styles.colData}>
+              <Text style={[styles.cellText, styles.textCenter]}>-</Text>
+            </View>
+            <View style={styles.colCodigo}>
+              <Text style={[styles.cellText, styles.textCenter]}>-</Text>
+            </View>
+            <View style={styles.colClassif}>
+              <Text style={styles.cellText}>-</Text>
+            </View>
+            <View style={styles.colPessoa}>
+              <Text style={styles.cellText}>-</Text>
+            </View>
+            <View style={styles.colDesc}>
+              <Text style={styles.cellText}>Saldo anterior:</Text>
+            </View>
+            <View style={styles.colValor}>
+              <Text style={[styles.cellText, styles.textRight]}>-</Text>
+            </View>
+            <View style={styles.colSaldo}>
+              <Text style={[styles.cellText, styles.textRight]}>
+                {formatCurrency(data.saldo_anterior)}
+              </Text>
+            </View>
           </View>
 
           {data.lancamentos.map((lanc) => {
@@ -169,20 +222,42 @@ function PDFDocument({ data }: RelatorioExtratoPDFProps) {
 
             return (
               <View key={lanc.id} style={styles.tableRow}>
-                <Text style={[styles.tableCellSmall, styles.textCenter]}>
-                  {formatDate(lanc.data)}
-                </Text>
-                <Text style={[styles.tableCellSmall, styles.textCenter]}>{lanc.numero}</Text>
-                <Text style={styles.tableCell}>{lanc.categoria?.nome || '---'}</Text>
-                <Text style={styles.tableCell}>{lanc.parceiro_nome || '---'}</Text>
-                <Text style={styles.tableCellLarge}>{lanc.descricao}</Text>
-                <Text style={[styles.tableCellSmall, styles.textRight]}>
-                  {lanc.tipo === 'DESPESA' ? '-' : '+'}
-                  {formatCurrency(Math.abs(lanc.valor))}
-                </Text>
-                <Text style={[styles.tableCellSmall, styles.textRight]}>
-                  {formatCurrency(saldoAtual)}
-                </Text>
+                <View style={styles.colData}>
+                  <Text style={[styles.cellText, styles.textCenter]} wrap>
+                    {formatDate(lanc.data)}
+                  </Text>
+                </View>
+                <View style={styles.colCodigo}>
+                  <Text style={[styles.cellText, styles.textCenter]} wrap>
+                    {hardWrapForPdf(lanc.numero, 12)}
+                  </Text>
+                </View>
+                <View style={styles.colClassif}>
+                  <Text style={styles.cellText} wrap>
+                    {lanc.categoria?.nome || '---'}
+                  </Text>
+                </View>
+                <View style={styles.colPessoa}>
+                  <Text style={styles.cellText} wrap>
+                    {lanc.parceiro_nome || '---'}
+                  </Text>
+                </View>
+                <View style={styles.colDesc}>
+                  <Text style={styles.cellText} wrap>
+                    {lanc.descricao}
+                  </Text>
+                </View>
+                <View style={styles.colValor}>
+                  <Text style={[styles.cellText, styles.textRight]} wrap>
+                    {lanc.tipo === 'DESPESA' ? '-' : '+'}
+                    {formatCurrency(Math.abs(lanc.valor))}
+                  </Text>
+                </View>
+                <View style={styles.colSaldo}>
+                  <Text style={[styles.cellText, styles.textRight]} wrap>
+                    {formatCurrency(saldoAtual)}
+                  </Text>
+                </View>
               </View>
             )
           })}
