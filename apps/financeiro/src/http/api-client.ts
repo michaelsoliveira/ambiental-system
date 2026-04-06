@@ -1,5 +1,5 @@
 // src/http/api-client.ts (sem 'use server')
-import { env } from '@saas/env'
+import { env } from '@saas/env/next'
 import ky from 'ky'
 
 export const api = ky.create({

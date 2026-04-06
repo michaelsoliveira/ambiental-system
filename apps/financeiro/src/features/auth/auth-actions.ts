@@ -1,6 +1,6 @@
 'use server'
 
-import { env } from '@saas/env'
+import { env } from '@saas/env/next'
 import { redirect } from 'next/navigation'
 
 export async function signInWithGithub() {
