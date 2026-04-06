@@ -14,9 +14,11 @@ COPY config ./config
 
 RUN pnpm install --frozen-lockfile
 
-# generate só precisa de URL sintaticamente válida
+# Prisma CLI está em apps/api (devDependency); `pnpm exec` na raiz não encontra o binário.
 ENV DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"
-RUN pnpm exec prisma generate --schema=apps/api/prisma/schema.prisma
+WORKDIR /app/apps/api
+RUN pnpm exec prisma generate
+WORKDIR /app
 
 ENV NODE_ENV=production
 RUN pnpm turbo run build --filter=@saas/api
