@@ -6,10 +6,10 @@ import { OrganizationSwitcher } from '@/components/organization-switcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
-export default async function HomePage({ 
-  searchParams 
-}: { 
-  searchParams: { fromLogin?: string } 
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ fromLogin?: string }>;
 }) {
   const params = await searchParams
   const fromLogin = params?.fromLogin === 'true';
