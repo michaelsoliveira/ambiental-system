@@ -6,6 +6,10 @@
 #   docker compose -f docker-compose.prod.yml --env-file .env up -d --build
 #
 # Migrações rodam na subida do container da API (entrypoint). Para pular: SKIP_MIGRATE=1
+#
+# Mesma VPS que outro stack (ex.: licencas): 3000 e 3333 no host podem estar ocupados.
+# Padrão aqui: host 3001 → financeiro, host 3334 → API (ajuste API_PORT / FINANCEIRO_PORT no .env).
+# Com nginx/caddy na frente, costuma não publicar essas portas — use proxy para os containers.
 
 services:
   postgres:
@@ -47,7 +51,7 @@ services:
       postgres:
         condition: service_healthy
     ports:
-      - "${API_PORT:-3333}:3333"
+      - "${API_PORT:-3334}:3333"
     networks:
       - ambiental
 
@@ -68,7 +72,7 @@ services:
     depends_on:
       - api
     ports:
-      - "${FINANCEIRO_PORT:-3000}:3000"
+      - "${FINANCEIRO_PORT:-3001}:3000"
     networks:
       - ambiental
 
