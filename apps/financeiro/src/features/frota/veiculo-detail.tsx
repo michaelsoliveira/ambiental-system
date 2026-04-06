@@ -1,54 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { ArrowLeft, Fuel, Pencil, Route, Trash2,Wrench } from 'lucide-react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
-import {
-  useVeiculo,
-  usePostAbastecimento,
-  usePostManutencao,
-  usePostViagem,
-  usePutAbastecimento,
-  useDeleteAbastecimento,
-  usePutManutencao,
-  useDeleteManutencao,
-  usePutViagem,
-  useDeleteViagem,
-  useDeleteVeiculo,
-  useUpdateVeiculo,
-} from '@/hooks/use-frota'
-import { useCategorias } from '@/hooks/use-categoria'
-import { useContas } from '@/hooks/use-conta'
-import { useCentrosCusto } from '@/hooks/use-centro-custo'
-import { Button } from '@/components/ui/button'
-import { Heading } from '@/components/ui/heading'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
+import { useState } from 'react'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,9 +15,54 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { ArrowLeft, Fuel, Wrench, Route, Pencil, Trash2 } from 'lucide-react'
-import { formatCurrency, formatDateShort } from '@/lib/format'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Heading } from '@/components/ui/heading'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { Textarea } from '@/components/ui/textarea'
+import { useCategorias } from '@/hooks/use-categoria'
+import { useCentrosCusto } from '@/hooks/use-centro-custo'
+import { useContas } from '@/hooks/use-conta'
+import {
+  useDeleteAbastecimento,
+  useDeleteManutencao,
+  useDeleteVeiculo,
+  useDeleteViagem,
+  usePostAbastecimento,
+  usePostManutencao,
+  usePostViagem,
+  usePutAbastecimento,
+  usePutManutencao,
+  usePutViagem,
+  useUpdateVeiculo,
+  useVeiculo,
+} from '@/hooks/use-frota'
+import { formatCurrency, formatDateShort } from '@/lib/format'
 
 function money(v: unknown) {
   if (v == null) return '—'

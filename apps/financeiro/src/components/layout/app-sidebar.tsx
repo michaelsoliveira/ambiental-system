@@ -1,4 +1,5 @@
 import { auth, getCurrentOrg } from "@/auth/auth";
+
 import SidebarClient from "./sidebar-client";
 
 export default async function AppSidebar() {

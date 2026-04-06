@@ -1,13 +1,13 @@
 'use client';
-import PageContainer from '@/components/layout/page-container';
+import { PlusIcon } from 'lucide-react';
+import { Suspense, useState } from 'react';
+
+import { Button } from '@/components/ui/button';
 import { Heading } from '@/components/ui/heading';
 import { Separator } from '@/components/ui/separator';
 import { DataTableSkeleton } from '@/components/ui/table/data-table-skeleton';
-import { Suspense, useState } from 'react';
-import PessoaListingPage from '@/features/pessoa/components/pessoa-listing';
 import { EditPessoaDialog } from '@/features/pessoa/components/edit-pessoa-dialog';
-import { Button } from '@/components/ui/button';
-import { PlusIcon } from 'lucide-react';
+import PessoaListingPage from '@/features/pessoa/components/pessoa-listing';
 
 export function PessoaIndexPage() {
     const [isDialogOpen, setDialogOpen] = useState(false);

@@ -1,21 +1,28 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react';
 import { 
-  Filter, 
-  Search, 
-  X, 
-  Calendar,
-  DollarSign,
-  CheckSquare,
   Building2,
+  Calendar,
+  CheckSquare,
   CreditCard,
-  Users,
+  DollarSign,
+  Filter, 
   Layers,
   Receipt,
+  Search, 
   Truck,
+  Users,
+  X, 
 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+
+import { SelectSearchable } from '@/components/select-searchable';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -23,13 +30,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+
 import { useLancamentoTableFilters } from './lancamento-tables/use-lancamento-table-filters';
-import { SelectSearchable } from '@/components/select-searchable';
 
 interface LancamentoFiltersProps {
   totalItems?: number;

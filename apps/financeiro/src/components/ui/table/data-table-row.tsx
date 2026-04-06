@@ -1,8 +1,10 @@
-import { Row, Table, flexRender } from '@tanstack/react-table'
-import { Button } from '@/components/ui/button'
-import { ChevronDown, ChevronRight } from 'lucide-react'
-import { TableCell, TableRow } from '../table'
 import { ScrollArea } from '@radix-ui/react-scroll-area'
+import { flexRender,Row, Table } from '@tanstack/react-table'
+import { ChevronDown, ChevronRight } from 'lucide-react'
+
+import { Button } from '@/components/ui/button'
+
+import { TableCell, TableRow } from '../table'
 
 interface DataTableRowProps<T> {
   table?: Table<T>

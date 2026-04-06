@@ -1,8 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
+import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
+  CreditCard,
+  GalleryVerticalEnd,
+  LogOut,
+} from 'lucide-react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import React, { useEffect,useState } from 'react';
+
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import {
   Sidebar,
   SidebarContent,
@@ -16,28 +35,11 @@ import {
   SidebarRail,
   useSidebar,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  GalleryVerticalEnd,
-  LogOut,
-} from 'lucide-react';
 import { getNavItems } from '@/constants/data';
+
 import { Icons } from '../icons';
-import { SidebarItemWithPopup } from './sidebar-item-with-popup';
 import { SidebarItemWithCollapsible } from './sidebar-item-with-collapsible';
+import { SidebarItemWithPopup } from './sidebar-item-with-popup';
 
 export const company = {
   name: 'Ambiental System',

@@ -7,8 +7,13 @@ import {
   CircuitBoardIcon,
   Command,
   CreditCard,
+  CurrencyIcon,
+  DollarSignIcon,
   File,
   FileText,
+  FileTextIcon,
+  Folder,
+  GroupIcon,
   HelpCircle,
   Image,
   Laptop,
@@ -26,19 +31,13 @@ import {
   SunMedium,
   Trash,
   Twitter,
+  TypeIcon,
   User,
   UserCircle2Icon,
   UserPen,
-  UserX2Icon,
-  X,
-  Folder,
-  FileTextIcon,
-  GroupIcon,
-  TypeIcon,
   UsersIcon,
-  CurrencyIcon,
-  DollarSignIcon
-} from 'lucide-react';
+  UserX2Icon,
+  X} from 'lucide-react';
 
 export type Icon = LucideIcon;
 

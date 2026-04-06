@@ -1,6 +1,7 @@
 'use client'
 
 import React, { createContext, ReactNode, useContext } from "react";
+
 import useClient from "@/hooks/use-client";
 
 type AuthContextType = {

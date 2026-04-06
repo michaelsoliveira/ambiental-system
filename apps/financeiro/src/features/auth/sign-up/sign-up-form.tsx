@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useFormState } from '@/hooks/use-form-state'
-import { signUpAction } from './sign-up-actions'
+
 import { signInWithGithub } from '../auth-actions'
+import { signUpAction } from './sign-up-actions'
 
 export function SignUpForm() {
   const router = useRouter()

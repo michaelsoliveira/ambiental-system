@@ -1,5 +1,6 @@
-import React, { FocusEventHandler } from "react"
 import { useMask } from '@react-input/mask'
+import React, { FocusEventHandler } from "react"
+
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils" // se usar função de classes
 

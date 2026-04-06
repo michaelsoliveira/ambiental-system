@@ -1,9 +1,11 @@
 'use client'
 
-import { cn } from '@/lib/utils';
-import AsyncSelect from 'react-select/async';
-import { Label } from './ui/label';
 import { ComponentProps, forwardRef } from 'react';
+import AsyncSelect from 'react-select/async';
+
+import { cn } from '@/lib/utils';
+
+import { Label } from './ui/label';
 
 interface State {
     readonly inputValue: string;
@@ -11,7 +13,7 @@ interface State {
 
 export interface OptionType {
     readonly label: string;
-    readonly value: string | Number | undefined;
+    readonly value: string | number | undefined;
 }
 
 type AsyncSelectProps = ComponentProps<typeof AsyncSelect>;

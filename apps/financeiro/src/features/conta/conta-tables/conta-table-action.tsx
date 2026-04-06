@@ -1,8 +1,9 @@
 'use client';
 
-import { DataTableSearch } from '@/components/ui/table/data-table-search';
 import { DataTableFilterBox } from '@/components/ui/table/data-table-filter-box';
 import { DataTableResetFilter } from '@/components/ui/table/data-table-reset-filter';
+import { DataTableSearch } from '@/components/ui/table/data-table-search';
+
 import {
   useContaTableFilters
 } from './use-conta-table-filters';

@@ -7,6 +7,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
+
 import { ScrollArea, ScrollBar } from '../scroll-area';
 
 export function DataTableSkeleton({

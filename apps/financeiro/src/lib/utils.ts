@@ -1,4 +1,4 @@
-import { clsx, type ClassValue } from "clsx"
+import { type ClassValue,clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 
 export function cn(...inputs: ClassValue[]) {
@@ -33,12 +33,12 @@ export function isValidCnpj(cnpj: string): boolean {
 
   if (/^(\d)\1+$/.test(cnpj)) return false; // todos os dígitos iguais
 
-  let t = cnpj.length - 2;
-  let d = cnpj.substring(t);
-  let d1 = parseInt(d.charAt(0));
-  let d2 = parseInt(d.charAt(1));
-  let calc = (x: number) => {
-    let n = cnpj.substring(0, x);
+  const t = cnpj.length - 2;
+  const d = cnpj.substring(t);
+  const d1 = parseInt(d.charAt(0));
+  const d2 = parseInt(d.charAt(1));
+  const calc = (x: number) => {
+    const n = cnpj.substring(0, x);
     let y = x - 7;
     let s = 0;
     let r = 0;

@@ -1,15 +1,17 @@
 'use client'
 
+import { Filter } from 'lucide-react';
 import { useState } from 'react';
+
+import { OptionType } from '@/components/select-searchable';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Filter } from 'lucide-react';
-import { OptionType } from '@/components/select-searchable';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useEstados } from '@/hooks/use-estados';
+
 import PessoaTableAction from './pessoa-tables/pessoa-table-action';
 import { usePessoaTableFilters } from './pessoa-tables/use-pessoa-table-filters';
-import { useEstados } from '@/hooks/use-estados';
 
 export function PessoaFilters() {
   const [isOpen, setIsOpen] = useState(false);

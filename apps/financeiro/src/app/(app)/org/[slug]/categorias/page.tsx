@@ -1,11 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { Heading } from '@/components/ui/heading'
-import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
-import CategoriaListingPage from '@/features/categoria/categoria-listing'
+import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
@@ -13,7 +11,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Heading } from '@/components/ui/heading'
+import { Separator } from '@/components/ui/separator'
 import { CategoriaForm } from '@/features/categoria/categoria-form'
+import CategoriaListingPage from '@/features/categoria/categoria-listing'
 
 export default function CategoriasPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)

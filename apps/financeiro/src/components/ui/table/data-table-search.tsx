@@ -1,9 +1,10 @@
 'use client';
 
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
 import { Options } from 'nuqs';
 import { useTransition } from 'react';
+
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface DataTableSearchProps {
   searchKey: string;

@@ -1,4 +1,9 @@
 'use client';
+import { Edit, Eye, MoreHorizontal, Trash } from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
+
 import { AlertModal } from '@/components/modal/alert-modal';
 import { Button } from '@/components/ui/button';
 import {
@@ -9,14 +14,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { useAuthContext } from '@/context/AuthContext';
-import { Edit, Eye, MoreHorizontal, Trash } from 'lucide-react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { useState } from 'react';
-import { toast } from 'sonner';
-import { EditPessoaDialog } from '../edit-pessoa-dialog';
-import { useDeletePessoa } from '@/hooks/use-pessoas';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { useAuthContext } from '@/context/AuthContext';
+import { useDeletePessoa } from '@/hooks/use-pessoas';
+
+import { EditPessoaDialog } from '../edit-pessoa-dialog';
 
 interface CellActionProps {
   data: any;

@@ -1,9 +1,10 @@
-import { Tabs } from '@/components/tabs'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { cookies } from 'next/headers';
+
 import AppSidebar from '@/components/layout/app-sidebar';
 // import { Header } from '@/components/header';
 import Header from '@/components/layout/header';
+import { Tabs } from '@/components/tabs'
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 export default async function OrgLayout({
   children,

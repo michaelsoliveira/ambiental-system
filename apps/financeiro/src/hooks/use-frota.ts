@@ -1,19 +1,20 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { getVeiculos } from '@/http/frota/get-veiculos'
-import { getVeiculo } from '@/http/frota/get-veiculo'
+
 import { createVeiculo, type CreateVeiculoInput } from '@/http/frota/create-veiculo'
-import { updateVeiculo, type UpdateVeiculoInput } from '@/http/frota/update-veiculo'
+import { deleteAbastecimento } from '@/http/frota/delete-abastecimento'
+import { deleteManutencao } from '@/http/frota/delete-manutencao'
 import { deleteVeiculo } from '@/http/frota/delete-veiculo'
+import { deleteViagem } from '@/http/frota/delete-viagem'
+import { getVeiculo } from '@/http/frota/get-veiculo'
+import { getVeiculos } from '@/http/frota/get-veiculos'
 import { postAbastecimento, type PostAbastecimentoInput } from '@/http/frota/post-abastecimento'
 import { postManutencao, type PostManutencaoInput } from '@/http/frota/post-manutencao'
 import { postViagem, type PostViagemInput } from '@/http/frota/post-viagem'
 import { putAbastecimento } from '@/http/frota/put-abastecimento'
-import { deleteAbastecimento } from '@/http/frota/delete-abastecimento'
 import { putManutencao } from '@/http/frota/put-manutencao'
-import { deleteManutencao } from '@/http/frota/delete-manutencao'
 import { putViagem } from '@/http/frota/put-viagem'
-import { deleteViagem } from '@/http/frota/delete-viagem'
+import { updateVeiculo, type UpdateVeiculoInput } from '@/http/frota/update-veiculo'
 
 export function useVeiculos(
   org: string,

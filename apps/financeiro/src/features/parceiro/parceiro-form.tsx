@@ -2,11 +2,13 @@
 
 import { AlertTriangle, Loader2 } from 'lucide-react'
 import { useParams } from 'next/navigation'
+import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
+import { SelectSearchable } from '@/components/select-searchable'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -14,13 +16,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
 import { useFormState } from '@/hooks/use-form-state'
-import { queryClient } from '@/lib/react-query'
-import { createParceiroAction } from './parceiro-action'
-import { SelectSearchable } from '@/components/select-searchable'
 import { usePessoas } from '@/hooks/use-pessoas'
-import { useEffect, useMemo, useState } from 'react'
-import { toast } from 'sonner'
+import { queryClient } from '@/lib/react-query'
+
+import { createParceiroAction } from './parceiro-action'
 
 export function ParceiroForm() {
   const [search, setSearch] = useState<string>()

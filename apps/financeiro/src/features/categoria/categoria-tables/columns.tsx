@@ -1,7 +1,9 @@
 'use client'
 
 import { ColumnDef } from '@tanstack/react-table';
+
 import { Badge } from '@/components/ui/badge';
+
 import { CategoriaButton } from '../categoria-button';
 
 interface Categoria {

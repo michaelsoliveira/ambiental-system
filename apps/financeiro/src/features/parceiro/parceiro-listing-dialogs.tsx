@@ -35,8 +35,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { deleteParceiro } from '@/http/parceiro/delete-parceiro'
 import type { ParceiroListRecord } from '@/http/parceiro/get-parceiros'
 import {
-  updateParceiro,
   type TipoParceiro,
+  updateParceiro,
 } from '@/http/parceiro/update-parceiro'
 
 function getParceiroNome(p: ParceiroListRecord) {

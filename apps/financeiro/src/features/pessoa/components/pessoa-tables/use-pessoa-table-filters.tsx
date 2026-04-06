@@ -1,8 +1,9 @@
 'use client';
 
-import { searchParams } from '@/lib/searchparams';
 import { useQueryState } from 'nuqs';
 import { useCallback, useMemo } from 'react';
+
+import { searchParams } from '@/lib/searchparams';
 
 export function usePessoaTableFilters() {
   const [searchQuery, setSearchQuery] = useQueryState(

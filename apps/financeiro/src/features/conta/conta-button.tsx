@@ -1,24 +1,10 @@
 'use client'
 
-import { useState } from 'react'
 import { MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Button } from '@/components/ui/button'
-import { ContaForm } from './conta-form'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import { useDeleteConta } from '@/hooks/use-conta'
 import { useParams } from 'next/navigation'
+import { useState } from 'react'
 import { toast } from 'sonner'
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +15,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { useDeleteConta } from '@/hooks/use-conta'
+
+import { ContaForm } from './conta-form'
 
 interface ContaButtonProps {
   contaId: string

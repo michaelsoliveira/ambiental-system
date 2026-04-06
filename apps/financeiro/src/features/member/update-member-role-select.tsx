@@ -1,7 +1,9 @@
 'use client'
 
 import { Role } from '@saas/auth'
-import { SelectSearch, OptionType } from '@/components/select-search'
+
+import { OptionType,SelectSearch } from '@/components/select-search'
+
 import { updateMemberAction } from './member-actions'
 
 interface UpdateMemberRoleSelectProps {

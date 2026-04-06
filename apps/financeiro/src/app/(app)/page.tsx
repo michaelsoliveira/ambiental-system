@@ -1,9 +1,10 @@
+import { ArrowRight,Building2, Plus } from 'lucide-react'
+import Link from 'next/link'
+
 import { Header } from '@/components/header'
-import { Building2, Plus, ArrowRight } from 'lucide-react'
 import { OrganizationSwitcher } from '@/components/organization-switcher'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import Link from 'next/link'
 
 export default async function HomePage({ 
   searchParams 

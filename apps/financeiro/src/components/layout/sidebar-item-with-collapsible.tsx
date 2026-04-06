@@ -1,11 +1,13 @@
-import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+import { AnimatePresence,motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
-import { NavItem } from "@/types";
-import { SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
-import { Icons } from "../icons";
+
 import { cn } from "@/lib/utils";
+import { NavItem } from "@/types";
+
+import { Icons } from "../icons";
+import { SidebarMenuButton, SidebarMenuItem } from "../ui/sidebar";
 
 export function SidebarItemWithCollapsible({ item, pathname }: {
   item: NavItem;

@@ -1,11 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { ChevronRight,Search } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { useVeiculos } from '@/hooks/use-frota'
-import { Input } from '@/components/ui/input'
+import { useMemo, useState } from 'react'
+
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import {
   Table,
   TableBody,
@@ -14,8 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
-import { Search, ChevronRight } from 'lucide-react'
+import { useVeiculos } from '@/hooks/use-frota'
 export function VeiculosListing() {
   const { slug } = useParams<{ slug: string }>()
   const [search, setSearch] = useState('')

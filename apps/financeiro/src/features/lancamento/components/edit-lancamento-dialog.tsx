@@ -1,10 +1,12 @@
 'use client'
 
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Suspense, useCallback, useEffect, useRef } from 'react'
 import { Copy, Loader2, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Suspense, useCallback, useEffect, useRef } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { cn } from '@/lib/utils'
+
 import { LancamentoForm } from './form/lancamento-form'
 
 interface EditLancamentoDialogProps {

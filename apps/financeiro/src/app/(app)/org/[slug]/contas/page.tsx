@@ -1,18 +1,19 @@
 'use client'
 
-import { useState } from 'react'
-import { Heading } from '@/components/ui/heading'
-import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
-import { Separator } from '@/components/ui/separator'
-import ContaListingPage from '@/features/conta/conta-listing'
+import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { Heading } from '@/components/ui/heading'
+import { Separator } from '@/components/ui/separator'
 import { ContaForm } from '@/features/conta/conta-form'
+import ContaListingPage from '@/features/conta/conta-listing'
 
 export default function ContasPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)

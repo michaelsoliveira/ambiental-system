@@ -1,10 +1,11 @@
 // components/add-pessoa-button.tsx
 "use client";
 
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { Plus } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
+
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 type Props = {
   className?: string;

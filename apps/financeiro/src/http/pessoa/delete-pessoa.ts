@@ -1,8 +1,8 @@
 'use server'
 
 import { revalidatePath, revalidateTag } from 'next/cache'
+
 import { api } from '@/http/api-client'
-import { PessoaFormValues } from '@/features/pessoa/utils/form-schema'
 
 // Tipo de retorno padronizado
 type ActionResult<T = unknown> = {

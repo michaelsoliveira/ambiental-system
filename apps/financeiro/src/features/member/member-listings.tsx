@@ -9,9 +9,10 @@ import { Table, TableBody, TableCell, TableRow } from '@/components/ui/table'
 import { getMembers } from '@/http/get-members'
 import { getMembership } from '@/http/get-membership'
 import { getOrganization } from '@/http/get-organization'
-import { UpdateMemberRoleSelect } from './update-member-role-select'
-import { removeMemberAction } from './member-actions'
 import { getRoles } from '@/http/get-roles'
+
+import { removeMemberAction } from './member-actions'
+import { UpdateMemberRoleSelect } from './update-member-role-select'
 
 export async function MemberListing() {
   const currentOrg = await getCurrentOrg()

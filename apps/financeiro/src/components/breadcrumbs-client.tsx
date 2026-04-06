@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ReactNode } from 'react';
+
 import { useBreadcrumbs } from '@/hooks/use-breadcrumbs';
 
 interface BreadcrumbsClientProps {

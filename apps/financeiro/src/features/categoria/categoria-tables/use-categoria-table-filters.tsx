@@ -1,6 +1,6 @@
 'use client';
 
-import { useQueryState, parseAsInteger, parseAsString } from 'nuqs';
+import { parseAsInteger, parseAsString,useQueryState } from 'nuqs';
 
 export const useCategoriaTableFilters = () => {
   const [searchQuery, setSearchQuery] = useQueryState(

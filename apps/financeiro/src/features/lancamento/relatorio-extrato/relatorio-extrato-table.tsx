@@ -1,6 +1,5 @@
 'use client'
 
-import { formatCurrency, formatDate } from '@/lib/export-utils'
 import {
   Table,
   TableBody,
@@ -9,6 +8,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { formatCurrency, formatDate } from '@/lib/export-utils'
 
 interface RelatorioData {
   lancamentos: Array<{

@@ -1,10 +1,11 @@
 'use client';
 
+import { DataTableResetFilter } from '@/components/ui/table/data-table-reset-filter';
 import { DataTableSearch } from '@/components/ui/table/data-table-search';
+
 import {
   usePessoaTableFilters
 } from './use-pessoa-table-filters';
-import { DataTableResetFilter } from '@/components/ui/table/data-table-reset-filter';
 
 export default function UnidadeTableAction() {
   const {

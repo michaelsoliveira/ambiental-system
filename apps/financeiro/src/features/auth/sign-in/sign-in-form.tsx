@@ -12,8 +12,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useFormState } from '@/hooks/use-form-state'
-import { signInWithEmailAndPassword } from './sig-inin-actions'
+
 import { signInWithGithub } from '../auth-actions'
+import { signInWithEmailAndPassword } from './sig-inin-actions'
 
 export function SignInForm() {
   const router = useRouter()

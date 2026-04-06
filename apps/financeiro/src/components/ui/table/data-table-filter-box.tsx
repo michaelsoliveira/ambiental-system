@@ -1,5 +1,10 @@
 'use client';
 
+import { PlusCircledIcon } from '@radix-ui/react-icons';
+import { CheckIcon } from 'lucide-react';
+import { Options } from 'nuqs';
+import React from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,10 +23,6 @@ import {
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { PlusCircledIcon } from '@radix-ui/react-icons';
-import { CheckIcon } from 'lucide-react';
-import { Options } from 'nuqs';
-import React from 'react';
 
 interface FilterOption {
   value: string;

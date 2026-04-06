@@ -1,4 +1,4 @@
-import { parseAsInteger, parseAsString, parseAsBoolean, useQueryState } from 'nuqs';
+import { parseAsBoolean, parseAsInteger, parseAsString, useQueryState } from 'nuqs';
 import { useMemo } from 'react';
 
 export function useLancamentoTableFilters() {

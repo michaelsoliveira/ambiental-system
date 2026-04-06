@@ -1,14 +1,14 @@
-import {
-    DropdownMenu,
-    DropdownMenuTrigger,
-    DropdownMenuContent
-  } from "@/components/ui/dropdown-menu";
   import { motion } from "framer-motion";
   import Link from "next/link";
 
-import { Icons } from "../icons";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuTrigger  } from "@/components/ui/dropdown-menu";
 import { NavItem } from "@/types";
-import { SidebarMenuItem, SidebarMenuButton } from "../ui/sidebar";
+
+import { Icons } from "../icons";
+import { SidebarMenuButton,SidebarMenuItem } from "../ui/sidebar";
 
   
   export function SidebarItemWithPopup({ item, pathname }: {

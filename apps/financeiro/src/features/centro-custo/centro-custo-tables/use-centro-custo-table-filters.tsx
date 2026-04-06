@@ -1,6 +1,6 @@
 'use client';
 
-import { useQueryState, parseAsInteger, parseAsString } from 'nuqs';
+import { parseAsInteger, parseAsString,useQueryState } from 'nuqs';
 
 export const useCentroCustoTableFilters = () => {
   const [searchQuery, setSearchQuery] = useQueryState(

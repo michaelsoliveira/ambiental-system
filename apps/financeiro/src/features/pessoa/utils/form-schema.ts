@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { isValidCnpj, isValidCpf } from '@/lib/utils';
 
 type optionFieldMinType = {

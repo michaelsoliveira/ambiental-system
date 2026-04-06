@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
-import { PessoaForm } from './pessoa-form';
+
 import { fetchAPI } from '@/lib/utils';
+
+import { PessoaForm } from './pessoa-form';
 
 type TPessoaViewPageProps = {
   pessoaId: string;

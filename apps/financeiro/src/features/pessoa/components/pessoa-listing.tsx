@@ -1,14 +1,16 @@
 'use client'
 
-import { DataTable as PessoaTable } from '@/components/ui/table/data-table';
-import { PessoaFilters } from './pessoa-filters';
-import { usePessoaTableFilters } from './pessoa-tables/use-pessoa-table-filters';
-import { usePessoas } from '@/hooks/use-pessoas';
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
-import { EditPessoaDialog } from './edit-pessoa-dialog';
-import { getColumns } from './pessoa-tables/columns';
 import { useParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
+import { DataTable as PessoaTable } from '@/components/ui/table/data-table';
 import { useDebounce } from '@/hooks/use-debounce';
+import { usePessoas } from '@/hooks/use-pessoas';
+
+import { EditPessoaDialog } from './edit-pessoa-dialog';
+import { PessoaFilters } from './pessoa-filters';
+import { getColumns } from './pessoa-tables/columns';
+import { usePessoaTableFilters } from './pessoa-tables/use-pessoa-table-filters';
 
 export default function PessoaListingPage() {
   const { slug } = useParams<{ slug: string }>();

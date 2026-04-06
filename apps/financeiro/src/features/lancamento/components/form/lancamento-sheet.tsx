@@ -1,18 +1,20 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { LancamentoForm } from './lancamento-form'
-import { cn } from '@/lib/utils'
 import { Copy, Maximize2, Minimize2, X } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
 import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { cn } from '@/lib/utils'
+
+import { LancamentoForm } from './lancamento-form'
 
 interface LancamentoSheetProps {
     open: boolean

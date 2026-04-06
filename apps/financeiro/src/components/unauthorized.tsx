@@ -1,8 +1,9 @@
 "use client";
 
-import { ShieldAlert, Home, ArrowLeft } from "lucide-react";
+import { ArrowLeft,Home, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 
 interface UnauthorizedProps {

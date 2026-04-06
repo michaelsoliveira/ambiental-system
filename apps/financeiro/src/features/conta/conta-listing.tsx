@@ -1,11 +1,13 @@
 'use client'
 
+import { useParams } from 'next/navigation'
+
 import { DataTable } from '@/components/ui/table/data-table';
 import { useContas } from '@/hooks/use-conta'
-import { useParams } from 'next/navigation'
-import { useContaTableFilters } from './conta-tables/use-conta-table-filters';
+
 import { columns } from './conta-tables/columns';
 import ContaTableAction from './conta-tables/conta-table-action';
+import { useContaTableFilters } from './conta-tables/use-conta-table-filters';
 
 export default function ContaListingPage() {
   try {

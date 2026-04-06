@@ -1,11 +1,13 @@
 'use client'
 
+import { useParams } from 'next/navigation'
+
 import { DataTable } from '@/components/ui/table/data-table';
 import { useCentrosCusto } from '@/hooks/use-centro-custo';
-import { useCentroCustoTableFilters } from './centro-custo-tables/use-centro-custo-table-filters';
-import { columns } from './centro-custo-tables/columns';
+
 import CentroCustoTableAction from './centro-custo-tables/centro-custo-table-action';
-import { useParams } from 'next/navigation'
+import { columns } from './centro-custo-tables/columns';
+import { useCentroCustoTableFilters } from './centro-custo-tables/use-centro-custo-table-filters';
 
 export default function CentroCustoListingPage() {
   try {

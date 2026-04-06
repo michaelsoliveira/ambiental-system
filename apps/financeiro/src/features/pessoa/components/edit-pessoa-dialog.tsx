@@ -1,9 +1,11 @@
 'use client';
 
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { PessoaForm } from './pessoa-form';
 import { useParams } from 'next/navigation';
+
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
+import { PessoaForm } from './pessoa-form';
 
 interface EditPessoaDialogProps {
   pessoa?: any;

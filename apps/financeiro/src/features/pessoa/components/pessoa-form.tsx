@@ -1,7 +1,17 @@
 'use client';
 
 // import { FileUploader } from '@/components/file-uploader';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { 
+  useForm, 
+  useWatch } from 'react-hook-form';
+import { toast } from 'sonner';
+
+import { InputMasked } from '@/components/input-masked';
 import { OptionType, SelectSearchable } from '@/components/select-searchable';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -11,9 +21,6 @@ import {
   FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
-import { useAuthContext } from '@/context/AuthContext';
-import { cn, formatCnpj, formatCpf } from '@/lib/utils';
 import {
   Select,
   SelectContent,
@@ -21,19 +28,14 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { 
-  useForm, 
-  useWatch } from 'react-hook-form';
-import { toast } from 'sonner';
-import { PessoaFormValues, pessoaSchema } from '../utils/form-schema';
-import { InputMasked } from '@/components/input-masked';
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
-import { useCreatePessoa, useUpdatePessoa } from '@/hooks/use-pessoas';
+import { Separator } from '@/components/ui/separator';
+import { useAuthContext } from '@/context/AuthContext';
 import { useEstados, useMunicipiosByEstado } from '@/hooks/use-estados';
+import { useCreatePessoa, useUpdatePessoa } from '@/hooks/use-pessoas';
+import { cn, formatCnpj, formatCpf } from '@/lib/utils';
 import { zodV4Resolver } from '@/lib/zod-v4-resolver';
+
+import { PessoaFormValues, pessoaSchema } from '../utils/form-schema';
 
 interface PessoaFormProps {
   slug: string; // ⭐ Adicione esta prop

@@ -2,6 +2,7 @@
 
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 
 import { Button } from '../ui/button'
 import {
@@ -10,8 +11,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '../ui/dropdown-menu'
-
-import { useEffect, useState } from 'react'
 
 export function ThemeSwitcher() {
   const [mounted, setMounted] = useState(false)

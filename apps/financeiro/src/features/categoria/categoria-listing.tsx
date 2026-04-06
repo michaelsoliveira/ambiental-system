@@ -1,11 +1,13 @@
 'use client'
 
+import { useParams } from 'next/navigation'
+
 import { DataTable } from '@/components/ui/table/data-table';
 import { useCategorias } from '@/hooks/use-categoria';
-import { useCategoriaTableFilters } from './categoria-tables/use-categoria-table-filters';
-import { columns } from './categoria-tables/columns';
+
 import CategoriaTableAction from './categoria-tables/categoria-table-action';
-import { useParams } from 'next/navigation'
+import { columns } from './categoria-tables/columns';
+import { useCategoriaTableFilters } from './categoria-tables/use-categoria-table-filters';
 
 export default function CategoriaListingPage() {
   try {

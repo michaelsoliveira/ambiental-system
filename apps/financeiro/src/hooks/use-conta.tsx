@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { getContas } from '@/http/conta/get-contas'
+
 import { createConta } from '@/http/conta/create-conta'
-import { updateConta } from '@/http/conta/update-conta'
 import { deleteConta } from '@/http/conta/delete-conta'
+import { getContas } from '@/http/conta/get-contas'
+import { updateConta } from '@/http/conta/update-conta'
 
 export function useContas(
   org: string,

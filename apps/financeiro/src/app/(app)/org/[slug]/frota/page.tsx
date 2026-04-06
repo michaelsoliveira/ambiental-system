@@ -1,9 +1,10 @@
+import { List,Truck } from 'lucide-react'
 import Link from 'next/link'
-import { Heading } from '@/components/ui/heading'
-import { Separator } from '@/components/ui/separator'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Truck, List } from 'lucide-react'
+import { Heading } from '@/components/ui/heading'
+import { Separator } from '@/components/ui/separator'
 
 export default async function FrotaPage({
   params,

@@ -1,19 +1,20 @@
 'use client'
 
-import { useState } from 'react'
-import { useParams } from 'next/navigation'
-import { Heading } from '@/components/ui/heading'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { Plus } from 'lucide-react'
+import { useParams } from 'next/navigation'
+import { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { VeiculosListing } from '@/features/frota/veiculos-listing'
+import { Heading } from '@/components/ui/heading'
+import { Separator } from '@/components/ui/separator'
 import { VeiculoForm } from '@/features/frota/veiculo-form'
+import { VeiculosListing } from '@/features/frota/veiculos-listing'
 
 export default function FrotaVeiculosPage() {
   const { slug } = useParams<{ slug: string }>()

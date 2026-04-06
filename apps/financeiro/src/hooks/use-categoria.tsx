@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { getCategorias } from '@/http/categoria/get-categorias'
+
 import { createCategoria } from '@/http/categoria/create-categoria'
-import { updateCategoria } from '@/http/categoria/update-categoria'
 import { deleteCategoria } from '@/http/categoria/delete-categoria'
+import { getCategorias } from '@/http/categoria/get-categorias'
+import { updateCategoria } from '@/http/categoria/update-categoria'
 
 export function useCategorias(
   org: string,

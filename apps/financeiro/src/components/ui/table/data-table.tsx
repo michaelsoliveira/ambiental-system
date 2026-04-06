@@ -1,4 +1,19 @@
 'use client';
+import {
+  DoubleArrowLeftIcon,
+  DoubleArrowRightIcon
+} from '@radix-ui/react-icons';
+import {
+  ColumnDef,
+  flexRender,
+  getCoreRowModel,
+  getPaginationRowModel,
+  PaginationState,
+  useReactTable
+} from '@tanstack/react-table';
+import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { parseAsInteger, useQueryState } from 'nuqs';
+
 import { Button } from '@/components/ui/button';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import {
@@ -16,20 +31,6 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import {
-  DoubleArrowLeftIcon,
-  DoubleArrowRightIcon
-} from '@radix-ui/react-icons';
-import {
-  ColumnDef,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  PaginationState,
-  useReactTable
-} from '@tanstack/react-table';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
-import { parseAsInteger, useQueryState } from 'nuqs';
 
 interface DataTableProps<TData, TValue> {
   columns: ColumnDef<TData, TValue>[];

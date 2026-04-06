@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
 import { Check, ChevronsUpDown } from "lucide-react"
+import { useEffect,useRef, useState } from "react"
 
-import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -18,7 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
+
 import { ScrollArea } from "./ui/scroll-area"
 
 export interface OptionType {

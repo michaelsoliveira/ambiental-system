@@ -1,6 +1,7 @@
 'use client';
 
 import { Search } from 'lucide-react';
+
 import { Button } from './ui/button';
 
 export default function SearchInput() {

@@ -1,8 +1,12 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useQuery } from '@tanstack/react-query'
+import { useParams } from 'next/navigation'
+import { useEffect } from 'react'
+import { useForm } from 'react-hook-form'
 import { z } from 'zod'
+
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -13,7 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -21,10 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCreateCategoria, useUpdateCategoria, useCategoria } from '@/hooks/use-categoria'
-import { useParams } from 'next/navigation'
-import { useEffect } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { Textarea } from '@/components/ui/textarea'
+import { useCategoria,useCreateCategoria, useUpdateCategoria } from '@/hooks/use-categoria'
 import { getCategorias } from '@/http/categoria/get-categorias'
 
 const categoriaSchema = z.object({
