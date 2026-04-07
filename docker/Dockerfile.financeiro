@@ -8,9 +8,11 @@ RUN apk add --no-cache libc6-compat openssl && \
 WORKDIR /app
 
 FROM base AS builder
-# URL pública da API (browser + validação @saas/env no build). Sobrescreva no compose/build.
+# URLs públicas (browser). Sobrescreva no compose/build.
 ARG NEXT_PUBLIC_API_URL=http://localhost:3333
+ARG NEXT_PUBLIC_APP_URL=http://localhost:3000
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps ./apps
@@ -31,7 +33,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
-ENV HOSTNAME=0.0.0.0
 
 COPY --from=builder /app/apps/financeiro/.next/standalone ./
 COPY --from=builder /app/apps/financeiro/.next/static ./apps/financeiro/.next/static

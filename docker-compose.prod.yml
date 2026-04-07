@@ -60,13 +60,16 @@ services:
       dockerfile: docker/Dockerfile.financeiro
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
     restart: unless-stopped
     environment:
       NODE_ENV: production
       NEXT_TELEMETRY_DISABLED: "1"
       PORT: "3000"
-      HOSTNAME: "0.0.0.0"
+      # Mesmo valor que NEXT_PUBLIC_APP_URL — lido em runtime nos Route Handlers (redirect OAuth/logout)
+      APP_URL: ${NEXT_PUBLIC_APP_URL}
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL}
       INTERNAL_API_URL: http://api:3333
       # OAuth GitHub (server actions / @saas/env/next) — mesmo valor que na API
       GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}

@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 
+import { getAppOrigin } from '@/lib/app-origin'
 import { acceptInvite } from '@/http/accept-invite'
 import { signInWithGithub } from '@/http/sign-in-with-github'
 
@@ -32,10 +33,7 @@ export async function GET(request: NextRequest) {
     } catch {}
   }
 
-  const redirectUrl = request.nextUrl.clone()
+  const home = new URL('/', getAppOrigin(request))
 
-  redirectUrl.pathname = '/'
-  redirectUrl.search = ''
-
-  return NextResponse.redirect(redirectUrl)
+  return NextResponse.redirect(home)
 }
