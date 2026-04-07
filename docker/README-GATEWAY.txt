@@ -10,6 +10,20 @@ DNS
 ---
   Registros A (ou AAAA) para api-financeiro e financeiro apontando para o IP da VPS.
 
+Seeds (Prisma) no container da API
+----------------------------------
+  O compose não inclui pnpm na imagem; os scripts com `pnpm env:load` são para dev local.
+
+  Na VPS, com o stack no ar:
+
+    docker compose -f docker-compose.prod.yml --env-file .env exec api /seed-api.sh
+
+  Ou, dentro do container:
+
+    cd /app/apps/api && npm run db:seed:prod
+
+  (DATABASE_URL vem do ambiente do serviço `api`.)
+
 Variáveis (.env)
 ----------------
   NEXT_PUBLIC_API_URL=https://api-financeiro.bomanejo.com.br

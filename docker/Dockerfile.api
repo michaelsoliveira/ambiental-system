@@ -37,7 +37,8 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
 COPY docker/entrypoint-api.sh /entrypoint-api.sh
-RUN chmod +x /entrypoint-api.sh && chown -R nodejs:nodejs /app
+COPY docker/seed-api.sh /seed-api.sh
+RUN chmod +x /entrypoint-api.sh /seed-api.sh && chown -R nodejs:nodejs /app
 
 USER nodejs
 EXPOSE 3333

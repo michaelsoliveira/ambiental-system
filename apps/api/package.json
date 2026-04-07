@@ -25,6 +25,7 @@
     "scripts": {
         "dev": "pnpm env:load tsx watch src/http/server.ts",
         "db:seed": "pnpm env:load prisma db seed",
+        "db:seed:prod": "prisma db seed",
         "db:migrate": "pnpm env:load prisma migrate dev",
         "db:studio": "pnpm env:load prisma studio",
         "env:load": "dotenv -e ../../.env --",
