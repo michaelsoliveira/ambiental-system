@@ -1,7 +1,7 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hash } from "bcrypt";
 import { faker } from "@faker-js/faker";
-import { ensureFrotaFinanceiroDefaults } from "../src/lib/frota-financeiro-seed";
+import { ensureFrotaFinanceiroDefaults } from "./frota-financeiro-seed";
 const prisma = new PrismaClient();
 
 async function seed() {

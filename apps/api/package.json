@@ -19,7 +19,7 @@
         ]
     },
     "prisma": {
-        "seed": "tsx prisma/seeds.ts"
+        "seed": "npx tsx prisma/seeds.ts"
     },
     "prettier": "@saas/prettier",
     "scripts": {

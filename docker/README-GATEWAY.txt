@@ -18,7 +18,7 @@ Seeds (Prisma) no container da API
 
     docker compose -f docker-compose.prod.yml --env-file .env exec api /seed-api.sh
 
-  Ou, dentro do container:
+  Ou, dentro do container (npm precisa do package.json do pacote; não use `/app` como cwd):
 
     cd /app/apps/api && npm run db:seed:prod
 
