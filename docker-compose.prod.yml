@@ -68,6 +68,10 @@ services:
       HOSTNAME: "0.0.0.0"
       NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
       INTERNAL_API_URL: http://api:3333
+      # OAuth GitHub (server actions / @saas/env/next) — mesmo valor que na API
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
+      GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
     depends_on:
       - api
     expose:

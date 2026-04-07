@@ -1,6 +1,13 @@
 {
   "$schema": "https://turborepo.com/schema.json",
-  "globalEnv": ["NODE_ENV", "NEXT_PUBLIC_API_URL", "INTERNAL_API_URL"],
+  "globalEnv": [
+    "NODE_ENV",
+    "NEXT_PUBLIC_API_URL",
+    "INTERNAL_API_URL",
+    "GITHUB_OAUTH_CLIENT_ID",
+    "GITHUB_OAUTH_CLIENT_SECRET",
+    "GITHUB_OAUTH_CLIENT_REDIRECT_URI"
+  ],
   "globalDependencies": ["**/.env.*local"],
   "ui": "tui",
   "tasks": {
