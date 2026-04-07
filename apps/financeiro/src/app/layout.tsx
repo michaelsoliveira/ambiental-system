@@ -8,7 +8,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { Providers } from './providers'
 
 export const metadata: Metadata = {
-  title: 'AmapaCode Soluções',
+  title: 'Ambiental System',
 }
 
 export default function RootLayout({
