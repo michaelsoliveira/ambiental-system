@@ -24,8 +24,12 @@ import { queryClient } from '@/lib/react-query'
 import { createParceiroAction } from './parceiro-action'
 
 export function ParceiroForm() {
-  const [search, setSearch] = useState<string>()
+  const [search, setSearch] = useState<string>('')
+  const [page, setPage] = useState(1)
+  const [allPessoas, setAllPessoas] = useState<any[]>([])
   const [pessoaId, setPessoaId] = useState<string>()
+  const [tipoParceiro, setTipoParceiro] = useState<'CLIENTE' | 'FORNECEDOR' | 'AMBOS'>('CLIENTE')
+  const [ativo, setAtivo] = useState<'true' | 'false'>('true')
   const { slug: org } = useParams<{ slug: string }>()
 
   const [{ errors, message, success }, handleSubmit, isPending] = useFormState(
@@ -38,22 +42,42 @@ export function ParceiroForm() {
     },
   )
 
-  const { data: responseUsers = [], isLoading: isLoadingUser } = usePessoas(org, { search })
-  const { data: pessoas = [], pagination }: any = responseUsers ?? { 
+  const { data: responseUsers = [], isLoading: isLoadingUser } = usePessoas(org, {
+    search,
+    page,
+    limit: 50,
+  })
+  const { data: pessoas = [], pagination }: any = responseUsers ?? {
     pessoas: [], 
     pagination: { count: 0 } 
   };
+
+  useEffect(() => {
+    if (!Array.isArray(pessoas)) return
+
+    setAllPessoas((prev) => {
+      if (page === 1) {
+        const prevIds = prev.map((item) => item.id).join(',')
+        const nextIds = pessoas.map((item: any) => item.id).join(',')
+        if (prevIds === nextIds) return prev
+        return pessoas
+      }
+      const seen = new Set(prev.map((item) => item.id))
+      const next = pessoas.filter((item: any) => !seen.has(item.id))
+      if (next.length === 0) return prev
+      return [...prev, ...next]
+    })
+  }, [pessoas, page])
   
   const usersOptions = useMemo(() => {
-    if (!pessoas || !Array.isArray(pessoas)) return []
+    if (!allPessoas || !Array.isArray(allPessoas)) return []
     
-    return pessoas
-      // .filter(pessoa => pessoa && pessoa.fisica && pessoa.fisica.nome)
+    return allPessoas
       .map((pessoa: any) => ({ 
         label: pessoa.tipo === 'F' ? pessoa.fisica.nome : pessoa.juridica.nome_fantasia, 
         value: pessoa.id 
       }))
-  }, [pessoas])
+  }, [allPessoas])
 
 
   return (
@@ -79,8 +103,9 @@ export function ParceiroForm() {
       )}
 
       <div className="space-y-1">
+        <input type="hidden" name="tipo_parceiro" value={tipoParceiro} />
         <Label htmlFor="tipo_parceiro">Código</Label>
-        <Select name="tipo_parceiro" defaultValue="CLIENTE">
+        <Select value={tipoParceiro} onValueChange={(value) => setTipoParceiro(value as any)}>
           <SelectTrigger className='w-full'>
             <SelectValue placeholder="Selecione o Tipo" />
           </SelectTrigger>
@@ -93,7 +118,7 @@ export function ParceiroForm() {
 
         {errors?.tipo_parceiro && (
           <p className="text-xs font-medium text-red-500 dark:text-red-400">
-            {errors.codigo[0]}
+            {errors.tipo_parceiro[0]}
           </p>
         )}
       </div>
@@ -106,9 +131,20 @@ export function ParceiroForm() {
           value={pessoaId}
           onValueChange={setPessoaId}
           placeholder="Nome do parceiro"
-          emptyText={pessoas.length === 0 ? "Nenhuma pessoa encontrada" : "" }
+          emptyText={allPessoas.length === 0 ? "Nenhuma pessoa encontrada" : "" }
           searchPlaceholder="Digite para buscar pessoas..."
-          onSearchChange={setSearch}
+          onSearchChange={(value) => {
+            setSearch(value)
+            setPage(1)
+            setAllPessoas([])
+          }}
+          hasMore={pagination?.has_next}
+          isLoadingMore={isLoadingUser && page > 1}
+          onLoadMore={() => {
+            if (pagination?.has_next && !isLoadingUser) {
+              setPage((old) => old + 1)
+            }
+          }}
         />
         
         {errors?.pessoa_id && (
@@ -134,8 +170,9 @@ export function ParceiroForm() {
       </div>
 
       <div className="space-y-1">
+        <input type="hidden" name="ativo" value={ativo} />
         <Label htmlFor="ativo">Status</Label>
-        <Select name="ativo" defaultValue="true">
+        <Select value={ativo} onValueChange={(value) => setAtivo(value as any)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione o status" />
           </SelectTrigger>

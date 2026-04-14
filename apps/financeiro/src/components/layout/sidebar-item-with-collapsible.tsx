@@ -24,14 +24,20 @@ export function SidebarItemWithCollapsible({ item, pathname }: {
         <SidebarMenuButton
           onClick={() => setOpen((prev) => !prev)}
           isActive={item.items?.some((sub) => sub.url === pathname)}
+          className={cn(
+            "transition-all duration-200",
+            item.items?.some((sub) => sub.url === pathname)
+              ? "bg-emerald-500/25 text-emerald-100 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-emerald-400 before:rounded-r-sm shadow-sm"
+              : "text-emerald-50/85 hover:bg-emerald-500/10 hover:text-emerald-100",
+          )}
         >
           {item.icon && <Icon />}
-            <span className="flex-1 text-left text-muted-foreground">{item.title}</span>
+          <span className="flex-1 text-left">{item.title}</span>
           <motion.span
             animate={{ rotate: open ? 180 : 0 }}
             transition={{ duration: 0.2 }}
           >
-            <ChevronDown className="h-4 w-4 sidebar-foreground" />
+            <ChevronDown className="h-4 w-4 text-emerald-100/90" />
           </motion.span>
         </SidebarMenuButton>
       </SidebarMenuItem>
@@ -49,8 +55,8 @@ export function SidebarItemWithCollapsible({ item, pathname }: {
               <li key={subItem.title}>
                 <Link
                   href={subItem.url}
-                  className={cn('relative transition-all duration-200 block text-muted-foreground px-3 py-2 rounded-md text-sm hover:bg-[var(--sidebar-accent)]/30 hover:text-sidebar-accent-foreground', 
-                    pathname === subItem.url && "bg-[var(--sidebar-accent)] before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-[var(--sidebar-primary)] before:rounded-l-sm shadow-sm"
+                  className={cn('relative transition-all duration-200 block text-emerald-50/85 px-3 py-2 rounded-md text-sm hover:bg-emerald-500/10 hover:text-emerald-100',
+                    pathname === subItem.url && "bg-emerald-500/20 text-emerald-100 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-emerald-400 before:rounded-l-sm shadow-sm"
                   )}
                 >
                   {subItem.title}

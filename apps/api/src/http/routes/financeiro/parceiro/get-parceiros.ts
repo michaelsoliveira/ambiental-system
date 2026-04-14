@@ -20,9 +20,13 @@ export async function getParceiros(app: FastifyInstance) {
           security: [{ bearerAuth: [] }],
           params: z.object({ slug: z.string() }),
           querystring: z.object({
-            ativo: z.boolean().optional(),
-            page: z.number().int().min(1).default(1),
-            limit: z.number().int().min(1).max(100).default(10),
+            ativo: z.coerce.boolean().optional(),
+            tipo_parceiro: z.enum(['CLIENTE', 'FORNECEDOR', 'AMBOS']).optional(),
+            search: z.string().optional(),
+            page: z.coerce.number().int().min(1).default(1),
+            limit: z.coerce.number().int().min(1).max(100).default(50),
+            orderBy: z.enum(['created_at', 'tipo_parceiro']).optional().default('created_at'),
+            order: z.enum(['asc', 'desc']).optional().default('desc'),
           }),
           response: {
             200: z.object({
@@ -39,13 +43,21 @@ export async function getParceiros(app: FastifyInstance) {
                 }),
               ),
               total: z.number(),
+              pagination: z.object({
+                count: z.number(),
+                page: z.number(),
+                limit: z.number(),
+                total_pages: z.number(),
+                has_next: z.boolean(),
+                has_prev: z.boolean(),
+              }),
             }),
           },
         },
       },
       async (request, reply) => {
         const { slug } = request.params
-        const { ativo, page, limit } = request.query
+        const { ativo, tipo_parceiro, search, page, limit, orderBy, order } = request.query
         const userId = await request.getCurrentUserId()
         const { organization, membership } = await request.getUserMembership(slug)
 
@@ -61,6 +73,26 @@ export async function getParceiros(app: FastifyInstance) {
         const where = {
           organization_id: organization.id,
           ...(ativo !== undefined && { ativo }),
+          ...(tipo_parceiro && { tipo_parceiro }),
+          ...(search && {
+            OR: [
+              { observacoes: { contains: search, mode: 'insensitive' as const } },
+              {
+                pessoa: {
+                  fisica: {
+                    nome: { contains: search, mode: 'insensitive' as const },
+                  },
+                },
+              },
+              {
+                pessoa: {
+                  juridica: {
+                    nome_fantasia: { contains: search, mode: 'insensitive' as const },
+                  },
+                },
+              },
+            ],
+          }),
         }
 
         const [parceiros, total] = await Promise.all([
@@ -77,7 +109,7 @@ export async function getParceiros(app: FastifyInstance) {
             where,
             skip: (page - 1) * limit,
             take: limit,
-            orderBy: { created_at: 'desc' },
+            orderBy: { [orderBy]: order },
           }),
           prisma.parceiro.count({ where }),
         ])
@@ -87,7 +119,15 @@ export async function getParceiros(app: FastifyInstance) {
             ...parceiro,
             pessoa_nome: parceiro.pessoa.tipo === 'F' ? parceiro.pessoa.fisica?.nome : parceiro.pessoa.juridica?.nome_fantasia
           })), 
-          total 
+          total,
+          pagination: {
+            count: total,
+            page,
+            limit,
+            total_pages: Math.ceil(total / limit),
+            has_next: page * limit < total,
+            has_prev: page > 1,
+          },
         })
       },
     )

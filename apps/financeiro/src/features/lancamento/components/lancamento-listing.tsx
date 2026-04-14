@@ -105,6 +105,8 @@ export function LancamentoListing({
           columns={columns}
           data={lancamentos}
           totalItems={pagination?.total ?? 0}
+          page={Number(page) ?? 1}
+          pageSizeOptions={[50, 100, 200, 500, 1000]}
       />
       {selectedLancamento && (
         <LancamentoSheet

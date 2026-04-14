@@ -69,6 +69,11 @@ import { updateLancamento } from "./routes/financeiro/lancamento/update-lancamen
 import { CategoriaFinanceiraService } from "@/services/categoria-financeira-service";
 import { CentroCustoService } from "@/services/centro-custo-service";
 import { ContaBancariaService } from "@/services/conta-bancaria-service";
+import { FuncionarioService } from "@/services/funcionario.service";
+import { FolhaPagamentoService } from "@/services/folha-pagamento.service";
+import { DashboardFinanceiroService } from "@/services/dashboard-financeiro.service";
+import { CargoFuncionarioService } from "@/services/cargo-funcionario.service";
+import { EmpresaService } from "@/services/empresa.service";
 import multipart from '@fastify/multipart'
 import { updatePessoa } from "./routes/common/pessoa/update-pessoa";
 import { getLancamentoStatistics } from "./routes/financeiro/lancamento/lancamento-statistics";
@@ -87,6 +92,31 @@ import { putManutencao } from "./routes/financeiro/frota/put-manutencao";
 import { deleteManutencao } from "./routes/financeiro/frota/delete-manutencao";
 import { putViagem } from "./routes/financeiro/frota/put-viagem";
 import { deleteViagem } from "./routes/financeiro/frota/delete-viagem";
+import { createFuncionario } from "./routes/financeiro/funcionario/create-funcionario";
+import { deleteFuncionario } from "./routes/financeiro/funcionario/delete-funcionario";
+import { getFuncionario } from "./routes/financeiro/funcionario/get-funcionario";
+import { getFuncionarios } from "./routes/financeiro/funcionario/get-funcionarios";
+import { updateFuncionario } from "./routes/financeiro/funcionario/update-funcionario";
+import { createFolhaPagamento } from "./routes/financeiro/folha-pagamento/create-folha-pagamento";
+import { createFolhaPagamentoItem } from "./routes/financeiro/folha-pagamento/create-folha-pagamento-item";
+import { getFolhaPagamento } from "./routes/financeiro/folha-pagamento/get-folha-pagamento";
+import { getFolhasPagamento } from "./routes/financeiro/folha-pagamento/get-folhas-pagamento";
+import { deleteFolhaPagamentoItem } from "./routes/financeiro/folha-pagamento/delete-folha-pagamento-item";
+import { closeFolhaPagamento } from "./routes/financeiro/folha-pagamento/close-folha-pagamento";
+import { reopenFolhaPagamento } from "./routes/financeiro/folha-pagamento/reopen-folha-pagamento";
+import { payFolhaPagamento } from "./routes/financeiro/folha-pagamento/pay-folha-pagamento";
+import { getDashboardResumo } from "./routes/financeiro/dashboard/get-dashboard-resumo";
+import { getDashboardSeries } from "./routes/financeiro/dashboard/get-dashboard-series";
+import { getCargosFuncionario } from "./routes/financeiro/cargo-funcionario/get-cargos-funcionario";
+import { createCargoFuncionario } from "./routes/financeiro/cargo-funcionario/create-cargo-funcionario";
+import { getCargoFuncionario } from "./routes/financeiro/cargo-funcionario/get-cargo-funcionario";
+import { updateCargoFuncionario } from "./routes/financeiro/cargo-funcionario/update-cargo-funcionario";
+import { deleteCargoFuncionario } from "./routes/financeiro/cargo-funcionario/delete-cargo-funcionario";
+import { getEmpresas } from "./routes/financeiro/empresa/get-empresas";
+import { getEmpresa } from "./routes/financeiro/empresa/get-empresa";
+import { createEmpresa } from "./routes/financeiro/empresa/create-empresa";
+import { updateEmpresa } from "./routes/financeiro/empresa/update-empresa";
+import { deleteEmpresa } from "./routes/financeiro/empresa/delete-empresa";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -97,6 +127,11 @@ app.decorate('pessoaService', new PessoaService());
 app.decorate('categoriaFinanceiraService', new CategoriaFinanceiraService());
 app.decorate('centroCustoService', new CentroCustoService());
 app.decorate('contaBancariaService', new ContaBancariaService());
+app.decorate('funcionarioService', new FuncionarioService());
+app.decorate('folhaPagamentoService', new FolhaPagamentoService());
+app.decorate('dashboardFinanceiroService', new DashboardFinanceiroService());
+app.decorate('cargoFuncionarioService', new CargoFuncionarioService());
+app.decorate('empresaService', new EmpresaService());
 // app.decorate('estadoService', new EstadoService());
 
 app.register(multipart, {
@@ -205,6 +240,31 @@ app.register(putManutencao)
 app.register(deleteManutencao)
 app.register(putViagem)
 app.register(deleteViagem)
+app.register(createFuncionario)
+app.register(deleteFuncionario)
+app.register(getFuncionario)
+app.register(getFuncionarios)
+app.register(updateFuncionario)
+app.register(createFolhaPagamento)
+app.register(getFolhasPagamento)
+app.register(getFolhaPagamento)
+app.register(createFolhaPagamentoItem)
+app.register(deleteFolhaPagamentoItem)
+app.register(closeFolhaPagamento)
+app.register(reopenFolhaPagamento)
+app.register(payFolhaPagamento)
+app.register(getDashboardResumo)
+app.register(getDashboardSeries)
+app.register(getCargosFuncionario)
+app.register(createCargoFuncionario)
+app.register(getCargoFuncionario)
+app.register(updateCargoFuncionario)
+app.register(deleteCargoFuncionario)
+app.register(getEmpresas)
+app.register(getEmpresa)
+app.register(createEmpresa)
+app.register(updateEmpresa)
+app.register(deleteEmpresa)
 
 app.register(asaasPaymentsWebhook)
 

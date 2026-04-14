@@ -41,11 +41,12 @@ export function SignInForm() {
         )}
 
         <div className="space-y-1">
-          <Label htmlFor="email">E-mail</Label>
+          <Label htmlFor="email" className="text-white">E-mail</Label>
           <Input
             name="email"
             type="email"
             id="email"
+            className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
             defaultValue={searchParams.get('email') ?? ''}
           />
 
@@ -57,8 +58,13 @@ export function SignInForm() {
         </div>
 
         <div className="space-y-1">
-          <Label htmlFor="password">Password</Label>
-          <Input name="password" type="password" id="password" />
+          <Label htmlFor="password" className="text-white">Password</Label>
+          <Input 
+            name="password" 
+            type="password" 
+            id="password" 
+            className="bg-white/10 border-white/20 text-white placeholder:text-white/50"
+          />
 
           {errors?.password && (
             <p className="text-xs font-medium text-red-500 dark:text-red-400">
@@ -68,7 +74,7 @@ export function SignInForm() {
 
           <Link
             href="/auth/forgot-password"
-            className="text-xs font-medium text-foreground hover:underline"
+            className="text-xs font-medium text-white hover:underline"
           >
             Forgot your password?
           </Link>
@@ -83,7 +89,7 @@ export function SignInForm() {
         </Button>
 
         <Button className="w-full" variant="link" size="sm" asChild>
-          <Link href="/auth/sign-up">Create new account</Link>
+          <Link href="/auth/sign-up" className="text-white">Create new account</Link>
         </Button>
       </form>
 

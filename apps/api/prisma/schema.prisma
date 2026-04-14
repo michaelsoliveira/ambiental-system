@@ -115,6 +115,9 @@ model Organization {
   relatorios            Relatorio[]
   empresas              Empresa[]
   funcionarios          Funcionario[]
+  cargosFuncionario     CargoFuncionario[]
+  folhasPagamento       FolhaPagamento[]
+  folhaPagamentoItens   FolhaPagamentoItem[]
   pessoas               Pessoa[]
   veiculos              Veiculo[]
   @@map("organizations")
@@ -642,6 +645,62 @@ model Relatorio {
   @@index([organization_id])
   @@index([tipo])
   @@map("relatorios")
+  @@schema("financeiro")
+}
+
+model FolhaPagamento {
+  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id     String              @db.Uuid
+  created_at          DateTime            @default(now()) @db.Timestamp(6)
+  updated_at          DateTime            @updatedAt @db.Timestamp(6)
+
+  competencia         String              @db.VarChar(7) // MM/YYYY
+  referencia_mes      Int
+  referencia_ano      Int
+  status              StatusFolhaPagamento @default(ABERTA)
+  data_fechamento     DateTime?
+  data_pagamento      DateTime?
+  observacoes         String?
+
+  total_proventos     Decimal             @default(0) @db.Decimal(15, 2)
+  total_descontos     Decimal             @default(0) @db.Decimal(15, 2)
+  total_encargos      Decimal             @default(0) @db.Decimal(15, 2)
+  total_liquido       Decimal             @default(0) @db.Decimal(15, 2)
+
+  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  itens               FolhaPagamentoItem[]
+
+  @@unique([organization_id, competencia])
+  @@index([organization_id, referencia_ano, referencia_mes])
+  @@index([status])
+  @@map("folhas_pagamento")
+  @@schema("financeiro")
+}
+
+model FolhaPagamentoItem {
+  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id     String              @db.Uuid
+  folha_pagamento_id  String              @db.Uuid
+  funcionario_id      String              @db.Uuid
+  created_at          DateTime            @default(now()) @db.Timestamp(6)
+  updated_at          DateTime            @updatedAt @db.Timestamp(6)
+
+  tipo                TipoFolhaItem
+  natureza            NaturezaFolhaItem
+  codigo              String?             @db.VarChar(30)
+  descricao           String              @db.VarChar(255)
+  referencia          String?             @db.VarChar(100)
+  valor               Decimal             @db.Decimal(15, 2)
+
+  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  folha_pagamento     FolhaPagamento      @relation(fields: [folha_pagamento_id], references: [id], onDelete: Cascade)
+  funcionario         Funcionario         @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([folha_pagamento_id])
+  @@index([funcionario_id])
+  @@index([natureza])
+  @@map("folhas_pagamento_itens")
   @@schema("financeiro")
 }
 
@@ -1243,17 +1302,50 @@ model Funcionario {
   pessoa_id  String   @db.Uuid
   empresa_id String   @db.Uuid
   organization_id  String   @db.Uuid
+  cargo_id         String?  @db.Uuid
+  matricula        String?  @db.VarChar(50)
+  departamento     String?  @db.VarChar(120)
+  data_admissao    DateTime?
+  data_demissao    DateTime?
+  tipo_contrato    TipoContratoFuncionario @default(CLT)
+  ativo            Boolean  @default(true)
 
   pessoa     Pessoa   @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
   empresa    Empresa  @relation(fields: [empresa_id], references: [id])
   organization     Organization @relation(fields: [organization_id], references: [id])
+  cargo_funcionario CargoFuncionario? @relation(fields: [cargo_id], references: [id], onDelete: SetNull)
   profissionais Profissional[]
   funcionarios     ExameOcupacional[]
+  folhas_pagamento_itens FolhaPagamentoItem[]
   @@map("funcionario")
   @@schema("common")
 
   @@index([organization_id])
+  @@index([ativo])
+  @@index([cargo_id])
+  @@unique([organization_id, matricula])
   @@unique([empresa_id, pessoa_id])
+}
+
+model CargoFuncionario {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+  codigo          String?  @db.VarChar(50)
+  nome            String   @db.VarChar(120)
+  descricao       String?
+  salario_base    Decimal  @default(0) @db.Decimal(15, 2)
+  ativo           Boolean  @default(true)
+
+  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  funcionarios    Funcionario[]
+
+  @@unique([organization_id, nome])
+  @@unique([organization_id, codigo])
+  @@index([organization_id, ativo])
+  @@map("cargo_funcionario")
+  @@schema("common")
 }
 
 model Profissional {
@@ -1492,4 +1584,40 @@ enum TipoRelatorio {
   CONTAS_A_PAGAR
   LUCRO_PREJUIZO
   @@schema("financeiro")
+}
+
+enum StatusFolhaPagamento {
+  ABERTA
+  FECHADA
+  PAGA
+  CANCELADA
+  @@schema("financeiro")
+}
+
+enum TipoFolhaItem {
+  SALARIO
+  HORA_EXTRA
+  BENEFICIO
+  DESCONTO
+  INSS
+  FGTS
+  IRRF
+  OUTRO
+  @@schema("financeiro")
+}
+
+enum NaturezaFolhaItem {
+  PROVENTO
+  DESCONTO
+  ENCARGO
+  @@schema("financeiro")
+}
+
+enum TipoContratoFuncionario {
+  CLT
+  PJ
+  ESTAGIO
+  TEMPORARIO
+  APRENDIZ
+  @@schema("common")
 }

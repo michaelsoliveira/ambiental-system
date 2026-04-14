@@ -37,14 +37,14 @@ import { SidebarMenuButton,SidebarMenuItem } from "../ui/sidebar";
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 8 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="bg-white dark:bg-zinc-950 shadow-lg rounded-md p-2 w-48 space-y-1"
+              className="bg-black/80 backdrop-blur-md border border-emerald-300/30 shadow-lg rounded-md p-2 w-56 space-y-1"
             >
               {item.items?.map((subItem) => (
                 <li key={subItem.title}>
                   <Link
                     href={subItem.url}
-                    className={`flex items-center px-3 py-2 rounded-md text-sm transition-colors hover:bg-sidebar-accent/30 hover:text-sidebar-accent-foreground ${
-                      pathname === subItem.url ? "bg-sidebar-accent" : ""
+                    className={`flex items-center px-3 py-2 rounded-md text-sm transition-colors text-emerald-50/90 hover:bg-emerald-500/15 hover:text-emerald-100 ${
+                      pathname === subItem.url ? "bg-emerald-500/25 text-emerald-100" : ""
                     }`}
                   >
                     {subItem.title}

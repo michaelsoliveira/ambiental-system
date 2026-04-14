@@ -2,7 +2,8 @@
 
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
-import { Building2, LayoutGrid, List } from 'lucide-react'
+import { DoubleArrowLeftIcon, DoubleArrowRightIcon } from '@radix-ui/react-icons'
+import { Building2, ChevronLeftIcon, ChevronRightIcon, LayoutGrid, List } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useState } from 'react'
 
@@ -23,6 +24,13 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type { ParceiroListRecord } from '@/http/parceiro/get-parceiros'
 import { formatCnpj, formatCpf } from '@/lib/utils'
 
@@ -54,17 +62,32 @@ export function ParceiroListingClient({
   parceiros,
   canUpdate,
   canDelete,
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+  onPageSizeChange,
 }: {
   parceiros: ParceiroListRecord[]
   canUpdate: boolean
   canDelete: boolean
+  page: number
+  totalPages: number
+  totalItems: number
+  pageSize: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
 }) {
   const { slug: orgSlug } = useParams<{ slug: string }>()
   const [view, setView] = useState<ViewMode>('grid')
   const [editing, setEditing] = useState<ParceiroListRecord | null>(null)
   const [deleting, setDeleting] = useState<ParceiroListRecord | null>(null)
+  const safePage = Math.max(1, Math.min(page, totalPages || 1))
+  const start = (safePage - 1) * pageSize
+  const end = start + parceiros.length
 
-  if (parceiros.length === 0) {
+  if (totalItems === 0) {
     return (
       <p className="rounded-lg border py-12 text-center text-sm text-muted-foreground">
         Nenhum parceiro cadastrado.
@@ -208,6 +231,78 @@ export function ParceiroListingClient({
           </TableBody>
         </Table>
       )}
+
+      <div className="flex flex-col items-center justify-end gap-2 space-x-2 py-2 sm:flex-row">
+        <div className="flex w-full items-center justify-between">
+          <div className="flex-1 text-sm text-muted-foreground">
+            Mostrando de {totalItems > 0 ? start + 1 : 0} a {Math.min(end, totalItems)} de {totalItems}
+          </div>
+          <div className="flex items-center space-x-2">
+            <p className="whitespace-nowrap text-sm font-medium">por Página</p>
+            <Select
+              value={`${pageSize}`}
+              onValueChange={(value) => {
+                onPageSizeChange(Number(value))
+                onPageChange(1)
+              }}
+            >
+              <SelectTrigger className="h-8 w-[90px]">
+                <SelectValue placeholder={pageSize} />
+              </SelectTrigger>
+              <SelectContent side="top">
+                {[50, 100, 200, 500, 1000].map((size) => (
+                  <SelectItem key={size} value={`${size}`}>
+                    {size}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex w-full items-center justify-between gap-2 sm:justify-end">
+          <div className="flex items-center justify-center text-sm font-medium">
+            Página {safePage} de {totalPages || 1}
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              aria-label="Go to first page"
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => onPageChange(1)}
+              disabled={safePage <= 1}
+            >
+              <DoubleArrowLeftIcon className="h-4 w-4" aria-hidden="true" />
+            </Button>
+            <Button
+              aria-label="Go to previous page"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => onPageChange(Math.max(1, safePage - 1))}
+              disabled={safePage <= 1}
+            >
+              <ChevronLeftIcon className='h-4 w-4' aria-hidden='true' />
+            </Button>
+            <Button
+              aria-label="Go to next page"
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => onPageChange(Math.min(totalPages || 1, safePage + 1))}
+              disabled={safePage >= (totalPages || 1)}
+            >
+              <ChevronRightIcon className='h-4 w-4' aria-hidden='true' />
+            </Button>
+            <Button
+              aria-label="Go to last page"
+              variant="outline"
+              className="hidden h-8 w-8 p-0 lg:flex"
+              onClick={() => onPageChange(totalPages || 1)}
+              disabled={safePage >= (totalPages || 1)}
+            >
+              <DoubleArrowRightIcon className="h-4 w-4" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

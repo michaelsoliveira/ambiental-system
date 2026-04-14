@@ -17,9 +17,9 @@ export const PAGE_HEIGHT = 1056; // px = 29.7cm
 const baseNavItems: Array<NavItem> = [
   {
     title: 'Dashboard',
-    url: '/',
+    url: '/dashboard',
     icon: 'dashboard',
-    org: false,
+    org: true,
     isActive: false,
     shortcut: ['d', 'd'],
     items: []
@@ -34,8 +34,14 @@ const baseNavItems: Array<NavItem> = [
   {
     title: 'Parceiros',
     org: true,
-    url: '/',
+    url: '/parceiro',
     icon: 'folder',
+  },
+  {
+    title: 'Funcionários',
+    org: true,
+    url: '/funcionario',
+    icon: 'employee',
   },
   {
     title: 'Financeiro',
@@ -46,6 +52,10 @@ const baseNavItems: Array<NavItem> = [
       {
         title: 'Lançamentos',
         url: '/lancamento',
+      },
+      {
+        title: 'Folha de Pagamento',
+        url: '/folha-pagamento',
       },
       {
         title: 'Relatório de Financeiro',
@@ -80,6 +90,18 @@ const baseNavItems: Array<NavItem> = [
         title: 'Categorias',
         org: true,
         url: '/categorias',
+        icon: 'folder',
+      },
+      {
+        title: 'Empresas',
+        org: true,
+        url: '/empresas',
+        icon: 'folder',
+      },
+      {
+        title: 'Cargos',
+        org: true,
+        url: '/cargos-funcionario',
         icon: 'folder',
       },
       {

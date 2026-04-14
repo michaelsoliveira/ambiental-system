@@ -25,7 +25,11 @@ export default async function Projects() {
       </div>
 
       {permissions?.can('get', 'Parceiro') ? (
-        <ParceiroListing />
+        <ParceiroListing
+          orgSlug={currentOrg!}
+          canUpdate={permissions?.can('update', 'Parceiro') ?? false}
+          canDelete={permissions?.can('delete', 'Parceiro') ?? false}
+        />
       ) : (
         <p className="text-sm text-muted-foreground">
           You are not allowed to see organization parceiros.

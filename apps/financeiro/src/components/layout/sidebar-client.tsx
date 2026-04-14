@@ -61,20 +61,28 @@ export default function SidebarClient({ user, slug }: AppSidebarProps) {
   const navItems = getNavItems(slug);
 
   return (
-    <Sidebar collapsible='icon'>
-      <SidebarHeader>
+    <Sidebar collapsible='icon' className="relative overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <div
+          className="h-full w-full bg-cover bg-center"
+          style={{ backgroundImage: "url('/bg_sidebar.jpeg')" }}
+        >
+          <div className="h-full w-full bg-gradient-to-b from-black/75 via-black/60 to-black/70 opacity-90" />
+        </div>
+      </div>
+      <SidebarHeader className="relative z-10">
         <div className='flex gap-2 py-2 text-sidebar-accent-foreground'>
-          <div className='flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground'>
+          <div className='flex aspect-square size-8 items-center justify-center rounded-lg border border-emerald-300/40 bg-emerald-500/85 text-white shadow-sm backdrop-blur-sm'>
             <company.logo className='size-4' />
           </div>
           <div className='grid flex-1 text-left text-sm leading-tight'>
-            <span className='truncate font-semibold'>{company.name}</span>
-            <span className='truncate text-xs'>{company.plan}</span>
+            <span className='truncate font-semibold text-emerald-100'>{company.name}</span>
+            <span className='truncate text-xs text-emerald-200/90'>{company.plan}</span>
           </div>
         </div>
       </SidebarHeader>
 
-      <SidebarContent className='overflow-x-hidden'>
+      <SidebarContent className='relative z-10 overflow-x-hidden text-white'>
         <SidebarGroup>
           <SidebarGroupLabel>Visão Geral</SidebarGroupLabel>
           <SidebarMenu>
@@ -103,8 +111,8 @@ export default function SidebarClient({ user, slug }: AppSidebarProps) {
                       relative transition-all duration-200 rounded-md
                       ${
                         pathname === item.url && mounted
-                          ? "bg-[var(--sidebar-accent)]/30 text-[var(--sidebar-primary)] before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-[var(--sidebar-primary)] before:rounded-r-sm shadow-sm"
-                          : "hover:bg-[var(--sidebar-accent)]/20 text-[var(--muted-foreground)]"
+                          ? "bg-emerald-500/25 text-emerald-100 before:absolute before:left-0 before:top-0 before:h-full before:w-1 before:bg-emerald-400 before:rounded-r-sm shadow-sm"
+                          : "hover:bg-emerald-500/10 text-emerald-50/85 hover:text-emerald-100"
                       }
                     `}
                   >
@@ -120,12 +128,12 @@ export default function SidebarClient({ user, slug }: AppSidebarProps) {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="relative z-10">
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton size='lg'>
+                <SidebarMenuButton size='lg' className="hover:bg-emerald-500/10 text-emerald-50/90">
                   <Avatar className='h-8 w-8 rounded-lg'>
                     <AvatarImage src={user?.avatarUrl || ''} />
                     <AvatarFallback className='rounded-lg'>
@@ -142,7 +150,7 @@ export default function SidebarClient({ user, slug }: AppSidebarProps) {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent side='bottom' align='end' sideOffset={4}>
+              <DropdownMenuContent side='bottom' align='end' sideOffset={4} className="border-emerald-200/40">
                 <DropdownMenuLabel className='p-0 font-normal'>
                   <div className='flex items-center gap-2 px-1 py-1.5'>
                     <Avatar className='h-8 w-8 rounded-lg'>

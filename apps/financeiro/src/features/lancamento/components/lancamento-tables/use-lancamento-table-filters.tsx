@@ -16,7 +16,7 @@ export function useLancamentoTableFilters() {
     'limit',
     parseAsInteger
       .withOptions({ shallow: false, history: 'push' })
-      .withDefault(10)
+      .withDefault(50)
   );
 
   // Filtro de tipo de lançamento (RECEITA, DESPESA, TRANSFERENCIA)

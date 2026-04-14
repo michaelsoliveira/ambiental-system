@@ -49,6 +49,9 @@ export type SelectItemsProps = {
     styleInputCustom?: string;
     disabled?: boolean;
     name?: string;
+    hasMore?: boolean;
+    onLoadMore?: () => void;
+    isLoadingMore?: boolean;
 }
 
 // Função helper para verificar se é um grupo
@@ -85,7 +88,10 @@ export function SelectSearchable({
     truncateWidth = '14rem',
     styleInputCustom,
     disabled,
-    name
+    name,
+    hasMore,
+    onLoadMore,
+    isLoadingMore
 } : SelectItemsProps) {
   const [open, setOpen] = useState(false)
   const [width, setWidth] = useState(0);
@@ -235,6 +241,19 @@ export function SelectSearchable({
                 }
               })}
             </CommandList>
+            {hasMore && (
+              <div className="border-t p-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={onLoadMore}
+                  disabled={isLoadingMore}
+                >
+                  {isLoadingMore ? 'Carregando...' : 'Carregar mais'}
+                </Button>
+              </div>
+            )}
           </Command>
         </PopoverContent>
       </Popover>
