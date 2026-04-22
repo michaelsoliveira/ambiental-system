@@ -177,7 +177,12 @@ export function PessoaForm({ slug, initialData, onClose }: PessoaFormProps) {
   });
 
   const { mutate: fetchMunicipiosByEstado, error } = useMunicipiosByEstado(setMunicipios);
-  const { data: responseEstados }: any = useEstados()
+  const { data: responseEstados }: any = useEstados({
+    page: 1,
+    limit: 100,
+    order_by: 'uf',
+    order: 'asc',
+  });
   const { data: estados = [], pagination } = responseEstados ?? { estados: [], pagination: null }
 
   const optionsEstados = useMemo<OptionType[]>(() => {

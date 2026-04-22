@@ -120,6 +120,7 @@ model Organization {
   folhaPagamentoItens   FolhaPagamentoItem[]
   pessoas               Pessoa[]
   veiculos              Veiculo[]
+  disponibilidadesVeiculo VeiculoDisponibilidade[]
   @@map("organizations")
   @@schema("common")
 }
@@ -1414,12 +1415,34 @@ model Veiculo {
   abastecimentos Abastecimento[]
   manutencoes    Manutencao[]
   viagens        Viagem[]
+  disponibilidades VeiculoDisponibilidade[]
   lancamentos    Lancamento[] @relation("VeiculoLancamento")
 
   @@unique([organization_id, placa])
   @@index([organization_id])
   @@index([ativo])
   @@map("veiculos")
+  @@schema("frota")
+}
+
+model VeiculoDisponibilidade {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  veiculo_id      String   @db.Uuid
+  tipo            String   @db.VarChar(20) // PRODUCAO | MANUTENCAO
+  inicio          DateTime @db.Timestamp(6)
+  fim             DateTime @db.Timestamp(6)
+  motivo          String?  @db.VarChar(500)
+  origem          String   @default("MANUAL") @db.VarChar(20) // MANUAL | AUTOMATICA
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  veiculo      Veiculo      @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id, inicio, fim])
+  @@index([veiculo_id, inicio, fim])
+  @@map("veiculos_disponibilidade")
   @@schema("frota")
 }
 

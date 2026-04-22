@@ -29,31 +29,43 @@ export const api = ky.create({
       async (request, options, response) => {
         if (!response.ok) {
           // Tentar obter mensagem de erro mais detalhada
-          let errorMessage = `API Error: ${response.status} ${response.statusText}`;
-          let errorData: any = null;
+          let errorMessage = `API Error: ${response.status} ${response.statusText}`
+          let errorData: any = null
+          let errorBodyText: string | null = null
+          const responseClone = response.clone()
           
           try {
-            errorData = await response.json();
-            errorMessage = errorData.message || errorData.error || errorMessage;
+            errorData = await responseClone.json()
+            errorMessage = errorData?.message || errorData?.error || errorMessage
           } catch {
-            // Se não conseguir parsear JSON, usar statusText
-            errorMessage = response.statusText || errorMessage;
+            try {
+              errorBodyText = await responseClone.text()
+            } catch {
+              errorBodyText = null
+            }
+            // Se não conseguir parsear JSON, usar statusText/body
+            errorMessage = response.statusText || errorBodyText || errorMessage
           }
           
-          const error: any = new Error(errorMessage);
-          error.response = errorData || { error: response.statusText };
-          error.status = response.status;
-          error.url = request.url;
+          const error: any = new Error(errorMessage)
+          error.response = errorData || {
+            error: response.statusText || 'Unknown error',
+            body: errorBodyText,
+          }
+          error.status = response.status
+          error.url = request.url
           
           // Log do erro para debug
           console.error('[ApiClient] ❌ Erro na requisição:', {
             url: request.url,
+            method: request.method,
             status: response.status,
             statusText: response.statusText,
             error: errorData,
-          });
+            bodyText: errorBodyText,
+          })
           
-          throw error;
+          throw error
         }
       }
     ]

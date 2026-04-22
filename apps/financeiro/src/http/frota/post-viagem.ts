@@ -11,6 +11,9 @@ export type PostViagemInput = {
   contaBancariaId?: string | null
   centroCustoId?: string | null
   pago?: boolean
+  tipoRegistro?: 'SIMPLES' | 'RECORRENTE'
+  diasSemana?: number[]
+  recorrenciaFim?: string | null
 }
 
 export async function postViagem(
@@ -23,5 +26,5 @@ export async function postViagem(
       `organizations/${org}/financeiro/frota/veiculos/${veiculoId}/viagens`,
       { json: data }
     )
-    .json<{ viagemId: string; lancamentoId: string | null }>()
+    .json<{ viagemIds: string[]; lancamentoIds: string[]; totalCriadas: number }>()
 }

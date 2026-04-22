@@ -53,9 +53,6 @@ export function ParceiroListing({
     order: 'desc',
   })
 
-  if (isLoading) return <div>Carregando...</div>
-  if (error) return <div>Erro ao carregar parceiros</div>
-
   const parceiros = data?.parceiros ?? []
   const pagination = data?.pagination ?? { count: 0, page: 1, limit: 10, total_pages: 1 }
 
@@ -85,18 +82,25 @@ export function ParceiroListing({
         />
         <DataTableResetFilter isFilterActive={isAnyFilterActive} onReset={resetFilters} />
       </div>
-
-      <ParceiroListingClient
-        parceiros={parceiros}
-        canUpdate={canUpdate}
-        canDelete={canDelete}
-        page={pagination.page}
-        totalPages={pagination.total_pages}
-        totalItems={pagination.count}
-        pageSize={pagination.limit}
-        onPageChange={setPage}
-        onPageSizeChange={setLimit}
-      />
+    {
+      isLoading ? (
+        <div className="text-muted-foreground">Carregando...</div>
+      ) : error ? (
+        <div className="text-destructive">Erro ao carregar parceiros</div>
+      ) : (
+        <ParceiroListingClient
+          parceiros={parceiros}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
+          page={pagination.page}
+          totalPages={pagination.total_pages}
+          totalItems={pagination.count}
+          pageSize={pagination.limit}
+          onPageChange={setPage}
+          onPageSizeChange={setLimit}
+        />
+      )
+    }
     </div>
   )
 }

@@ -15,6 +15,130 @@ function numeroOperacao(prefix: string) {
  * sempre vinculados a um {@link Lancamento} (fonte única de valor no financeiro).
  */
 export class FrotaService {
+  private static validateReceitaLancamentoInput(input: {
+    valorReceita?: number | null
+    categoriaId?: string
+    contaBancariaId?: string
+  }) {
+    const hasValor = input.valorReceita != null && input.valorReceita > 0
+    const hasCategoria = !!input.categoriaId
+    const hasConta = !!input.contaBancariaId
+
+    if (hasValor && (!hasCategoria || !hasConta)) {
+      throw new BadRequestError(
+        'Para gerar lançamento de receita, informe categoria e conta bancária.',
+      )
+    }
+  }
+
+  private static buildRecurrenceDates(
+    start: Date,
+    end: Date,
+    weekdays: number[],
+  ): Date[] {
+    const byDay = new Set(weekdays)
+    const dates: Date[] = []
+
+    const cursor = new Date(start)
+    cursor.setHours(0, 0, 0, 0)
+    const endDay = new Date(end)
+    endDay.setHours(23, 59, 59, 999)
+
+    while (cursor <= endDay) {
+      if (byDay.has(cursor.getDay())) {
+        dates.push(new Date(cursor))
+      }
+      cursor.setDate(cursor.getDate() + 1)
+    }
+
+    return dates
+  }
+
+  private static normalizeInterval(inicio: Date, fim?: Date | null) {
+    const start = new Date(inicio)
+    const end = fim ? new Date(fim) : new Date(inicio)
+    if (end < start) {
+      throw new BadRequestError('Data final deve ser maior ou igual à data inicial.')
+    }
+    return { start, end }
+  }
+
+  private static async assertSemConflitoComDisponibilidade(
+    organizationId: string,
+    veiculoId: string,
+    inicio: Date,
+    fim?: Date | null,
+  ) {
+    const { start, end } = this.normalizeInterval(inicio, fim)
+    const conflito = await prisma.veiculoDisponibilidade.findFirst({
+      where: {
+        organization_id: organizationId,
+        veiculo_id: veiculoId,
+        inicio: { lte: end },
+        fim: { gte: start },
+      },
+      orderBy: { inicio: 'asc' },
+    })
+
+    if (conflito) {
+      throw new BadRequestError(
+        `Conflito com disponibilidade do veículo (${conflito.tipo}) entre ${conflito.inicio.toISOString()} e ${conflito.fim.toISOString()}.`,
+      )
+    }
+  }
+
+  private static async assertSemConflitoComViagem(
+    organizationId: string,
+    veiculoId: string,
+    inicio: Date,
+    fim?: Date | null,
+    ignoreViagemId?: string,
+  ) {
+    const { start, end } = this.normalizeInterval(inicio, fim)
+    const conflito = await prisma.viagem.findFirst({
+      where: {
+        veiculo: {
+          id: veiculoId,
+          organization_id: organizationId,
+        },
+        ...(ignoreViagemId ? { id: { not: ignoreViagemId } } : {}),
+        data_inicio: { lte: end },
+        OR: [{ data_fim: null }, { data_fim: { gte: start } }],
+      },
+      orderBy: { data_inicio: 'asc' },
+    })
+
+    if (conflito) {
+      throw new BadRequestError(
+        `Existe viagem no período informado (${conflito.origem} → ${conflito.destino}).`,
+      )
+    }
+  }
+
+  private static async assertSemConflitoEntreDisponibilidades(
+    organizationId: string,
+    veiculoId: string,
+    inicio: Date,
+    fim: Date,
+    ignoreId?: string,
+  ) {
+    const conflito = await prisma.veiculoDisponibilidade.findFirst({
+      where: {
+        organization_id: organizationId,
+        veiculo_id: veiculoId,
+        ...(ignoreId ? { id: { not: ignoreId } } : {}),
+        inicio: { lte: fim },
+        fim: { gte: inicio },
+      },
+      orderBy: { inicio: 'asc' },
+    })
+    if (conflito) {
+      throw new BadRequestError(
+        `Já existe disponibilidade no período (${conflito.tipo}) entre ${conflito.inicio.toISOString()} e ${conflito.fim.toISOString()}.`,
+      )
+    }
+  }
+
   private static buildLancamentoBase(
     veiculo: { id: string; placa: string },
     input: {
@@ -171,10 +295,18 @@ export class FrotaService {
       pago?: boolean
     }
   ) {
+    this.validateReceitaLancamentoInput(input)
+
     const veiculo = await prisma.veiculo.findFirst({
       where: { id: input.veiculoId, organization_id: organizationId },
     })
     if (!veiculo) throw new BadRequestError('Veículo não encontrado.')
+    await this.assertSemConflitoComDisponibilidade(
+      organizationId,
+      veiculo.id,
+      input.dataInicio,
+      input.dataFim ?? null,
+    )
 
     let lancamentoId: string | null = null
 
@@ -217,6 +349,93 @@ export class FrotaService {
     })
 
     return { viagem, lancamentoId }
+  }
+
+  static async registrarViagensRecorrentesComReceita(
+    organizationId: string,
+    input: {
+      veiculoId: string
+      origem: string
+      destino: string
+      dataInicio: Date
+      dataFim?: Date | null
+      kmRodado?: number | null
+      valorReceita?: number | null
+      categoriaId?: string
+      contaBancariaId?: string
+      centroCustoId?: string | null
+      pago?: boolean
+      recorrenciaFim: Date
+      diasSemana: number[]
+    }
+  ) {
+    if (input.diasSemana.length === 0) {
+      throw new BadRequestError(
+        'Selecione ao menos um dia da semana para recorrência.',
+      )
+    }
+    if (input.recorrenciaFim < input.dataInicio) {
+      throw new BadRequestError(
+        'A data final da recorrência deve ser maior ou igual à data inicial.',
+      )
+    }
+
+    const ocorrencias = this.buildRecurrenceDates(
+      input.dataInicio,
+      input.recorrenciaFim,
+      input.diasSemana,
+    )
+    if (ocorrencias.length === 0) {
+      throw new BadRequestError(
+        'Nenhuma data foi gerada para os dias da semana selecionados.',
+      )
+    }
+
+    const durationMs =
+      input.dataFim && input.dataFim > input.dataInicio
+        ? input.dataFim.getTime() - input.dataInicio.getTime()
+        : null
+
+    const viagemIds: string[] = []
+    const lancamentoIds: string[] = []
+
+    for (const occ of ocorrencias) {
+      const dataInicio = new Date(occ)
+      dataInicio.setHours(
+        input.dataInicio.getHours(),
+        input.dataInicio.getMinutes(),
+        0,
+        0,
+      )
+
+      const dataFim =
+        durationMs != null ? new Date(dataInicio.getTime() + durationMs) : null
+
+      const result = await this.registrarViagemComReceita(organizationId, {
+        veiculoId: input.veiculoId,
+        origem: input.origem,
+        destino: input.destino,
+        dataInicio,
+        dataFim,
+        kmRodado: input.kmRodado ?? null,
+        valorReceita: input.valorReceita ?? null,
+        categoriaId: input.categoriaId,
+        contaBancariaId: input.contaBancariaId,
+        centroCustoId: input.centroCustoId ?? null,
+        pago: input.pago,
+      })
+
+      viagemIds.push(result.viagem.id)
+      if (result.lancamentoId) {
+        lancamentoIds.push(result.lancamentoId)
+      }
+    }
+
+    return {
+      viagemIds,
+      lancamentoIds,
+      totalCriadas: viagemIds.length,
+    }
   }
 
   private static lancamentoPatchAbastecimentoManutencao(
@@ -419,6 +638,8 @@ export class FrotaService {
       pago?: boolean
     },
   ) {
+    this.validateReceitaLancamentoInput(input)
+
     const veiculo = await prisma.veiculo.findFirst({
       where: { id: veiculoId, organization_id: organizationId },
     })
@@ -428,6 +649,12 @@ export class FrotaService {
       where: { id: viagemId, veiculo_id: veiculoId },
     })
     if (!vi) throw new BadRequestError('Viagem não encontrada.')
+    await this.assertSemConflitoComDisponibilidade(
+      organizationId,
+      veiculoId,
+      input.dataInicio,
+      input.dataFim ?? null,
+    )
 
     const hasReceita =
       input.valorReceita != null &&
@@ -528,5 +755,130 @@ export class FrotaService {
     } else {
       await prisma.viagem.delete({ where: { id: viagemId } })
     }
+  }
+
+  static async listarDisponibilidades(
+    organizationId: string,
+    veiculoId: string,
+    filters?: { inicio?: Date | null; fim?: Date | null },
+  ) {
+    await prisma.veiculo.findFirstOrThrow({
+      where: { id: veiculoId, organization_id: organizationId },
+    })
+    const inicioFiltro = filters?.inicio ?? null
+    const fimFiltro = filters?.fim ?? null
+
+    return prisma.veiculoDisponibilidade.findMany({
+      where: {
+        organization_id: organizationId,
+        veiculo_id: veiculoId,
+        ...(inicioFiltro && { fim: { gte: inicioFiltro } }),
+        ...(fimFiltro && { inicio: { lte: fimFiltro } }),
+      },
+      orderBy: { inicio: 'asc' },
+    })
+  }
+
+  static async criarDisponibilidade(
+    organizationId: string,
+    input: {
+      veiculoId: string
+      tipo: 'PRODUCAO' | 'MANUTENCAO'
+      inicio: Date
+      fim: Date
+      motivo?: string | null
+      origem?: 'MANUAL' | 'AUTOMATICA'
+    },
+  ) {
+    const veiculo = await prisma.veiculo.findFirst({
+      where: { id: input.veiculoId, organization_id: organizationId },
+    })
+    if (!veiculo) throw new BadRequestError('Veículo não encontrado.')
+
+    const { start, end } = this.normalizeInterval(input.inicio, input.fim)
+    await this.assertSemConflitoEntreDisponibilidades(
+      organizationId,
+      veiculo.id,
+      start,
+      end,
+    )
+    await this.assertSemConflitoComViagem(organizationId, veiculo.id, start, end)
+
+    return prisma.veiculoDisponibilidade.create({
+      data: {
+        organization_id: organizationId,
+        veiculo_id: veiculo.id,
+        tipo: input.tipo,
+        inicio: start,
+        fim: end,
+        motivo: input.motivo ?? null,
+        origem: input.origem ?? 'MANUAL',
+      },
+    })
+  }
+
+  static async atualizarDisponibilidade(
+    organizationId: string,
+    veiculoId: string,
+    disponibilidadeId: string,
+    input: {
+      tipo: 'PRODUCAO' | 'MANUTENCAO'
+      inicio: Date
+      fim: Date
+      motivo?: string | null
+    },
+  ) {
+    await prisma.veiculo.findFirstOrThrow({
+      where: { id: veiculoId, organization_id: organizationId },
+    })
+    const atual = await prisma.veiculoDisponibilidade.findFirst({
+      where: {
+        id: disponibilidadeId,
+        veiculo_id: veiculoId,
+        organization_id: organizationId,
+      },
+    })
+    if (!atual) throw new BadRequestError('Disponibilidade não encontrada.')
+
+    const { start, end } = this.normalizeInterval(input.inicio, input.fim)
+    await this.assertSemConflitoEntreDisponibilidades(
+      organizationId,
+      veiculoId,
+      start,
+      end,
+      disponibilidadeId,
+    )
+    await this.assertSemConflitoComViagem(
+      organizationId,
+      veiculoId,
+      start,
+      end,
+    )
+
+    return prisma.veiculoDisponibilidade.update({
+      where: { id: disponibilidadeId },
+      data: {
+        tipo: input.tipo,
+        inicio: start,
+        fim: end,
+        motivo: input.motivo ?? null,
+      },
+    })
+  }
+
+  static async excluirDisponibilidade(
+    organizationId: string,
+    veiculoId: string,
+    disponibilidadeId: string,
+  ) {
+    const item = await prisma.veiculoDisponibilidade.findFirst({
+      where: {
+        id: disponibilidadeId,
+        veiculo_id: veiculoId,
+        organization_id: organizationId,
+      },
+    })
+    if (!item) throw new BadRequestError('Disponibilidade não encontrada.')
+    await prisma.veiculoDisponibilidade.delete({ where: { id: item.id } })
   }
 }

@@ -1,9 +1,10 @@
 'use client'
 
-import { ArrowLeft, Fuel, Pencil, Route, Trash2,Wrench } from 'lucide-react'
+import { ArrowLeft, CalendarDays, Fuel, Pencil, Route, Trash2, Wrench } from 'lucide-react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { toast } from 'sonner'
 
 import {
   AlertDialog,
@@ -17,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -50,13 +52,16 @@ import { useCentrosCusto } from '@/hooks/use-centro-custo'
 import { useContas } from '@/hooks/use-conta'
 import {
   useDeleteAbastecimento,
+  useDeleteDisponibilidade,
   useDeleteManutencao,
   useDeleteVeiculo,
   useDeleteViagem,
   usePostAbastecimento,
+  usePostDisponibilidade,
   usePostManutencao,
   usePostViagem,
   usePutAbastecimento,
+  usePutDisponibilidade,
   usePutManutencao,
   usePutViagem,
   useUpdateVeiculo,
@@ -85,7 +90,16 @@ function isoToDatetimeLocal(iso: string) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-type Tab = 'abastecimentos' | 'manutencoes' | 'viagens' | 'dados'
+type Tab = 'abastecimentos' | 'manutencoes' | 'viagens' | 'agenda' | 'dados'
+const WEEK_DAYS = [
+  { label: 'Dom', value: 0 },
+  { label: 'Seg', value: 1 },
+  { label: 'Ter', value: 2 },
+  { label: 'Qua', value: 3 },
+  { label: 'Qui', value: 4 },
+  { label: 'Sex', value: 5 },
+  { label: 'Sab', value: 6 },
+]
 
 export function VeiculoDetail() {
   const { slug, id } = useParams<{ slug: string; id: string }>()
@@ -122,17 +136,22 @@ export function VeiculoDetail() {
   const mutDelMan = useDeleteManutencao(slug!, id!)
   const mutPutVia = usePutViagem(slug!, id!)
   const mutDelVia = useDeleteViagem(slug!, id!)
+  const mutPostInd = usePostDisponibilidade(slug!, id!)
+  const mutPutInd = usePutDisponibilidade(slug!, id!)
+  const mutDelInd = useDeleteDisponibilidade(slug!, id!)
   const mutUp = useUpdateVeiculo(slug!, id!)
 
   const [dlgAbs, setDlgAbs] = useState(false)
   const [dlgMan, setDlgMan] = useState(false)
   const [dlgVia, setDlgVia] = useState(false)
+  const [dlgInd, setDlgInd] = useState(false)
   const [dlgDados, setDlgDados] = useState(false)
   const [absEditId, setAbsEditId] = useState<string | null>(null)
   const [manEditId, setManEditId] = useState<string | null>(null)
   const [viaEditId, setViaEditId] = useState<string | null>(null)
+  const [dispEditId, setDispEditId] = useState<string | null>(null)
   const [confirmItemDel, setConfirmItemDel] = useState<
-    { kind: 'ab' | 'man' | 'via'; id: string } | null
+    { kind: 'ab' | 'man' | 'via' | 'disp'; id: string } | null
   >(null)
 
   // form abastecimento
@@ -159,10 +178,13 @@ export function VeiculoDetail() {
   })
 
   const [viaData, setViaData] = useState({
+    tipoRegistro: 'SIMPLES' as 'SIMPLES' | 'RECORRENTE',
     origem: '',
     destino: '',
     dataInicio: new Date().toISOString().slice(0, 16),
     dataFim: '',
+    recorrenciaFim: '',
+    diasSemana: [] as number[],
     kmRodado: '',
     valorReceita: '',
     categoriaId: '',
@@ -179,6 +201,13 @@ export function VeiculoDetail() {
     tipo: '',
     km_atual: '',
     ativo: true,
+  })
+
+  const [indData, setIndData] = useState({
+    tipo: 'PRODUCAO' as 'PRODUCAO' | 'MANUTENCAO',
+    inicio: new Date().toISOString().slice(0, 16),
+    fim: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
+    motivo: '',
   })
 
   if (isLoading) return <p className="p-6 text-muted-foreground">Carregando…</p>
@@ -271,10 +300,13 @@ export function VeiculoDetail() {
   const openNewVia = () => {
     setViaEditId(null)
     setViaData({
+      tipoRegistro: 'SIMPLES',
       origem: '',
       destino: '',
       dataInicio: new Date().toISOString().slice(0, 16),
       dataFim: '',
+      recorrenciaFim: '',
+      diasSemana: [],
       kmRodado: '',
       valorReceita: '',
       categoriaId: '',
@@ -289,10 +321,13 @@ export function VeiculoDetail() {
     const val = valorFinanceiroFrota(x)
     const n = Number(val)
     setViaData({
+      tipoRegistro: 'SIMPLES',
       origem: x.origem,
       destino: x.destino,
       dataInicio: isoToDatetimeLocal(x.data_inicio),
       dataFim: x.data_fim ? isoToDatetimeLocal(x.data_fim) : '',
+      recorrenciaFim: '',
+      diasSemana: [],
       kmRodado: x.km_rodado != null ? String(x.km_rodado) : '',
       valorReceita: Number.isFinite(n) && n > 0 ? String(n) : '',
       categoriaId: x.lancamento?.categoria_id ?? '',
@@ -302,6 +337,28 @@ export function VeiculoDetail() {
     })
     setViaEditId(x.id)
     setDlgVia(true)
+  }
+
+  const openNewInd = () => {
+    setDispEditId(null)
+    setIndData({
+      tipo: 'PRODUCAO',
+      inicio: new Date().toISOString().slice(0, 16),
+      fim: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
+      motivo: '',
+    })
+    setDlgInd(true)
+  }
+
+  const openEditInd = (x: (typeof v)['disponibilidades'][number]) => {
+    setDispEditId(x.id)
+    setIndData({
+      tipo: x.tipo,
+      inicio: isoToDatetimeLocal(x.inicio),
+      fim: isoToDatetimeLocal(x.fim),
+      motivo: x.motivo ?? '',
+    })
+    setDlgInd(true)
   }
 
   const submitAbs = () => {
@@ -357,19 +414,44 @@ export function VeiculoDetail() {
   }
 
   const submitVia = () => {
+    if (!viaData.origem || !viaData.destino || !viaData.dataInicio) return
+    const valorReceita = viaData.valorReceita ? parseFloat(viaData.valorReceita) : null
+    if (valorReceita != null && valorReceita > 0) {
+      if (!viaData.categoriaId || !viaData.contaBancariaId) {
+        toast.error(
+          'Para gerar lançamento financeiro da receita, selecione categoria e conta bancária.',
+        )
+        return
+      }
+    }
+    if (viaData.tipoRegistro === 'RECORRENTE') {
+      if (!viaData.recorrenciaFim) {
+        toast.error('Informe a data final da recorrência.')
+        return
+      }
+      if (!viaData.diasSemana.length) {
+        toast.error('Selecione ao menos um dia da semana.')
+        return
+      }
+    }
+
     const payload = {
       origem: viaData.origem,
       destino: viaData.destino,
       dataInicio: new Date(viaData.dataInicio).toISOString(),
       dataFim: viaData.dataFim ? new Date(viaData.dataFim).toISOString() : null,
       kmRodado: viaData.kmRodado ? parseFloat(viaData.kmRodado) : null,
-      valorReceita: viaData.valorReceita
-        ? parseFloat(viaData.valorReceita)
-        : null,
+      valorReceita,
       categoriaId: viaData.categoriaId || null,
       contaBancariaId: viaData.contaBancariaId || null,
       centroCustoId: viaData.centroCustoId || null,
       pago: viaData.pago,
+      tipoRegistro: viaData.tipoRegistro,
+      diasSemana: viaData.tipoRegistro === 'RECORRENTE' ? viaData.diasSemana : [],
+      recorrenciaFim:
+        viaData.tipoRegistro === 'RECORRENTE' && viaData.recorrenciaFim
+          ? new Date(viaData.recorrenciaFim).toISOString()
+          : null,
     }
     if (viaEditId) {
       mutPutVia.mutate(
@@ -383,6 +465,30 @@ export function VeiculoDetail() {
       )
     } else {
       mutVia.mutate(payload, { onSuccess: () => setDlgVia(false) })
+    }
+  }
+
+  const submitInd = () => {
+    if (!indData.inicio || !indData.fim) return
+    const payload = {
+      tipo: indData.tipo,
+      inicio: new Date(indData.inicio).toISOString(),
+      fim: new Date(indData.fim).toISOString(),
+      motivo: indData.motivo || null,
+    }
+
+    if (dispEditId) {
+      mutPutInd.mutate(
+        { disponibilidadeId: dispEditId, data: payload },
+        {
+          onSuccess: () => {
+            setDlgInd(false)
+            setDispEditId(null)
+          },
+        },
+      )
+    } else {
+      mutPostInd.mutate(payload, { onSuccess: () => setDlgInd(false) })
     }
   }
 
@@ -464,6 +570,7 @@ export function VeiculoDetail() {
           {tabBtn('abastecimentos', 'Abastecimentos', <Fuel className="h-4 w-4" />)}
           {tabBtn('manutencoes', 'Manutenções', <Wrench className="h-4 w-4" />)}
           {tabBtn('viagens', 'Viagens', <Route className="h-4 w-4" />)}
+          {tabBtn('agenda', 'Agenda', <CalendarDays className="h-4 w-4" />)}
           {tabBtn('dados', 'Resumo', <Pencil className="h-4 w-4" />)}
         </div>
 
@@ -677,6 +784,71 @@ export function VeiculoDetail() {
                     <TableRow>
                       <TableCell colSpan={5} className="text-muted-foreground">
                         Nenhum registro.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </>
+          )}
+
+          {tab === 'agenda' && (
+            <>
+              <div className="flex justify-end">
+                <Button onClick={openNewInd}>Nova disponibilidade</Button>
+              </div>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Período</TableHead>
+                    <TableHead>Motivo</TableHead>
+                    <TableHead className="w-[100px] text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {v.disponibilidades?.length ? (
+                    v.disponibilidades.map((x) => (
+                      <TableRow key={x.id}>
+                        <TableCell>
+                          <Badge variant={x.tipo === 'MANUTENCAO' ? 'destructive' : 'secondary'}>
+                            {x.tipo === 'MANUTENCAO' ? 'Manutenção' : 'Produção'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="whitespace-nowrap text-sm">
+                          {formatDateShort(x.inicio)} → {formatDateShort(x.fim)}
+                        </TableCell>
+                        <TableCell>{x.motivo || '—'}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => openEditInd(x)}
+                              title="Editar"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              onClick={() => setConfirmItemDel({ kind: 'disp', id: x.id })}
+                              title="Excluir"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-muted-foreground">
+                        Nenhuma disponibilidade cadastrada.
                       </TableCell>
                     </TableRow>
                   )}
@@ -1013,15 +1185,34 @@ export function VeiculoDetail() {
           if (!open) setViaEditId(null)
         }}
       >
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[94vh] overflow-y-auto md:max-w-2xl">
           <DialogHeader>
             <DialogTitle>
               {viaEditId ? 'Editar viagem' : 'Viagem / frete'}
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
+            {!viaEditId && (
+              <div className="space-y-1.5">
+                <Label>Tipo de lançamento</Label>
+                <Select
+                  value={viaData.tipoRegistro}
+                  onValueChange={(tipoRegistro: 'SIMPLES' | 'RECORRENTE') =>
+                    setViaData((s) => ({ ...s, tipoRegistro }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="SIMPLES">Simples</SelectItem>
+                    <SelectItem value="RECORRENTE">Recorrente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
-              <div>
+              <div className="space-y-1.5">
                 <Label>Origem</Label>
                 <Input
                   value={viaData.origem}
@@ -1030,7 +1221,7 @@ export function VeiculoDetail() {
                   }
                 />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label>Destino</Label>
                 <Input
                   value={viaData.destino}
@@ -1041,7 +1232,7 @@ export function VeiculoDetail() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
+              <div className="space-y-1.5">
                 <Label>Início</Label>
                 <Input
                   type="datetime-local"
@@ -1051,7 +1242,7 @@ export function VeiculoDetail() {
                   }
                 />
               </div>
-              <div>
+              <div className="space-y-1.5">
                 <Label>Fim (opcional)</Label>
                 <Input
                   type="datetime-local"
@@ -1062,7 +1253,49 @@ export function VeiculoDetail() {
                 />
               </div>
             </div>
-            <div>
+            {!viaEditId && viaData.tipoRegistro === 'RECORRENTE' && (
+              <>
+                <div className="space-y-1.5">
+                  <Label>Data final da recorrência</Label>
+                  <Input
+                    type="date"
+                    value={viaData.recorrenciaFim}
+                    onChange={(e) =>
+                      setViaData((s) => ({ ...s, recorrenciaFim: e.target.value }))
+                    }
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Dias da semana</Label>
+                  <div className="flex flex-wrap items-center gap-3 pt-2">
+                    {WEEK_DAYS.map((day) => {
+                      const checked = viaData.diasSemana.includes(day.value)
+                      return (
+                        <label
+                          key={day.value}
+                          className="inline-flex items-center gap-2 text-sm"
+                        >
+                          <Checkbox
+                            checked={checked}
+                            onCheckedChange={(value) =>
+                              setViaData((s) => ({
+                                ...s,
+                                diasSemana: value
+                                  ? [...s.diasSemana, day.value].sort((a, b) => a - b)
+                                  : s.diasSemana.filter((d) => d !== day.value),
+                              }))
+                            }
+                          />
+                          {day.label}
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+              </>
+            )}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
               <Label>Km rodado</Label>
               <Input
                 value={viaData.kmRodado}
@@ -1071,7 +1304,7 @@ export function VeiculoDetail() {
                 }
               />
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Valor da receita (opcional)</Label>
               <Input
                 value={viaData.valorReceita}
@@ -1081,7 +1314,8 @@ export function VeiculoDetail() {
                 placeholder="Se preenchido, gera lançamento de receita"
               />
             </div>
-            <div>
+            </div>
+            <div className="space-y-1.5">
               <Label>Categoria (receita) — se houver valor</Label>
               <Select
                 value={viaData.categoriaId || '_none'}
@@ -1105,7 +1339,7 @@ export function VeiculoDetail() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Conta bancária — se houver valor</Label>
               <Select
                 value={viaData.contaBancariaId || '_none'}
@@ -1130,7 +1364,7 @@ export function VeiculoDetail() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
+            <div className="space-y-1.5">
               <Label>Centro de custo (opcional)</Label>
               <Select
                 value={viaData.centroCustoId || '_none'}
@@ -1174,6 +1408,83 @@ export function VeiculoDetail() {
               disabled={mutVia.isPending || mutPutVia.isPending}
             >
               {viaEditId ? 'Salvar' : 'Registrar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={dlgInd}
+        onOpenChange={(open) => {
+          setDlgInd(open)
+          if (!open) setDispEditId(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>
+              {dispEditId ? 'Editar disponibilidade' : 'Nova disponibilidade'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-3">
+            <div>
+              <Label>Tipo</Label>
+              <Select
+                value={indData.tipo}
+                onValueChange={(tipo: 'PRODUCAO' | 'MANUTENCAO') =>
+                  setIndData((s) => ({ ...s, tipo }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PRODUCAO">Produção</SelectItem>
+                  <SelectItem value="MANUTENCAO">Manutenção</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label>Início</Label>
+                <Input
+                  type="datetime-local"
+                  value={indData.inicio}
+                  onChange={(e) =>
+                    setIndData((s) => ({ ...s, inicio: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <Label>Fim</Label>
+                <Input
+                  type="datetime-local"
+                  value={indData.fim}
+                  onChange={(e) =>
+                    setIndData((s) => ({ ...s, fim: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+            <div>
+              <Label>Motivo (opcional)</Label>
+              <Textarea
+                value={indData.motivo}
+                onChange={(e) =>
+                  setIndData((s) => ({ ...s, motivo: e.target.value }))
+                }
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDlgInd(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={submitInd}
+              disabled={mutPostInd.isPending || mutPutInd.isPending}
+            >
+              {dispEditId ? 'Salvar' : 'Registrar'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1278,7 +1589,8 @@ export function VeiculoDetail() {
               disabled={
                 mutDelAbs.isPending ||
                 mutDelMan.isPending ||
-                mutDelVia.isPending
+                mutDelVia.isPending ||
+                mutDelInd.isPending
               }
               onClick={() => {
                 if (!confirmItemDel) return
@@ -1289,6 +1601,10 @@ export function VeiculoDetail() {
                   })
                 } else if (kind === 'man') {
                   mutDelMan.mutate(id, {
+                    onSuccess: () => setConfirmItemDel(null),
+                  })
+                } else if (kind === 'disp') {
+                  mutDelInd.mutate(id, {
                     onSuccess: () => setConfirmItemDel(null),
                   })
                 } else {

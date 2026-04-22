@@ -92,6 +92,10 @@ import { putManutencao } from "./routes/financeiro/frota/put-manutencao";
 import { deleteManutencao } from "./routes/financeiro/frota/delete-manutencao";
 import { putViagem } from "./routes/financeiro/frota/put-viagem";
 import { deleteViagem } from "./routes/financeiro/frota/delete-viagem";
+import { getDisponibilidades } from "./routes/financeiro/frota/get-disponibilidades";
+import { postDisponibilidade } from "./routes/financeiro/frota/post-disponibilidade";
+import { putDisponibilidade } from "./routes/financeiro/frota/put-disponibilidade";
+import { deleteDisponibilidade } from "./routes/financeiro/frota/delete-disponibilidade";
 import { createFuncionario } from "./routes/financeiro/funcionario/create-funcionario";
 import { deleteFuncionario } from "./routes/financeiro/funcionario/delete-funcionario";
 import { getFuncionario } from "./routes/financeiro/funcionario/get-funcionario";
@@ -240,6 +244,10 @@ app.register(putManutencao)
 app.register(deleteManutencao)
 app.register(putViagem)
 app.register(deleteViagem)
+app.register(getDisponibilidades)
+app.register(postDisponibilidade)
+app.register(putDisponibilidade)
+app.register(deleteDisponibilidade)
 app.register(createFuncionario)
 app.register(deleteFuncionario)
 app.register(getFuncionario)

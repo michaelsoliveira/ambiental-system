@@ -4,14 +4,20 @@ import { toast } from 'sonner'
 import { createVeiculo, type CreateVeiculoInput } from '@/http/frota/create-veiculo'
 import { deleteAbastecimento } from '@/http/frota/delete-abastecimento'
 import { deleteManutencao } from '@/http/frota/delete-manutencao'
+import { deleteDisponibilidade } from '@/http/frota/delete-disponibilidade'
 import { deleteVeiculo } from '@/http/frota/delete-veiculo'
 import { deleteViagem } from '@/http/frota/delete-viagem'
 import { getVeiculo } from '@/http/frota/get-veiculo'
 import { getVeiculos } from '@/http/frota/get-veiculos'
 import { postAbastecimento, type PostAbastecimentoInput } from '@/http/frota/post-abastecimento'
 import { postManutencao, type PostManutencaoInput } from '@/http/frota/post-manutencao'
+import {
+  postDisponibilidade,
+  type PostDisponibilidadeInput,
+} from '@/http/frota/post-disponibilidade'
 import { postViagem, type PostViagemInput } from '@/http/frota/post-viagem'
 import { putAbastecimento } from '@/http/frota/put-abastecimento'
+import { putDisponibilidade } from '@/http/frota/put-disponibilidade'
 import { putManutencao } from '@/http/frota/put-manutencao'
 import { putViagem } from '@/http/frota/put-viagem'
 import { updateVeiculo, type UpdateVeiculoInput } from '@/http/frota/update-veiculo'
@@ -176,6 +182,45 @@ export function usePutViagem(org: string, veiculoId: string) {
       qc.invalidateQueries({ queryKey: ['frota-veiculo', org, veiculoId] })
     },
     onError: (e: Error) => toast.error(e.message || 'Erro ao atualizar'),
+  })
+}
+
+export function usePostDisponibilidade(org: string, veiculoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: PostDisponibilidadeInput) =>
+      postDisponibilidade(org, veiculoId, data),
+    onSuccess: () => {
+      toast.success('Disponibilidade registrada.')
+      qc.invalidateQueries({ queryKey: ['frota-veiculo', org, veiculoId] })
+    },
+    onError: (e: Error) => toast.error(e.message || 'Erro ao registrar'),
+  })
+}
+
+export function usePutDisponibilidade(org: string, veiculoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (input: { disponibilidadeId: string; data: PostDisponibilidadeInput }) =>
+      putDisponibilidade(org, veiculoId, input.disponibilidadeId, input.data),
+    onSuccess: () => {
+      toast.success('Disponibilidade atualizada.')
+      qc.invalidateQueries({ queryKey: ['frota-veiculo', org, veiculoId] })
+    },
+    onError: (e: Error) => toast.error(e.message || 'Erro ao atualizar'),
+  })
+}
+
+export function useDeleteDisponibilidade(org: string, veiculoId: string) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (disponibilidadeId: string) =>
+      deleteDisponibilidade(org, veiculoId, disponibilidadeId),
+    onSuccess: () => {
+      toast.success('Disponibilidade excluída.')
+      qc.invalidateQueries({ queryKey: ['frota-veiculo', org, veiculoId] })
+    },
+    onError: (e: Error) => toast.error(e.message || 'Erro ao excluir'),
   })
 }
 

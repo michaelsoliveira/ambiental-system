@@ -91,7 +91,10 @@ export async function getVeiculo(app: FastifyInstance) {
                 },
               },
             },
-          },
+            disponibilidades: {
+              orderBy: { inicio: 'asc' },
+            },
+          } as any,
         })
 
         if (!veiculo) {

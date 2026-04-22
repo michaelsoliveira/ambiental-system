@@ -1,25 +1,26 @@
 import { useQuery } from '@tanstack/react-query'
 
-import { api } from '@/http/api-client'
+import {
+  type DashboardRelatorioParams,
+  getDashboardResumo,
+  getDashboardSeries,
+} from '@/http/dashboard/get-dashboard-data'
 
-export function useDashboardResumo(org: string) {
+export function useDashboardResumo(org: string, params?: DashboardRelatorioParams) {
   return useQuery({
-    queryKey: ['dashboard-financeiro-resumo', org],
+    queryKey: ['dashboard-financeiro-resumo', org, params],
     enabled: !!org,
-    queryFn: async () =>
-      api.get(`organizations/${org}/financeiro/dashboard/resumo`).json<any>(),
+    queryFn: async () => getDashboardResumo(org, params),
   })
 }
 
-export function useDashboardSeries(org: string, months = 12, competencia?: string) {
+export function useDashboardSeries(
+  org: string,
+  opts?: { months?: number; competencia?: string; folha_status?: string },
+) {
   return useQuery({
-    queryKey: ['dashboard-financeiro-series', org, months, competencia],
+    queryKey: ['dashboard-financeiro-series', org, opts],
     enabled: !!org,
-    queryFn: async () =>
-      api
-        .get(`organizations/${org}/financeiro/dashboard/series`, {
-          searchParams: { months, competencia },
-        })
-        .json<any>(),
+    queryFn: async () => getDashboardSeries(org, opts),
   })
 }

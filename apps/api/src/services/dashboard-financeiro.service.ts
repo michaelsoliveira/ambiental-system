@@ -1,43 +1,96 @@
 import { prisma } from '@/lib/prisma'
 
+/** Filtro opcional de status da folha no relatório (TODAS = sem filtro por status). */
+export type FolhaStatusRelatorio = 'TODAS' | 'PAGA' | 'FECHADA' | 'ABERTA' | 'CANCELADA'
+
+function parseCompetencia(competencia: string): { mes: number; ano: number } | null {
+  const m = /^(\d{1,2})\/(\d{4})$/.exec(competencia.trim())
+  if (!m) return null
+  const mes = Number(m[1])
+  const ano = Number(m[2])
+  if (mes < 1 || mes > 12) return null
+  return { mes, ano }
+}
+
+function formatCompetencia(mes: number, ano: number) {
+  return `${String(mes).padStart(2, '0')}/${ano}`
+}
+
+export type DashboardResumoOptions = {
+  /** MM/AAAA — quando omitido, usa o mês calendário atual. */
+  competencia?: string
+  /** Restringe a folha usada no KPI “folha líquida” ao status (ex.: apenas PAGA). */
+  folha_status?: FolhaStatusRelatorio
+}
+
 export class DashboardFinanceiroService {
-  async getResumo(organizationId: string) {
+  async getResumo(organizationId: string, options?: DashboardResumoOptions) {
     const today = new Date()
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999)
+    let monthStart: Date
+    let monthEnd: Date
+    let refMes = today.getMonth() + 1
+    let refAno = today.getFullYear()
+
+    const competenciaInput = options?.competencia?.trim()
+    if (competenciaInput) {
+      const parsed = parseCompetencia(competenciaInput)
+      if (parsed) {
+        refMes = parsed.mes
+        refAno = parsed.ano
+        monthStart = new Date(refAno, refMes - 1, 1)
+        monthEnd = new Date(refAno, refMes, 0, 23, 59, 59, 999)
+      } else {
+        monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+        monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999)
+      }
+    } else {
+      monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+      monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999)
+    }
+
+    const folhaStatus = options?.folha_status ?? 'TODAS'
+    const folhaWhere: Record<string, unknown> = {
+      organization_id: organizationId,
+      competencia: formatCompetencia(refMes, refAno),
+    }
+    if (folhaStatus !== 'TODAS') {
+      folhaWhere.status = folhaStatus
+    }
+
+    const lancamentosWhereBase = {
+      organization_id: organizationId,
+      data: { gte: monthStart, lte: monthEnd },
+    }
+
+    /** Lista rápida: sempre os últimos 8 da organização (sem recorte por competência), para não esvaziar o bloco quando o mês filtrado não tem lançamentos. */
+    const latestLancamentosWhere = { organization_id: organizationId }
 
     const [receitasMes, despesasMes, parceirosTotal, funcionariosAtivos, lancamentosRecentes, folhaMes] =
       await Promise.all([
         prisma.lancamento.aggregate({
           where: {
-            organization_id: organizationId,
+            ...lancamentosWhereBase,
             tipo: 'RECEITA',
-            data: { gte: monthStart, lte: monthEnd },
           },
           _sum: { valor: true },
         }),
         prisma.lancamento.aggregate({
           where: {
-            organization_id: organizationId,
+            ...lancamentosWhereBase,
             tipo: 'DESPESA',
-            data: { gte: monthStart, lte: monthEnd },
           },
           _sum: { valor: true },
         }),
         prisma.parceiro.count({ where: { organization_id: organizationId } }),
         (prisma as any).funcionario.count({ where: { organization_id: organizationId, ativo: true } }),
         prisma.lancamento.findMany({
-          where: { organization_id: organizationId },
+          where: latestLancamentosWhere,
           include: { categoria: { select: { nome: true } } },
           orderBy: { created_at: 'desc' },
           take: 8,
         }),
         (prisma as any).folhaPagamento.findFirst({
-          where: {
-            organization_id: organizationId,
-            referencia_mes: today.getMonth() + 1,
-            referencia_ano: today.getFullYear(),
-          },
+          where: folhaWhere,
         }),
       ])
 
@@ -53,6 +106,10 @@ export class DashboardFinanceiroService {
         folha_liquida_mes: folhaLiquida,
         total_parceiros: parceirosTotal,
         total_funcionarios_ativos: funcionariosAtivos,
+      },
+      filtros: {
+        competencia_aplicada: formatCompetencia(refMes, refAno),
+        folha_status: folhaStatus,
       },
       latest_lancamentos: lancamentosRecentes.map((l) => ({
         ...l,
@@ -134,9 +191,18 @@ export class DashboardFinanceiroService {
     }
   }
 
-  async getFolhaResumoMes(organizationId: string, competencia: string) {
+  async getFolhaResumoMes(
+    organizationId: string,
+    competencia: string,
+    folhaStatus: FolhaStatusRelatorio = 'TODAS',
+  ) {
+    const where: Record<string, unknown> = { organization_id: organizationId, competencia }
+    if (folhaStatus !== 'TODAS') {
+      where.status = folhaStatus
+    }
+
     const folha = await (prisma as any).folhaPagamento.findFirst({
-      where: { organization_id: organizationId, competencia },
+      where,
       include: { itens: true },
     })
 
@@ -147,6 +213,7 @@ export class DashboardFinanceiroService {
         total_descontos: 0,
         total_encargos: 0,
         total_liquido: 0,
+        status: null,
       }
     }
 

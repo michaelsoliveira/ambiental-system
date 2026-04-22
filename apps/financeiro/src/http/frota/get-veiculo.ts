@@ -45,6 +45,16 @@ export type VeiculoDetalhe = {
     valor: unknown
     lancamento: LancamentoFrotaRef
   }>
+  disponibilidades: Array<{
+    id: string
+    tipo: 'PRODUCAO' | 'MANUTENCAO'
+    inicio: string
+    fim: string
+    motivo: string | null
+    origem: 'MANUAL' | 'AUTOMATICA'
+    created_at: string
+    updated_at: string
+  }>
 }
 
 export async function getVeiculo(org: string, veiculoId: string) {
