@@ -105,10 +105,13 @@ import { createFolhaPagamento } from "./routes/financeiro/folha-pagamento/create
 import { createFolhaPagamentoItem } from "./routes/financeiro/folha-pagamento/create-folha-pagamento-item";
 import { getFolhaPagamento } from "./routes/financeiro/folha-pagamento/get-folha-pagamento";
 import { getFolhasPagamento } from "./routes/financeiro/folha-pagamento/get-folhas-pagamento";
+import { getFolhasPagamentoRelatorio } from "./routes/financeiro/folha-pagamento/get-folhas-pagamento-relatorio";
+import { getRubricasFolha } from "./routes/financeiro/folha-pagamento/get-rubricas-folha";
 import { deleteFolhaPagamentoItem } from "./routes/financeiro/folha-pagamento/delete-folha-pagamento-item";
 import { closeFolhaPagamento } from "./routes/financeiro/folha-pagamento/close-folha-pagamento";
 import { reopenFolhaPagamento } from "./routes/financeiro/folha-pagamento/reopen-folha-pagamento";
 import { payFolhaPagamento } from "./routes/financeiro/folha-pagamento/pay-folha-pagamento";
+import { unpayFolhaPagamento } from "./routes/financeiro/folha-pagamento/unpay-folha-pagamento";
 import { getDashboardResumo } from "./routes/financeiro/dashboard/get-dashboard-resumo";
 import { getDashboardSeries } from "./routes/financeiro/dashboard/get-dashboard-series";
 import { getCargosFuncionario } from "./routes/financeiro/cargo-funcionario/get-cargos-funcionario";
@@ -255,12 +258,15 @@ app.register(getFuncionarios)
 app.register(updateFuncionario)
 app.register(createFolhaPagamento)
 app.register(getFolhasPagamento)
+app.register(getRubricasFolha)
+app.register(getFolhasPagamentoRelatorio)
 app.register(getFolhaPagamento)
 app.register(createFolhaPagamentoItem)
 app.register(deleteFolhaPagamentoItem)
 app.register(closeFolhaPagamento)
 app.register(reopenFolhaPagamento)
 app.register(payFolhaPagamento)
+app.register(unpayFolhaPagamento)
 app.register(getDashboardResumo)
 app.register(getDashboardSeries)
 app.register(getCargosFuncionario)

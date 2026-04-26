@@ -29,7 +29,7 @@ export const lancamentoCreateSchema = z.object({
     .transform(val => val ? parseFloat(val) : undefined)
     .refine(val => val === undefined || (!isNaN(val) && val >= 0), 'Valor pago inválido')
     .optional(),
-  forma_parcelamento: z.enum(['UNICA', 'FIXA', 'PROGRESSIVA']).default('UNICA'),
+  forma_parcelamento: z.enum(['UNICA', 'FIXA', 'PROGRESSIVA', 'RECORRENTE']).default('UNICA'),
   numero_parcelas: z.string()
     .transform(val => parseInt(val))
     .refine(val => !isNaN(val) && val >= 1, 'Número de parcelas deve ser um número maior que 0'),
@@ -57,6 +57,10 @@ export const lancamentoCreateSchema = z.object({
     .transform(val => val === '' ? undefined : val)
     .optional(),
   status_lancamento: z.enum(['PENDENTE', 'CONFIRMADO', 'PAGO', 'CANCELADO', 'ATRASADO']).default('PENDENTE'),
+  periodicidade: z
+    .enum(['DIARIA', 'SEMANAL', 'QUINZENAL', 'MENSAL', 'BIMESTRAL', 'TRIMESTRAL', 'SEMESTRAL', 'ANUAL'])
+    .optional()
+    .default('MENSAL'),
   // Controle interno e integração Asaas
   controle_interno: z.preprocess(
     (v) => (v === true || v === 'true' || v === '1' ? true : false),

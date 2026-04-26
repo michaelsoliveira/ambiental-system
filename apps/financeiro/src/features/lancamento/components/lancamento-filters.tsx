@@ -485,6 +485,7 @@ export function LancamentoFilters({
                     <SelectItem value="UNICA">Única</SelectItem>
                     <SelectItem value="FIXA">Fixa</SelectItem>
                     <SelectItem value="PROGRESSIVA">Progressiva</SelectItem>
+                    <SelectItem value="RECORRENTE">Recorrente</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

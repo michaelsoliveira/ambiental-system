@@ -16,7 +16,7 @@ export interface LancamentoFilters {
   centro_custo_id?: string
   veiculo_id?: string
   parceiro_id?: string
-  forma_parcelamento?: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'todos'
+  forma_parcelamento?: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'RECORRENTE' | 'todos'
   valor_min?: string
   valor_max?: string
   apenas_vencidos?: boolean
@@ -36,7 +36,7 @@ export interface CreateLancamentoData {
   descricao: string
   observacoes?: string
   valor: number
-  forma_parcelamento: 'UNICA' | 'FIXA' | 'PROGRESSIVA'
+  forma_parcelamento: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'RECORRENTE'
   numero_parcelas: number
   categoria_id: string
   conta_bancaria_id: string
@@ -90,6 +90,19 @@ export interface LancamentoWithRelations extends Lancamento {
 }
 
 export class LancamentoService {
+  private static addPeriod(date: Date, periodicidade: NonNullable<CreateLancamentoData['periodicidade']>, index: number) {
+    const next = new Date(date)
+    if (periodicidade === 'DIARIA') next.setDate(next.getDate() + index)
+    if (periodicidade === 'SEMANAL') next.setDate(next.getDate() + 7 * index)
+    if (periodicidade === 'QUINZENAL') next.setDate(next.getDate() + 15 * index)
+    if (periodicidade === 'MENSAL') next.setMonth(next.getMonth() + index)
+    if (periodicidade === 'BIMESTRAL') next.setMonth(next.getMonth() + 2 * index)
+    if (periodicidade === 'TRIMESTRAL') next.setMonth(next.getMonth() + 3 * index)
+    if (periodicidade === 'SEMESTRAL') next.setMonth(next.getMonth() + 6 * index)
+    if (periodicidade === 'ANUAL') next.setFullYear(next.getFullYear() + index)
+    return next
+  }
+
   /**
    * Constrói o filtro WHERE do Prisma baseado nos filtros fornecidos
    */
@@ -466,10 +479,10 @@ export class LancamentoService {
 
     const tipoRepeticao = data.tipo_repeticao || 'NENHUMA'
 
-    if (tipoRepeticao === 'PARCELADO') {
-      return this.createLancamentoParcelado(organizationId, data)
-    } else if (tipoRepeticao === 'RECORRENTE') {
+    if (data.forma_parcelamento === 'RECORRENTE' || tipoRepeticao === 'RECORRENTE') {
       return this.createLancamentoRecorrente(organizationId, data)
+    } else if (tipoRepeticao === 'PARCELADO') {
+      return this.createLancamentoParcelado(organizationId, data)
     } else {
       return this.createLancamentoUnico(organizationId, data)
     }
@@ -698,9 +711,12 @@ export class LancamentoService {
     organizationId: string,
     data: CreateLancamentoData
   ) {
-    if (!data.periodicidade) {
-      throw new BadRequestError('Periodicidade é obrigatória para lançamentos recorrentes.')
-    }
+    const periodicidade = data.periodicidade ?? 'MENSAL'
+    const numeroParcelas = data.numero_parcelas || 1
+    const dataInicio = data.data_vencimento ? new Date(data.data_vencimento) : new Date(data.data)
+    const dataFim = data.data_fim_repeticao
+      ? new Date(data.data_fim_repeticao)
+      : LancamentoService.addPeriod(dataInicio, periodicidade, numeroParcelas - 1)
 
     // Criar configuração de recorrência
     const lancamentoRecorrente = await prisma.lancamentoRecorrente.create({
@@ -708,10 +724,10 @@ export class LancamentoService {
         tipo: data.tipo,
         descricao: data.descricao,
         valor: new Decimal(data.valor),
-        periodicidade: data.periodicidade,
-        data_inicio: new Date(data.data_vencimento || data.data),
-        data_fim: data.data_fim_repeticao ? new Date(data.data_fim_repeticao) : null,
-        dia_vencimento: data.data_vencimento ? new Date(data.data_vencimento).getDate() : null,
+        periodicidade,
+        data_inicio: dataInicio,
+        data_fim: dataFim,
+        dia_vencimento: dataInicio.getDate(),
         organization_id: organizationId,
         categoria_id: data.categoria_id,
         conta_bancaria_id: data.conta_bancaria_id,
@@ -721,30 +737,46 @@ export class LancamentoService {
       },
     })
 
-    // Criar primeiro lançamento
-    const primeiroLancamento = await prisma.lancamento.create({
-      data: {
-        numero: data.numero,
-        tipo: data.tipo,
-        data: new Date(data.data.split('T')[0]!),
-        data_vencimento: data.data_vencimento ? new Date(data.data_vencimento) : null,
-        descricao: data.descricao,
-        observacoes: data.observacoes ?? null,
-        valor: new Decimal(data.valor),
-        status_lancamento: data.status_lancamento,
-        tipo_repeticao: 'RECORRENTE',
-        periodicidade: data.periodicidade,
-        lancamento_recorrente_id: lancamentoRecorrente.id,
-        organization_id: organizationId,
-        categoria_id: data.categoria_id,
-        conta_bancaria_id: data.conta_bancaria_id,
-        centro_custo_id: data.centro_custo_id ?? null,
-        parceiro_id: data.parceiro_id ?? null,
-        veiculo_id: data.veiculo_id ?? null,
-      },
-    })
+    let primeiroLancamento: Lancamento | null = null
+    for (let i = 1; i <= numeroParcelas; i++) {
+      const dataVencimentoParcela = LancamentoService.addPeriod(dataInicio, periodicidade, i - 1)
+      const lancamento = await prisma.lancamento.create({
+        data: {
+          numero: numeroParcelas === 1 ? data.numero : `${data.numero}-${i}/${numeroParcelas}`,
+          tipo: data.tipo,
+          data: new Date(data.data.split('T')[0]!),
+          data_vencimento: dataVencimentoParcela,
+          data_competencia: data.data_competencia || null,
+          descricao: numeroParcelas === 1 ? data.descricao : `${data.descricao} - Recorrência ${i}/${numeroParcelas}`,
+          observacoes: data.observacoes ?? null,
+          valor: new Decimal(data.valor),
+          valor_pago: i === 1 && data.valor_pago ? new Decimal(data.valor_pago) : null,
+          pago: i === 1 ? data.pago : false,
+          data_pagamento: i === 1 && data.data_pagamento ? new Date(data.data_pagamento) : null,
+          forma_parcelamento: 'RECORRENTE',
+          numero_parcelas: numeroParcelas,
+          status_lancamento: i === 1 ? data.status_lancamento : 'PENDENTE',
+          tipo_repeticao: 'RECORRENTE',
+          periodicidade,
+          data_fim_repeticao: dataFim,
+          parcela_atual: i,
+          lancamento_recorrente_id: lancamentoRecorrente.id,
+          organization_id: organizationId,
+          categoria_id: data.categoria_id,
+          conta_bancaria_id: data.conta_bancaria_id,
+          centro_custo_id: data.centro_custo_id ?? null,
+          parceiro_id: data.parceiro_id ?? null,
+          veiculo_id: data.veiculo_id ?? null,
+          controle_interno: data.controle_interno ?? false,
+          gerar_boleto: data.gerar_boleto ?? false,
+          permitir_pix: data.permitir_pix ?? false,
+        },
+      })
 
-    return primeiroLancamento
+      if (!primeiroLancamento) primeiroLancamento = lancamento
+    }
+
+    return primeiroLancamento!
   }
 
   /**

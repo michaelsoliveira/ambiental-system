@@ -118,6 +118,7 @@ model Organization {
   cargosFuncionario     CargoFuncionario[]
   folhasPagamento       FolhaPagamento[]
   folhaPagamentoItens   FolhaPagamentoItem[]
+  rubricasFolha         RubricaFolha[]
   pessoas               Pessoa[]
   veiculos              Veiculo[]
   disponibilidadesVeiculo VeiculoDisponibilidade[]
@@ -656,6 +657,7 @@ model FolhaPagamento {
   updated_at          DateTime            @updatedAt @db.Timestamp(6)
 
   competencia         String              @db.VarChar(7) // MM/YYYY
+  tipo                TipoFolhaPagamento  @default(FOLHA_MENSAL)
   referencia_mes      Int
   referencia_ano      Int
   status              StatusFolhaPagamento @default(ABERTA)
@@ -671,10 +673,35 @@ model FolhaPagamento {
   organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   itens               FolhaPagamentoItem[]
 
-  @@unique([organization_id, competencia])
+  @@unique([organization_id, competencia, tipo])
   @@index([organization_id, referencia_ano, referencia_mes])
+  @@index([tipo])
   @@index([status])
   @@map("folhas_pagamento")
+  @@schema("financeiro")
+}
+
+model RubricaFolha {
+  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id     String              @db.Uuid
+  created_at          DateTime            @default(now()) @db.Timestamp(6)
+  updated_at          DateTime            @updatedAt @db.Timestamp(6)
+
+  codigo              String?             @db.VarChar(30)
+  nome                String              @db.VarChar(255)
+  tipo_folha          TipoFolhaPagamento
+  tipo_item           TipoFolhaItem        @default(OUTRO)
+  natureza            NaturezaFolhaItem
+  ativo               Boolean             @default(true)
+  ordem               Int                 @default(0)
+
+  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  itens               FolhaPagamentoItem[]
+
+  @@unique([organization_id, tipo_folha, nome])
+  @@index([organization_id, tipo_folha, ativo])
+  @@index([natureza])
+  @@map("rubricas_folha")
   @@schema("financeiro")
 }
 
@@ -683,6 +710,7 @@ model FolhaPagamentoItem {
   organization_id     String              @db.Uuid
   folha_pagamento_id  String              @db.Uuid
   funcionario_id      String              @db.Uuid
+  rubrica_id          String?             @db.Uuid
   created_at          DateTime            @default(now()) @db.Timestamp(6)
   updated_at          DateTime            @updatedAt @db.Timestamp(6)
 
@@ -696,10 +724,12 @@ model FolhaPagamentoItem {
   organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   folha_pagamento     FolhaPagamento      @relation(fields: [folha_pagamento_id], references: [id], onDelete: Cascade)
   funcionario         Funcionario         @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+  rubrica             RubricaFolha?       @relation(fields: [rubrica_id], references: [id], onDelete: SetNull)
 
   @@index([organization_id])
   @@index([folha_pagamento_id])
   @@index([funcionario_id])
+  @@index([rubrica_id])
   @@index([natureza])
   @@map("folhas_pagamento_itens")
   @@schema("financeiro")
@@ -1561,6 +1591,7 @@ enum FormaParcelamento {
   UNICA
   FIXA
   PROGRESSIVA
+  RECORRENTE
   @@schema("financeiro")
 }
 
@@ -1614,6 +1645,14 @@ enum StatusFolhaPagamento {
   FECHADA
   PAGA
   CANCELADA
+  @@schema("financeiro")
+}
+
+enum TipoFolhaPagamento {
+  FOLHA_MENSAL
+  FERIAS
+  DECIMO_TERCEIRO
+  RESCISAO
   @@schema("financeiro")
 }
 

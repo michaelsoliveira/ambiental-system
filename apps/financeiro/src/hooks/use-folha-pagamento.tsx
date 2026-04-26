@@ -23,6 +23,28 @@ export function useFolhaPagamento(org: string, id?: string) {
   })
 }
 
+export function useRubricasFolha(org: string, params: Record<string, any> = {}) {
+  return useQuery({
+    queryKey: ['rubricas-folha', org, params],
+    enabled: !!org,
+    queryFn: async () =>
+      api
+        .get(`organizations/${org}/financeiro/folhas-pagamento/rubricas`, { searchParams: params })
+        .json<any>(),
+  })
+}
+
+export function useFolhaPagamentoRelatorio(org: string, params: Record<string, any> | null) {
+  return useQuery({
+    queryKey: ['folhas-pagamento-relatorio', org, params],
+    enabled: !!org && !!params,
+    queryFn: async () =>
+      api
+        .get(`organizations/${org}/financeiro/folhas-pagamento/relatorio`, { searchParams: params ?? {} })
+        .json<any>(),
+  })
+}
+
 export function useCreateFolhaPagamento(org: string) {
   return useMutation({
     mutationFn: async (data: any) =>
@@ -49,7 +71,7 @@ export function useCreateFolhaItem(org: string) {
 }
 
 export function useFolhaActions(org: string) {
-  const call = (action: 'close' | 'reopen' | 'pay', successText: string) =>
+  const call = (action: 'close' | 'reopen' | 'pay' | 'unpay', successText: string) =>
     useMutation({
       mutationFn: async (folhaId: string) =>
         api
@@ -66,5 +88,6 @@ export function useFolhaActions(org: string) {
     closeFolha: call('close', 'Folha fechada com sucesso.'),
     reopenFolha: call('reopen', 'Folha reaberta com sucesso.'),
     payFolha: call('pay', 'Folha marcada como paga.'),
+    unpayFolha: call('unpay', 'Pagamento estornado. A folha voltou para fechada.'),
   }
 }

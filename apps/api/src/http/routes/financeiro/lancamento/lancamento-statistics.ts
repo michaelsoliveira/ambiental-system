@@ -32,7 +32,7 @@ export async function getLancamentoStatistics(app: FastifyInstance) {
             centro_custo_id: z.string().uuid().optional(),
             veiculo_id: z.string().uuid().optional(),
             parceiro_id: z.string().uuid().optional(),
-            forma_parcelamento: z.enum(['UNICA', 'FIXA', 'PROGRESSIVA', 'todos']).optional(),
+            forma_parcelamento: z.enum(['UNICA', 'FIXA', 'PROGRESSIVA', 'RECORRENTE', 'todos']).optional(),
             valor_min: z.string().optional(),
             valor_max: z.string().optional(),
             apenas_vencidos: z.string().transform(v => v === 'true').optional(),

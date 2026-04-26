@@ -14,7 +14,7 @@ export const lancamentoSchema = z.object({
   conta_bancaria_id: z.string().min(1, 'Conta bancária é obrigatória'),
   centro_custo_id: z.string().optional(),
   parceiro_id: z.string().optional(),
-  forma_parcelamento: z.enum(['UNICA', 'FIXA', 'PROGRESSIVA']).default('UNICA'),
+  forma_parcelamento: z.enum(['UNICA', 'FIXA', 'PROGRESSIVA', 'RECORRENTE']).default('UNICA'),
   numero_parcelas: z.string()
     .default('1')
     .refine(val => !isNaN(parseInt(val)) && parseInt(val) > 0, 'Número de parcelas deve ser maior que 0'),

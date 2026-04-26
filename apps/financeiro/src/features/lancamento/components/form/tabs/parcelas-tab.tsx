@@ -31,6 +31,7 @@ export function ParcelasTab() {
   const formaParcelamento = form.watch('forma_parcelamento')
   const valor = form.watch('valor')
   const numeroParcelas = form.watch('numero_parcelas')
+  const isRecorrente = formaParcelamento === 'RECORRENTE'
 
   const statusOptions = [
     { label: 'Pendente', value: 'PENDENTE' },
@@ -59,7 +60,7 @@ export function ParcelasTab() {
 
   const totalParcelas = calcularTotalParcelas()
   const valorOriginal = parseFloat(valor || '0')
-  const diferenca = valorOriginal - totalParcelas
+  const diferenca = isRecorrente ? 0 : valorOriginal - totalParcelas
 
   if (formaParcelamento === 'UNICA' || !fields || fields.length === 0) {
     return (
@@ -85,14 +86,14 @@ export function ParcelasTab() {
       {/* Resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-muted-foreground">Valor Total</p>
+          <p className="text-sm text-muted-foreground">{isRecorrente ? 'Valor por Recorrência' : 'Valor Total'}</p>
           <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
             {formatCurrency(valorOriginal)}
           </p>
         </div>
         
         <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
-          <p className="text-sm text-muted-foreground">Total Parcelas</p>
+          <p className="text-sm text-muted-foreground">{isRecorrente ? 'Total Recorrente' : 'Total Parcelas'}</p>
           <p className="text-2xl font-bold text-green-600 dark:text-green-400">
             {formatCurrency(totalParcelas)}
           </p>

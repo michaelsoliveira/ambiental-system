@@ -1,7 +1,7 @@
 'use client'
 
 import { ColumnDef } from '@tanstack/react-table'
-import { FilterIcon, PlusIcon, Trash2Icon } from 'lucide-react'
+import { FilePlus2Icon, FilterIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
 import { useParams } from 'next/navigation'
 import { useMemo, useState } from 'react'
 
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
@@ -22,8 +23,39 @@ import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCargosFuncionario, useCreateCargoFuncionario } from '@/hooks/use-cargos-funcionario'
 import { useEmpresas } from '@/hooks/use-empresas'
-import { useCreateFuncionario, useDeleteFuncionario, useFuncionarios } from '@/hooks/use-funcionarios'
+import { useCreateFolhaItem, useFolhasPagamento, useRubricasFolha } from '@/hooks/use-folha-pagamento'
+import { useCreateFuncionario, useDeleteFuncionario, useFuncionarios, useUpdateFuncionario } from '@/hooks/use-funcionarios'
 import { usePessoas } from '@/hooks/use-pessoas'
+
+const defaultFuncionarioForm = () => ({
+  pessoa_id: '',
+  empresa_id: '',
+  matricula: '',
+  cargo_id: '',
+  departamento: '',
+  tipo_contrato: 'CLT',
+  ativo: true,
+})
+
+const defaultFolhaItemForm = () => ({
+  folhaId: '',
+  rubrica_id: '',
+  descricao: '',
+  valor: 0,
+})
+
+const tiposFolhaLabels: Record<string, string> = {
+  FOLHA_MENSAL: 'Folha de pagamento',
+  FERIAS: 'Férias',
+  DECIMO_TERCEIRO: '13º Salário',
+  RESCISAO: 'Rescisão',
+}
+
+const naturezaLabels: Record<string, string> = {
+  PROVENTO: 'Provento',
+  DESCONTO: 'Desconto',
+  ENCARGO: 'Encargo',
+}
 
 export function FuncionarioPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -36,15 +68,13 @@ export function FuncionarioPage() {
   const [searchPessoaForm, setSearchPessoaForm] = useState('')
   const [searchEmpresaForm, setSearchEmpresaForm] = useState('')
   const [searchCargoForm, setSearchCargoForm] = useState('')
-  const [form, setForm] = useState<any>({
-    pessoa_id: '',
-    empresa_id: '',
-    matricula: '',
-    cargo_id: '',
-    departamento: '',
-  })
+  const [editingFuncionario, setEditingFuncionario] = useState<any | null>(null)
+  const [folhaFuncionario, setFolhaFuncionario] = useState<any | null>(null)
+  const [form, setForm] = useState<any>(defaultFuncionarioForm())
+  const [folhaItemForm, setFolhaItemForm] = useState<any>(defaultFolhaItemForm())
   const [cargoNome, setCargoNome] = useState('')
   const [cargoSalario, setCargoSalario] = useState(0)
+  const [showNewCargoForm, setShowNewCargoForm] = useState(false)
 
   const { data } = useFuncionarios(slug, {
     search,
@@ -54,15 +84,25 @@ export function FuncionarioPage() {
     tipo_contrato: contratoFilter || undefined,
   })
   const createFuncionario = useCreateFuncionario(slug)
+  const updateFuncionario = useUpdateFuncionario(slug)
   const deleteFuncionario = useDeleteFuncionario(slug)
+  const createFolhaItem = useCreateFolhaItem(slug)
   const createCargo = useCreateCargoFuncionario(slug)
   const { data: cargosData } = useCargosFuncionario(slug, { search: searchCargoForm, limit: 50 })
   const { data: empresasData } = useEmpresas(slug, { search: searchEmpresaForm, limit: 50 })
   const { data: pessoasData }: any = usePessoas(slug, { search: searchPessoaForm, limit: 50 })
+  const { data: folhasAbertasData } = useFolhasPagamento(slug, { status: 'ABERTA', limit: 1000 })
+  const folhaSelecionada = folhasAbertasData?.folhas?.find((folha: any) => folha.id === folhaItemForm.folhaId)
+  const { data: rubricasData, isLoading: isLoadingRubricas } = useRubricasFolha(
+    slug,
+    folhaSelecionada?.tipo ? { tipo_folha: folhaSelecionada.tipo } : {},
+  )
   const funcionarios = data?.funcionarios ?? []
   const cargos = cargosData?.cargos ?? []
   const empresas = empresasData?.empresas ?? []
   const pessoas = pessoasData?.data ?? pessoasData?.pessoas ?? []
+  const folhasAbertas = folhasAbertasData?.folhas ?? []
+  const rubricas = rubricasData?.rubricas ?? []
   const pagination = data?.pagination ?? { count: 0 }
 
   const pessoaOptions = useMemo(
@@ -96,6 +136,46 @@ export function FuncionarioPage() {
       })),
     [cargos],
   )
+  const selectedRubrica = rubricas.find((rubrica: any) => rubrica.id === folhaItemForm.rubrica_id)
+
+  function funcionarioNome(funcionario: any) {
+    return (
+      funcionario?.pessoa?.fisica?.nome ??
+      funcionario?.pessoa?.juridica?.nome_fantasia ??
+      funcionario?.matricula ??
+      'Funcionário'
+    )
+  }
+
+  function resetFuncionarioForm() {
+    setForm(defaultFuncionarioForm())
+    setEditingFuncionario(null)
+    setCargoNome('')
+    setCargoSalario(0)
+    setShowNewCargoForm(false)
+    setSearchPessoaForm('')
+    setSearchEmpresaForm('')
+    setSearchCargoForm('')
+  }
+
+  function openEditModal(funcionario: any) {
+    setEditingFuncionario(funcionario)
+    setForm({
+      pessoa_id: funcionario.pessoa_id ?? '',
+      empresa_id: funcionario.empresa_id ?? '',
+      matricula: funcionario.matricula ?? '',
+      cargo_id: funcionario.cargo_id ?? '',
+      departamento: funcionario.departamento ?? '',
+      tipo_contrato: funcionario.tipo_contrato ?? 'CLT',
+      ativo: Boolean(funcionario.ativo),
+    })
+    setOpen(true)
+  }
+
+  function openFolhaItemModal(funcionario: any) {
+    setFolhaFuncionario(funcionario)
+    setFolhaItemForm(defaultFolhaItemForm())
+  }
 
   const columns = useMemo<ColumnDef<any>[]>(
     () => [
@@ -145,26 +225,66 @@ export function FuncionarioPage() {
         id: 'actions',
         header: '',
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => deleteFuncionario.mutate(row.original.id)}
-          >
-            <Trash2Icon className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreHorizontalIcon className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => openEditModal(row.original)}>
+                <PencilIcon className="mr-2 h-4 w-4" />
+                Editar
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openFolhaItemModal(row.original)}>
+                <FilePlus2Icon className="mr-2 h-4 w-4" />
+                Lançar na folha
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => deleteFuncionario.mutate(row.original.id)}
+                className="text-destructive"
+              >
+                <Trash2Icon className="mr-2 h-4 w-4" />
+                Excluir
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ),
       },
     ],
-    [deleteFuncionario],
+    [deleteFuncionario, openEditModal, openFolhaItemModal],
   )
 
   async function handleCreate() {
-    await createFuncionario.mutateAsync({
+    const payload = {
       ...form,
-      ativo: true,
       tipo_contrato: form.tipo_contrato ?? 'CLT',
-    })
+      cargo_id: form.cargo_id || undefined,
+      matricula: form.matricula || undefined,
+      departamento: form.departamento || undefined,
+    }
+
+    if (editingFuncionario) {
+      await updateFuncionario.mutateAsync({ id: editingFuncionario.id, ...payload })
+    } else {
+      await createFuncionario.mutateAsync(payload)
+    }
+    resetFuncionarioForm()
     setOpen(false)
+  }
+
+  async function handleCreateFolhaItem() {
+    if (!folhaFuncionario) return
+
+    await createFolhaItem.mutateAsync({
+      folhaId: folhaItemForm.folhaId,
+      funcionario_id: folhaFuncionario.id,
+      rubrica_id: folhaItemForm.rubrica_id,
+      descricao: folhaItemForm.descricao,
+      valor: folhaItemForm.valor,
+    })
+    setFolhaFuncionario(null)
+    setFolhaItemForm(defaultFolhaItemForm())
   }
 
   async function handleCreateCargo() {
@@ -174,6 +294,9 @@ export function FuncionarioPage() {
       ativo: true,
     })
     setForm((prev: any) => ({ ...prev, cargo_id: result.id }))
+    setCargoNome('')
+    setCargoSalario(0)
+    setShowNewCargoForm(false)
   }
 
   return (
@@ -183,16 +306,28 @@ export function FuncionarioPage() {
           title="Funcionários"
           description="Cadastro e gestão dos funcionários utilizados na folha."
         />
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog
+          open={open}
+          onOpenChange={(nextOpen) => {
+            setOpen(nextOpen)
+            if (!nextOpen) resetFuncionarioForm()
+          }}
+        >
           <DialogTrigger asChild>
-            <Button className="rounded-full p-4 shadow-xl">
+            <Button
+              className="rounded-full p-4 shadow-xl"
+              onClick={() => {
+                resetFuncionarioForm()
+                setOpen(true)
+              }}
+            >
               <PlusIcon className="mr-2 h-5 w-5" />
               Adicionar
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Novo funcionário</DialogTitle>
+              <DialogTitle>{editingFuncionario ? 'Editar funcionário' : 'Novo funcionário'}</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1">
@@ -217,21 +352,72 @@ export function FuncionarioPage() {
               </div>
               <div className="space-y-1">
                 <Label>Matrícula</Label>
-                <Input onChange={(e) => setForm({ ...form, matricula: e.target.value })} />
+                <Input value={form.matricula ?? ''} onChange={(e) => setForm({ ...form, matricula: e.target.value })} />
               </div>
               <div className="space-y-1">
                 <Label>Cargo</Label>
-                <SelectSearchable
-                  options={cargoOptions}
-                  value={form.cargo_id}
-                  onValueChange={(value) => setForm({ ...form, cargo_id: value })}
-                  onSearchChange={setSearchCargoForm}
-                  placeholder="Selecione um cargo"
-                />
+                <div className="flex gap-2">
+                  <div className="min-w-0 flex-1">
+                    <SelectSearchable
+                      options={cargoOptions}
+                      value={form.cargo_id}
+                      onValueChange={(value) => setForm({ ...form, cargo_id: value })}
+                      onSearchChange={setSearchCargoForm}
+                      placeholder="Selecione um cargo"
+                    />
+                  </div>
+                  <Button type="button" variant="outline" onClick={() => setShowNewCargoForm(true)}>
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    Novo cargo
+                  </Button>
+                </div>
               </div>
+              {showNewCargoForm ? (
+                <div className="rounded-md border bg-muted/30 p-3">
+                  <div className="grid gap-3 md:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label>Novo cargo (nome)</Label>
+                      <Input value={cargoNome} onChange={(e) => setCargoNome(e.target.value)} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label>Novo cargo (salário base)</Label>
+                      <Input
+                        type="number"
+                        value={cargoSalario === 0 ? '' : cargoSalario}
+                        onChange={(e) => setCargoSalario(e.target.value === '' ? 0 : Number(e.target.value))}
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-3 flex flex-row items-center justify-between gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleCreateCargo}
+                      disabled={createCargo.isPending || !cargoNome || !cargoSalario}
+                    >
+                      <PlusIcon className="mr-2 h-4 w-4" />
+                      Criar cargo e vincular
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        setCargoNome('')
+                        setCargoSalario(0)
+                        setShowNewCargoForm(false)
+                      }}
+                    >
+                      <Trash2Icon className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
               <div className="space-y-1">
                 <Label>Departamento</Label>
-                <Input onChange={(e) => setForm({ ...form, departamento: e.target.value })} />
+                <Input
+                  value={form.departamento ?? ''}
+                  onChange={(e) => setForm({ ...form, departamento: e.target.value })}
+                />
               </div>
               <div className="space-y-1">
                 <Label>Tipo de contrato</Label>
@@ -252,23 +438,147 @@ export function FuncionarioPage() {
                 </Select>
               </div>
               <div className="space-y-1">
-                <Label>Novo cargo (nome)</Label>
-                <Input value={cargoNome} onChange={(e) => setCargoNome(e.target.value)} />
+                <Label>Status</Label>
+                <Select
+                  value={String(Boolean(form.ativo))}
+                  onValueChange={(value) => setForm({ ...form, ativo: value === 'true' })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="true">Ativo</SelectItem>
+                    <SelectItem value="false">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="space-y-1">
-                <Label>Novo cargo (salário base)</Label>
-                <Input type="number" value={cargoSalario} onChange={(e) => setCargoSalario(Number(e.target.value))} />
-                <Button type="button" variant="outline" className="mt-2" onClick={handleCreateCargo}>
-                  Criar cargo e vincular
-                </Button>
-              </div>
-              <Button className="w-full" onClick={handleCreate}>
-                Salvar
+              <Button className="w-full" onClick={handleCreate} disabled={createFuncionario.isPending || updateFuncionario.isPending}>
+                {editingFuncionario ? 'Atualizar' : 'Salvar'}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
+
+      <Dialog
+        open={!!folhaFuncionario}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) {
+            setFolhaFuncionario(null)
+            setFolhaItemForm(defaultFolhaItemForm())
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Lançar item na folha</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border bg-muted/40 p-3 text-sm">
+              <p className="text-xs text-muted-foreground">Funcionário</p>
+              <p className="font-medium">{folhaFuncionario ? funcionarioNome(folhaFuncionario) : '-'}</p>
+            </div>
+            <div className="space-y-1">
+              <Label>Folha aberta</Label>
+              <Select
+                value={folhaItemForm.folhaId}
+                onValueChange={(value) =>
+                  setFolhaItemForm({
+                    ...folhaItemForm,
+                    folhaId: value,
+                    rubrica_id: '',
+                    descricao: '',
+                  })
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma folha aberta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {folhasAbertas.map((folha: any) => (
+                    <SelectItem key={folha.id} value={folha.id}>
+                      {folha.competencia} · {tiposFolhaLabels[folha.tipo] ?? folha.tipo}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label>Rubrica</Label>
+              <Select
+                value={folhaItemForm.rubrica_id}
+                onValueChange={(value) => {
+                  const rubrica = rubricas.find((item: any) => item.id === value)
+                  setFolhaItemForm({
+                    ...folhaItemForm,
+                    rubrica_id: value,
+                    descricao: folhaItemForm.descricao || rubrica?.nome || '',
+                  })
+                }}
+                disabled={!folhaSelecionada || isLoadingRubricas}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={!folhaSelecionada ? 'Selecione uma folha primeiro' : 'Selecione a rubrica'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {rubricas.map((rubrica: any) => (
+                    <SelectItem key={rubrica.id} value={rubrica.id}>
+                      {rubrica.nome} · {naturezaLabels[rubrica.natureza] ?? rubrica.natureza}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="space-y-1">
+                <Label>Natureza</Label>
+                <Input
+                  value={selectedRubrica ? naturezaLabels[selectedRubrica.natureza] ?? selectedRubrica.natureza : ''}
+                  disabled
+                />
+              </div>
+              <div className="space-y-1">
+                <Label>Valor</Label>
+                <Input
+                  type="number"
+                  value={folhaItemForm.valor === 0 ? '' : folhaItemForm.valor}
+                  onChange={(e) =>
+                    setFolhaItemForm({
+                      ...folhaItemForm,
+                      valor: e.target.value === '' ? 0 : Number(e.target.value),
+                    })
+                  }
+                />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label>Descrição</Label>
+              <Input
+                value={folhaItemForm.descricao}
+                onChange={(e) => setFolhaItemForm({ ...folhaItemForm, descricao: e.target.value })}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={() => setFolhaFuncionario(null)}>
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={handleCreateFolhaItem}
+                disabled={
+                  createFolhaItem.isPending ||
+                  !folhaFuncionario ||
+                  !folhaItemForm.folhaId ||
+                  !folhaItemForm.rubrica_id ||
+                  !folhaItemForm.valor
+                }
+              >
+                Lançar item
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Separator />
 

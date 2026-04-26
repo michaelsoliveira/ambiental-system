@@ -35,6 +35,7 @@ export function DadosLancamentoTab({
   const formaParcelamento = watch('forma_parcelamento')
   const numeroParcelas = watch('numero_parcelas')
   const valor = watch('valor')
+  const dataVencimento = watch('data_vencimento')
 
   const tiposOptions = [
     { label: 'Receita', value: 'RECEITA' },
@@ -45,7 +46,8 @@ export function DadosLancamentoTab({
   const formaParcelamentoOptions = [
     { label: 'Única', value: 'UNICA' },
     { label: 'Fixa', value: 'FIXA' },
-    { label: 'Progressiva', value: 'PROGRESSIVA' }
+    { label: 'Progressiva', value: 'PROGRESSIVA' },
+    { label: 'Recorrente', value: 'RECORRENTE' }
   ]
 
   const statusOptions = [
@@ -96,15 +98,16 @@ export function DadosLancamentoTab({
       
       if (numParcelas > 0 && valorNumerico > 0) {
         const parcelas: any = []
-        const valorPorParcela = valorNumerico / numParcelas
+        const valorPorParcela = formaParcelamento === 'RECORRENTE' ? valorNumerico : valorNumerico / numParcelas
+        const dataBase = dataVencimento ? new Date(`${dataVencimento}T00:00:00`) : new Date()
 
         for (let i = 1; i <= numParcelas; i++) {
-          const dataVencimento = new Date()
-          dataVencimento.setDate(dataVencimento.getDate() + (30 * i))
+          const dataVencimentoParcela = new Date(dataBase)
+          dataVencimentoParcela.setMonth(dataVencimentoParcela.getMonth() + (i - 1))
           
           parcelas.push({
             numero_parcela: i,
-            data_vencimento: dataVencimento.toISOString().split('T')[0],
+            data_vencimento: dataVencimentoParcela.toISOString().split('T')[0],
             valor: valorPorParcela.toFixed(2),
             pago: false,
             status_parcela: 'PENDENTE'
@@ -114,7 +117,7 @@ export function DadosLancamentoTab({
         setValue('parcelas', parcelas)
       }
     }
-  }, [formaParcelamento, numeroParcelas, valor, setValue])
+  }, [formaParcelamento, numeroParcelas, valor, dataVencimento, setValue])
 
   return (
     <div className="space-y-6">
@@ -444,6 +447,12 @@ export function DadosLancamentoTab({
                 </FormItem>
               )}
             />
+          )}
+          {formaParcelamento === 'RECORRENTE' && (
+            <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 md:col-span-2">
+              Recorrente gera automaticamente a quantidade informada de lançamentos mensais com o mesmo valor.
+              Use para parcelas fixas de financeiro, consórcio, mensalidades e cobranças recorrentes.
+            </div>
           )}
         </div>
       </div>
