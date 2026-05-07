@@ -62,6 +62,10 @@ const baseNavItems: Array<NavItem> = [
         url: '/lancamentos/relatorio-extrato',
       },
       {
+        title: 'Patrimônio',
+        url: '/patrimonio',
+      },
+      {
         title: 'Frota',
         url: '/frota',
       },

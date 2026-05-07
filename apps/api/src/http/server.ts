@@ -124,6 +124,8 @@ import { getEmpresa } from "./routes/financeiro/empresa/get-empresa";
 import { createEmpresa } from "./routes/financeiro/empresa/create-empresa";
 import { updateEmpresa } from "./routes/financeiro/empresa/update-empresa";
 import { deleteEmpresa } from "./routes/financeiro/empresa/delete-empresa";
+import { patrimonioRoutes } from "./routes/financeiro/patrimonio/patrimonio-routes";
+import { PatrimonioService } from "@/services/patrimonio.service";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -139,6 +141,7 @@ app.decorate('folhaPagamentoService', new FolhaPagamentoService());
 app.decorate('dashboardFinanceiroService', new DashboardFinanceiroService());
 app.decorate('cargoFuncionarioService', new CargoFuncionarioService());
 app.decorate('empresaService', new EmpresaService());
+app.decorate('patrimonioService', new PatrimonioService());
 // app.decorate('estadoService', new EstadoService());
 
 app.register(multipart, {
@@ -293,6 +296,8 @@ app.register(deleteCategoriaFinanceira)
 app.register(getCategoriaFinanceira)
 app.register(getCategorias)
 app.register(updateCategoriaFinanceira)
+
+app.register(patrimonioRoutes)
 
 app.register(getMembers)
 app.register(updateMember)

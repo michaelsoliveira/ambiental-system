@@ -11,6 +11,7 @@ import { FolhaPagamentoService } from '@/services/folha-pagamento.service';
 import { DashboardFinanceiroService } from '@/services/dashboard-financeiro.service';
 import { CargoFuncionarioService } from '@/services/cargo-funcionario.service';
 import { EmpresaService } from '@/services/empresa.service';
+import { PatrimonioService } from '@/services/patrimonio.service';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -27,6 +28,7 @@ declare module 'fastify' {
     dashboardFinanceiroService: DashboardFinanceiroService;
     cargoFuncionarioService: CargoFuncionarioService;
     empresaService: EmpresaService;
+    patrimonioService: PatrimonioService;
     // estadoService: EstadoService;
   }
   export interface FastifyRequest {

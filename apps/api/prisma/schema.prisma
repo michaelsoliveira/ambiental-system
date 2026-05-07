@@ -11,31 +11,32 @@ datasource db {
 }
 
 model User {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  username            String              @db.VarChar
-  email               String              @unique @db.VarChar
-  password            String?             @db.VarChar
-  provider            String?             @db.VarChar
-  avatarUrl           String?             @db.VarChar
-  email_verified      DateTime?
-  provider_id         String?             @db.VarChar
-  
-  accounts            Account[]
-  refresh_token       RefreshToken[]
-  pessoas_created            Pessoa[]      @relation("created_by")
-  pessoas_owner             Pessoa[]      @relation("owner")
-  sessions            Session[]
-  member_on           Member[]
-  organizations_owned Organization[]      @relation("organizations_owned")
-  invites_sent        Invite[]            @relation("invites_sent")
-  verification_tokens VerificationToken[]
-  licencas            LicencaCondicionante[]
-  notificacoes        NotificacaoCondicionante[]
+  id             String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at     DateTime  @default(now()) @db.Timestamp(6)
+  updated_at     DateTime  @updatedAt @db.Timestamp(6)
+  username       String    @db.VarChar
+  email          String    @unique @db.VarChar
+  password       String?   @db.VarChar
+  provider       String?   @db.VarChar
+  avatarUrl      String?   @db.VarChar
+  email_verified DateTime?
+  provider_id    String?   @db.VarChar
+
+  accounts               Account[]
+  refresh_token          RefreshToken[]
+  pessoas_created        Pessoa[]                   @relation("created_by")
+  pessoas_owner          Pessoa[]                   @relation("owner")
+  sessions               Session[]
+  member_on              Member[]
+  organizations_owned    Organization[]             @relation("organizations_owned")
+  invites_sent           Invite[]                   @relation("invites_sent")
+  verification_tokens    VerificationToken[]
+  licencas               LicencaCondicionante[]
+  notificacoes           NotificacaoCondicionante[]
   auditorias_notificacao AuditoriaNotificacao[]
-  auditorias_licenca      AuditoriaLicenca[]
-  fiscalizacoes           Fiscalizacao[]
+  auditorias_licenca     AuditoriaLicenca[]
+  fiscalizacoes          Fiscalizacao[]
+
   @@map("users")
   @@schema("common")
 }
@@ -46,85 +47,92 @@ enum UserRole {
   OWNER
   GUEST
   BILLING
+
   @@schema("common")
 }
 
 model Invite {
-  id              String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at      DateTime     @default(now()) @db.Timestamp(6)
-  updated_at      DateTime     @updatedAt @db.Timestamp(6)
-  role            UserRole     @default(MEMBER)
-  email           String       @db.VarChar
-  token           String       @unique @db.VarChar
-  expires_at      DateTime     @db.Timestamp(6)
-  used            Boolean      @default(false)
-  user_id         String?      @db.Uuid
-  organization_id String       @db.Uuid
-  
-  author          User?        @relation("invites_sent", fields: [user_id], references: [id], onDelete: Cascade)
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+  role            UserRole @default(MEMBER)
+  email           String   @db.VarChar
+  token           String   @unique @db.VarChar
+  expires_at      DateTime @db.Timestamp(6)
+  used            Boolean  @default(false)
+  user_id         String?  @db.Uuid
+  organization_id String   @db.Uuid
+
+  author       User?        @relation("invites_sent", fields: [user_id], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 
   @@map("invites")
   @@schema("common")
 }
 
 model Member {
-  id              String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at      DateTime            @default(now()) @db.Timestamp(6)
-  updated_at      DateTime            @updatedAt @db.Timestamp(6)
-  user_id         String              @db.Uuid
-  organization_id String              @db.Uuid
-  
-  user            User                @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  organization    Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+  user_id         String   @db.Uuid
+  organization_id String   @db.Uuid
+
+  user                User               @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  organization        Organization       @relation(fields: [organization_id], references: [id], onDelete: Cascade)
   members_permissions MemberPermission[]
-  members_roles   MemberRole[]
-  
+  members_roles       MemberRole[]
+
   @@unique([user_id, organization_id])
   @@map("members")
   @@schema("common")
 }
 
 model Organization {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  name                String              @db.VarChar
-  slug                String              @unique @db.VarChar
-  domain              String?             @unique @db.VarChar
-  shouldAttachDomain  Boolean             @default(false)
-  avatarUrl           String?             @db.VarChar
-  owner_id            String              @db.Uuid
-  
-  owner               User                @relation("organizations_owned", fields: [owner_id], references: [id], onDelete: Cascade)
-  members             Member[]
-  invites             Invite[]  
-  
+  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamp(6)
+  updated_at         DateTime @updatedAt @db.Timestamp(6)
+  name               String   @db.VarChar
+  slug               String   @unique @db.VarChar
+  domain             String?  @unique @db.VarChar
+  shouldAttachDomain Boolean  @default(false)
+  avatarUrl          String?  @db.VarChar
+  owner_id           String   @db.Uuid
+
+  owner   User     @relation("organizations_owned", fields: [owner_id], references: [id], onDelete: Cascade)
+  members Member[]
+  invites Invite[]
+
   // Dados financeiros multi-organization
-  parceiros             Parceiro[]
-  contasBancarias       ContaBancaria[]
-  centrosCusto          CentroCusto[]
-  categoriasFinanceiras CategoriaFinanceira[]
-  lancamentos           Lancamento[]
-  lancamentosRecorrentes LancamentoRecorrente[]
-  parcelas              Parcela[]
-  documentos            DocumentoFinanceiro[]
-  extratos              Extrato[]
-  planoConta            PlanoConta[]
-  configuracoes         ConfiguracaoFinanceira[]
-  relatorios            Relatorio[]
-  empresas              Empresa[]
-  funcionarios          Funcionario[]
-  cargosFuncionario     CargoFuncionario[]
-  folhasPagamento       FolhaPagamento[]
-  folhaPagamentoItens   FolhaPagamentoItem[]
-  rubricasFolha         RubricaFolha[]
-  pessoas               Pessoa[]
-  veiculos              Veiculo[]
+  parceiros               Parceiro[]
+  contasBancarias         ContaBancaria[]
+  centrosCusto            CentroCusto[]
+  categoriasFinanceiras   CategoriaFinanceira[]
+  lancamentos             Lancamento[]
+  lancamentosRecorrentes  LancamentoRecorrente[]
+  parcelas                Parcela[]
+  documentos              DocumentoFinanceiro[]
+  extratos                Extrato[]
+  planoConta              PlanoConta[]
+  configuracoes           ConfiguracaoFinanceira[]
+  relatorios              Relatorio[]
+  empresas                Empresa[]
+  funcionarios            Funcionario[]
+  cargosFuncionario       CargoFuncionario[]
+  folhasPagamento         FolhaPagamento[]
+  folhaPagamentoItens     FolhaPagamentoItem[]
+  rubricasFolha           RubricaFolha[]
+  pessoas                 Pessoa[]
+  veiculos                Veiculo[]
   disponibilidadesVeiculo VeiculoDisponibilidade[]
+  patrimonioAtivos        PatrimonioAtivo[]
+  patrimonioAvaliacoes    PatrimonioAvaliacao[]
+  patrimonioDocumentos    PatrimonioDocumento[]
+  patrimonioPassivos      PatrimonioPassivo[]
+
   @@map("organizations")
   @@schema("common")
 }
+
 model Role {
   id                String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
   created_at        DateTime         @default(now()) @db.Timestamp(6)
@@ -139,11 +147,11 @@ model Role {
 }
 
 model Permission {
-  id                String           @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at        DateTime         @default(now()) @db.Timestamp(6)
-  updated_at        DateTime         @updatedAt @db.Timestamp(6)
-  name              String           @db.VarChar
-  description       String           @db.VarChar
+  id                String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at        DateTime           @default(now()) @db.Timestamp(6)
+  updated_at        DateTime           @updatedAt @db.Timestamp(6)
+  name              String             @db.VarChar
+  description       String             @db.VarChar
   permissions_roles PermissionRole[]
   users_permissions MemberPermission[]
 
@@ -152,11 +160,11 @@ model Permission {
 }
 
 model PermissionRole {
-  role_id       String     @db.Uuid
-  permission_id String     @db.Uuid
-  
-  permissions   Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-  roles         Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  role_id       String @db.Uuid
+  permission_id String @db.Uuid
+
+  permissions Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  roles       Role       @relation(fields: [role_id], references: [id], onDelete: Cascade)
 
   @@id([role_id, permission_id])
   @@index([permission_id])
@@ -172,19 +180,19 @@ model RefreshToken {
   expires_in Int
   token      String   @db.VarChar
   user_id    String?  @db.Uuid
-  
-  users      User?    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  users User? @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("refresh_token")
   @@schema("common")
 }
 
 model MemberPermission {
-  member_id     String     @db.Uuid
-  permission_id String     @db.Uuid
-  
-  permissions   Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
-  members       Member     @relation(fields: [member_id], references: [id], onDelete: Cascade)
+  member_id     String @db.Uuid
+  permission_id String @db.Uuid
+
+  permissions Permission @relation(fields: [permission_id], references: [id], onDelete: Cascade)
+  members     Member     @relation(fields: [member_id], references: [id], onDelete: Cascade)
 
   @@id([member_id, permission_id])
   @@index([member_id])
@@ -196,9 +204,9 @@ model MemberPermission {
 model MemberRole {
   member_id String @db.Uuid
   role_id   String @db.Uuid
-  
-  roles     Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
-  member    Member @relation(fields: [member_id], references: [id], onDelete: Cascade)
+
+  roles  Role   @relation(fields: [role_id], references: [id], onDelete: Cascade)
+  member Member @relation(fields: [member_id], references: [id], onDelete: Cascade)
 
   @@id([member_id, role_id])
   @@index([role_id])
@@ -210,18 +218,19 @@ model MemberRole {
 enum TokenType {
   PASSWORD_RECOVERY
   EMAIL_VERIFICATION
+
   @@schema("common")
 }
 
 model VerificationToken {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  token     String   @unique
+  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  token     String    @unique
   type      TokenType @default(PASSWORD_RECOVERY)
-  createdAt DateTime @default(now()) @db.Timestamp(6)
+  createdAt DateTime  @default(now()) @db.Timestamp(6)
   expires   DateTime
-  user_id   String   @db.Uuid
-  
-  user      User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user_id   String    @db.Uuid
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([id, token])
   @@map("verification_tokens")
@@ -229,8 +238,8 @@ model VerificationToken {
 }
 
 model Account {
-  id                String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  user_id           String @db.Uuid
+  id                String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  user_id           String  @db.Uuid
   type              String
   provider          String
   providerAccountId String
@@ -241,8 +250,8 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  
-  user              User   @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
   @@map("accounts")
@@ -254,8 +263,8 @@ model Session {
   sessionToken String   @unique
   user_id      String   @db.Uuid
   expires      DateTime
-  
-  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
 
   @@map("sessions")
   @@schema("common")
@@ -263,23 +272,23 @@ model Session {
 
 // ==================== SCHEMA FINANCEIRO MULTI-organization ====================
 model Parceiro {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
   // codigo              String              @db.VarChar(100)
-  tipo_parceiro       TipoParceiro
-  pessoa_id           String              @db.Uuid
-  observacoes         String?
-  ativo               Boolean             @default(true)
-  
-  pessoa              Pessoa              @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  lancamentos         Lancamento[]
+  tipo_parceiro TipoParceiro
+  pessoa_id     String       @db.Uuid
+  observacoes   String?
+  ativo         Boolean      @default(true)
+
+  pessoa                 Pessoa                 @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
+  organization           Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  lancamentos            Lancamento[]
   lancamentosRecorrentes LancamentoRecorrente[]
-  documentos          DocumentoFinanceiro[]
-  
+  documentos             DocumentoFinanceiro[]
+
   @@unique([organization_id, pessoa_id])
   @@index([organization_id])
   @@index([ativo])
@@ -289,39 +298,40 @@ model Parceiro {
 
 // PC_Banco - Contas Bancárias e Contábeis
 model ContaBancaria {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  codigo              String              @db.VarChar(100)
-  nome                String              @db.VarChar(255)
-  tipo_conta          TipoConta           @default(BANCARIA)
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  codigo     String    @db.VarChar(100)
+  nome       String    @db.VarChar(255)
+  tipo_conta TipoConta @default(BANCARIA)
+
   // Campos para contas bancárias (opcionais, apenas para tipo BANCARIA)
-  banco               String?             @db.VarChar(100)
-  agencia             String?
-  numero              String?
-  digito              String?
-  tipoConta           TipoContaBancaria?
-  saldoInicial        Decimal             @default(0) @db.Decimal(15, 2)
-  saldoAtual          Decimal             @default(0) @db.Decimal(15, 2)
-  limiteCredito       Decimal?            @db.Decimal(15, 2)
-  dataAbertura        DateTime?
-  
+  banco         String?            @db.VarChar(100)
+  agencia       String?
+  numero        String?
+  digito        String?
+  tipoConta     TipoContaBancaria?
+  saldoInicial  Decimal            @default(0) @db.Decimal(15, 2)
+  saldoAtual    Decimal            @default(0) @db.Decimal(15, 2)
+  limiteCredito Decimal?           @db.Decimal(15, 2)
+  dataAbertura  DateTime?
+
   // Campos para contas contábeis (plano de contas)
-  conta_pai_id        String?             @db.Uuid
-  
-  ativo               Boolean             @default(true)
-  observacoes         String?
-  
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  conta_pai           ContaBancaria?      @relation("ContaHierarchy", fields: [conta_pai_id], references: [id], onDelete: SetNull)
-  subcontas           ContaBancaria[]     @relation("ContaHierarchy")
-  lancamentos         Lancamento[]
+  conta_pai_id String? @db.Uuid
+
+  ativo       Boolean @default(true)
+  observacoes String?
+
+  organization           Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  conta_pai              ContaBancaria?         @relation("ContaHierarchy", fields: [conta_pai_id], references: [id], onDelete: SetNull)
+  subcontas              ContaBancaria[]        @relation("ContaHierarchy")
+  lancamentos            Lancamento[]
   lancamentosRecorrentes LancamentoRecorrente[]
-  extratos            Extrato[]
-  
+  extratos               Extrato[]
+  patrimonioAtivos       PatrimonioAtivo[]
+
   @@unique([organization_id, codigo])
   @@index([organization_id])
   @@index([ativo])
@@ -333,22 +343,22 @@ model ContaBancaria {
 
 // PC_CC - Centros de Custo
 model CentroCusto {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  codigo              String              @db.VarChar(100)
-  nome                String              @db.VarChar(255)
-  descricao           String?
-  responsavel         String?
-  email               String?
-  ativo               Boolean             @default(true)
-  
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  lancamentos         Lancamento[]
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  codigo      String  @db.VarChar(100)
+  nome        String  @db.VarChar(255)
+  descricao   String?
+  responsavel String?
+  email       String?
+  ativo       Boolean @default(true)
+
+  organization           Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  lancamentos            Lancamento[]
   lancamentosRecorrentes LancamentoRecorrente[]
-  
+
   @@unique([organization_id, codigo])
   @@index([organization_id])
   @@index([ativo])
@@ -358,25 +368,25 @@ model CentroCusto {
 
 // PC_Rec e PC_Des - Categorias Financeiras
 model CategoriaFinanceira {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  codigo              String              @db.VarChar(100)
-  nome                String              @db.VarChar(255)
-  descricao           String?
-  tipo                TipoCategoria
-  nivel               Int                 @default(1)
-  parent_id            String?             @db.Uuid
-  ativo               Boolean             @default(true)
-  
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  parent              CategoriaFinanceira? @relation("SubcategoriasDe", fields: [parent_id], references: [id], onDelete: SetNull)
-  subcategorias       CategoriaFinanceira[] @relation("SubcategoriasDe")
-  lancamentos         Lancamento[]
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  codigo    String        @db.VarChar(100)
+  nome      String        @db.VarChar(255)
+  descricao String?
+  tipo      TipoCategoria
+  nivel     Int           @default(1)
+  parent_id String?       @db.Uuid
+  ativo     Boolean       @default(true)
+
+  organization           Organization           @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  parent                 CategoriaFinanceira?   @relation("SubcategoriasDe", fields: [parent_id], references: [id], onDelete: SetNull)
+  subcategorias          CategoriaFinanceira[]  @relation("SubcategoriasDe")
+  lancamentos            Lancamento[]
   lancamentosRecorrentes LancamentoRecorrente[]
-  
+
   @@unique([organization_id, codigo])
   @@index([organization_id])
   @@index([tipo])
@@ -388,23 +398,23 @@ model CategoriaFinanceira {
 
 // Plano de Contas
 model PlanoConta {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  codigo              String              @db.VarChar(50)
-  nome                String              @db.VarChar(255)
-  tipo                TipoContaPlano      // ATIVA, PASSIVA, RECEITA, DESPESA
-  nivel               Int
-  parent_id            String?             @db.Uuid
-  descricao           String?
-  ativo               Boolean             @default(true)
-  
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  parent              PlanoConta?        @relation("PlanoContaHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
-  subcontas           PlanoConta[]       @relation("PlanoContaHierarchy")
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  codigo    String         @db.VarChar(50)
+  nome      String         @db.VarChar(255)
+  tipo      TipoContaPlano // ATIVA, PASSIVA, RECEITA, DESPESA
+  nivel     Int
+  parent_id String?        @db.Uuid
+  descricao String?
+  ativo     Boolean        @default(true)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  parent       PlanoConta?  @relation("PlanoContaHierarchy", fields: [parent_id], references: [id], onDelete: SetNull)
+  subcontas    PlanoConta[] @relation("PlanoContaHierarchy")
+
   @@unique([organization_id, codigo])
   @@index([organization_id])
   @@index([tipo])
@@ -414,72 +424,73 @@ model PlanoConta {
 
 // PC_Transf - Lançamentos
 model Lancamento {
-  id                      String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id         String              @db.Uuid
-  created_at              DateTime            @default(now()) @db.Timestamp(6)
-  updated_at              DateTime            @updatedAt @db.Timestamp(6)
-  
-  numero                  String              @db.VarChar(100)
-  tipo                    TipoLancamento
-  data                    DateTime
-  data_vencimento          DateTime?
-  data_competencia         String?             @db.VarChar(7) // MM/YYYY
-  descricao               String              @db.VarChar(500)
-  observacoes             String?
-  valor                   Decimal             @db.Decimal(15, 2)
-  valor_pago               Decimal?            @db.Decimal(15, 2)
-  pago                    Boolean             @default(false)
-  data_pagamento           DateTime?
-  forma_parcelamento       FormaParcelamento   @default(UNICA)
-  numero_parcelas          Int                 @default(1)
-  status_lancamento        StatusLancamento    @default(PENDENTE)
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  numero             String            @db.VarChar(100)
+  tipo               TipoLancamento
+  data               DateTime
+  data_vencimento    DateTime?
+  data_competencia   String?           @db.VarChar(7) // MM/YYYY
+  descricao          String            @db.VarChar(500)
+  observacoes        String?
+  valor              Decimal           @db.Decimal(15, 2)
+  valor_pago         Decimal?          @db.Decimal(15, 2)
+  pago               Boolean           @default(false)
+  data_pagamento     DateTime?
+  forma_parcelamento FormaParcelamento @default(UNICA)
+  numero_parcelas    Int               @default(1)
+  status_lancamento  StatusLancamento  @default(PENDENTE)
+
   // Repetição
-  tipo_repeticao          TipoRepeticao       @default(NENHUMA)
-  parcela_atual           Int?                // Para parcelados (1, 2, 3...)
-  lancamento_origem_id    String?             @db.Uuid // Para parcelas
-  
+  tipo_repeticao       TipoRepeticao @default(NENHUMA)
+  parcela_atual        Int? // Para parcelados (1, 2, 3...)
+  lancamento_origem_id String?       @db.Uuid // Para parcelas
+
   // Controle interno e integração Asaas
-  controle_interno        Boolean             @default(false) // Se true, apenas registro interno sem cobrança no Asaas
-  gerar_boleto            Boolean             @default(false)
-  permitir_pix            Boolean             @default(false)
-  asaas_payment_id        String?             @db.VarChar(255) // ID da cobrança no Asaas
-  invoice_url            String?             @db.VarChar(500) // URL da invoice/cobrança no Asaas
-  boleto_url              String?             @db.VarChar(500)
-  boleto_linha_digitavel  String?             @db.VarChar(100)
-  pix_qrcode_url          String?             @db.VarChar(500)
-  
+  controle_interno       Boolean @default(false) // Se true, apenas registro interno sem cobrança no Asaas
+  gerar_boleto           Boolean @default(false)
+  permitir_pix           Boolean @default(false)
+  asaas_payment_id       String? @db.VarChar(255) // ID da cobrança no Asaas
+  invoice_url            String? @db.VarChar(500) // URL da invoice/cobrança no Asaas
+  boleto_url             String? @db.VarChar(500)
+  boleto_linha_digitavel String? @db.VarChar(100)
+  pix_qrcode_url         String? @db.VarChar(500)
+
   // Recorrente
-  periodicidade           Periodicidade?
-  data_fim_repeticao      DateTime?
-  lancamento_recorrente_id String?             @db.Uuid
-  
-  categoria_id             String              @db.Uuid
-  conta_bancaria_id         String              @db.Uuid
-  centro_custo_id           String?             @db.Uuid
-  parceiro_id              String?             @db.Uuid
-  lancamento_transferencia_id String?           @db.Uuid
+  periodicidade            Periodicidade?
+  data_fim_repeticao       DateTime?
+  lancamento_recorrente_id String?        @db.Uuid
+
+  categoria_id                String  @db.Uuid
+  conta_bancaria_id           String  @db.Uuid
+  centro_custo_id             String? @db.Uuid
+  parceiro_id                 String? @db.Uuid
+  lancamento_transferencia_id String? @db.Uuid
   /// Vínculo opcional com veículo (frota) — valor contábil continua só no lançamento.
-  veiculo_id               String?             @db.Uuid
-  
-  organization            Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  categoria               CategoriaFinanceira @relation(fields: [categoria_id], references: [id])
-  conta_bancaria           ContaBancaria       @relation(fields: [conta_bancaria_id], references: [id])
-  centro_custo             CentroCusto?        @relation(fields: [centro_custo_id], references: [id])
-  parceiro                Parceiro?           @relation(fields: [parceiro_id], references: [id])
-  lancamento_transferencia Lancamento?         @relation("TransferenciaEntre", fields: [lancamento_transferencia_id], references: [id], onDelete: SetNull)
-  lacamentos_relacionados Lancamento[]        @relation("TransferenciaEntre")
-  lancamento_origem       Lancamento?         @relation("LancamentoParcelas", fields: [lancamento_origem_id], references: [id], onDelete: SetNull)
-  parcelas_origem         Lancamento[]        @relation("LancamentoParcelas")
+  veiculo_id                  String? @db.Uuid
+
+  organization             Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  categoria                CategoriaFinanceira   @relation(fields: [categoria_id], references: [id])
+  conta_bancaria           ContaBancaria         @relation(fields: [conta_bancaria_id], references: [id])
+  centro_custo             CentroCusto?          @relation(fields: [centro_custo_id], references: [id])
+  parceiro                 Parceiro?             @relation(fields: [parceiro_id], references: [id])
+  lancamento_transferencia Lancamento?           @relation("TransferenciaEntre", fields: [lancamento_transferencia_id], references: [id], onDelete: SetNull)
+  lacamentos_relacionados  Lancamento[]          @relation("TransferenciaEntre")
+  lancamento_origem        Lancamento?           @relation("LancamentoParcelas", fields: [lancamento_origem_id], references: [id], onDelete: SetNull)
+  parcelas_origem          Lancamento[]          @relation("LancamentoParcelas")
   lancamento_recorrente    LancamentoRecorrente? @relation(fields: [lancamento_recorrente_id], references: [id], onDelete: SetNull)
-  veiculo                  Veiculo?            @relation("VeiculoLancamento", fields: [veiculo_id], references: [id], onDelete: SetNull)
+  veiculo                  Veiculo?              @relation("VeiculoLancamento", fields: [veiculo_id], references: [id], onDelete: SetNull)
   abastecimento            Abastecimento?
   manutencao               Manutencao?
   viagem                   Viagem?
-  
-  parcelas                Parcela[]
-  documentos              DocumentoFinanceiro[]
-  
+
+  parcelas         Parcela[]
+  documentos       DocumentoFinanceiro[]
+  patrimonioAtivos PatrimonioAtivo[]     @relation("PatrimonioAtivoLancamento")
+
   @@unique([organization_id, numero])
   @@index([organization_id])
   @@index([tipo])
@@ -498,36 +509,36 @@ model Lancamento {
 
 // Lançamentos Recorrentes
 model LancamentoRecorrente {
-  id                      String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id         String              @db.Uuid
-  created_at              DateTime            @default(now()) @db.Timestamp(6)
-  updated_at              DateTime            @updatedAt @db.Timestamp(6)
-  
-  tipo                    TipoLancamento
-  descricao               String              @db.VarChar(500)
-  valor                   Decimal             @db.Decimal(15, 2)
-  periodicidade           Periodicidade
-  data_inicio             DateTime
-  data_fim                DateTime?           // None = sem data de fim
-  dia_vencimento          Int?                // Dia do mês (1-31)
-  
-  categoria_id             String              @db.Uuid
-  conta_bancaria_id         String              @db.Uuid
-  centro_custo_id           String?             @db.Uuid
-  parceiro_id              String?             @db.Uuid
-  
-  ativo                   Boolean             @default(true)
-  gerar_boleto            Boolean             @default(false)
-  permitir_pix            Boolean             @default(false)
-  asaas_subscription_id   String?             @db.VarChar(255) // ID da assinatura no Asaas
-  
-  organization            Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  categoria               CategoriaFinanceira @relation(fields: [categoria_id], references: [id])
-  conta_bancaria           ContaBancaria       @relation(fields: [conta_bancaria_id], references: [id])
-  centro_custo             CentroCusto?        @relation(fields: [centro_custo_id], references: [id])
-  parceiro                Parceiro?           @relation(fields: [parceiro_id], references: [id])
-  lancamentos             Lancamento[]
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  tipo           TipoLancamento
+  descricao      String         @db.VarChar(500)
+  valor          Decimal        @db.Decimal(15, 2)
+  periodicidade  Periodicidade
+  data_inicio    DateTime
+  data_fim       DateTime? // None = sem data de fim
+  dia_vencimento Int? // Dia do mês (1-31)
+
+  categoria_id      String  @db.Uuid
+  conta_bancaria_id String  @db.Uuid
+  centro_custo_id   String? @db.Uuid
+  parceiro_id       String? @db.Uuid
+
+  ativo                 Boolean @default(true)
+  gerar_boleto          Boolean @default(false)
+  permitir_pix          Boolean @default(false)
+  asaas_subscription_id String? @db.VarChar(255) // ID da assinatura no Asaas
+
+  organization   Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  categoria      CategoriaFinanceira @relation(fields: [categoria_id], references: [id])
+  conta_bancaria ContaBancaria       @relation(fields: [conta_bancaria_id], references: [id])
+  centro_custo   CentroCusto?        @relation(fields: [centro_custo_id], references: [id])
+  parceiro       Parceiro?           @relation(fields: [parceiro_id], references: [id])
+  lancamentos    Lancamento[]
+
   @@index([organization_id])
   @@index([ativo])
   @@index([data_inicio])
@@ -537,23 +548,24 @@ model LancamentoRecorrente {
 
 // Parcelas de Lançamentos
 model Parcela {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  lancamento_id        String              @db.Uuid
-  organization_id        String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  numero_parcela       Int
-  data_vencimento      DateTime
-  valor               Decimal             @db.Decimal(15, 2)
-  valorPago           Decimal?            @db.Decimal(15, 2)
-  pago                Boolean             @default(false)
-  data_pagamento       DateTime?
-  status_parcela       StatusParcela       @default(PENDENTE)
-  observacoes         String?
-  
-  lancamento          Lancamento          @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lancamento_id   String   @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  numero_parcela  Int
+  data_vencimento DateTime
+  valor           Decimal       @db.Decimal(15, 2)
+  valorPago       Decimal?      @db.Decimal(15, 2)
+  pago            Boolean       @default(false)
+  data_pagamento  DateTime?
+  status_parcela  StatusParcela @default(PENDENTE)
+  observacoes     String?
+
+  lancamento   Lancamento   @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
   @@unique([lancamento_id, numero_parcela])
   @@index([data_vencimento])
   @@index([status_parcela])
@@ -563,24 +575,25 @@ model Parcela {
 
 // Documentos (NFe, Recibos, etc)
 model DocumentoFinanceiro {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  lancamento_id        String              @db.Uuid
-  organization_id        String              @db.Uuid
-  parceiro_id          String?             @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  tipo                TipoDocumento
-  numero              String              @db.VarChar(100)
-  serie               String?             @db.VarChar(50)
-  data_documento       DateTime
-  url                 String?
-  path      String?
-  observacoes         String?
-  
-  lancamento          Lancamento          @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
-  parceiro            Parceiro?           @relation(fields: [parceiro_id], references: [id], onDelete: SetNull)
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  lancamento_id   String   @db.Uuid
+  organization_id String   @db.Uuid
+  parceiro_id     String?  @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  tipo           TipoDocumento
+  numero         String        @db.VarChar(100)
+  serie          String?       @db.VarChar(50)
+  data_documento DateTime
+  url            String?
+  path           String?
+  observacoes    String?
+
+  lancamento   Lancamento   @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
+  parceiro     Parceiro?    @relation(fields: [parceiro_id], references: [id], onDelete: SetNull)
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
   @@unique([tipo, numero, serie])
   @@index([lancamento_id])
   @@index([parceiro_id])
@@ -588,21 +601,138 @@ model DocumentoFinanceiro {
   @@schema("financeiro")
 }
 
+model PatrimonioAtivo {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  nome                   String                       @db.VarChar(255)
+  descricao              String?
+  categoria              CategoriaPatrimonio
+  tipo                   String?                      @db.VarChar(100)
+  codigo                 String?                      @db.VarChar(100)
+  data_aquisicao         DateTime?
+  valor_aquisicao        Decimal                      @default(0) @db.Decimal(15, 2)
+  valor_atual            Decimal                      @default(0) @db.Decimal(15, 2)
+  metodo_depreciacao     MetodoDepreciacaoPatrimonio?
+  taxa_depreciacao_anual Decimal?                     @db.Decimal(5, 2)
+  vida_util_meses        Int?
+  status                 StatusPatrimonioAtivo        @default(ATIVO)
+  localizacao            String?                      @db.VarChar(255)
+  responsavel            String?                      @db.VarChar(255)
+  observacoes            String?
+
+  veiculo_id        String? @db.Uuid
+  conta_bancaria_id String? @db.Uuid
+  lancamento_id     String? @db.Uuid
+
+  organization   Organization          @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  veiculo        Veiculo?              @relation(fields: [veiculo_id], references: [id], onDelete: SetNull)
+  conta_bancaria ContaBancaria?        @relation(fields: [conta_bancaria_id], references: [id], onDelete: SetNull)
+  lancamento     Lancamento?           @relation("PatrimonioAtivoLancamento", fields: [lancamento_id], references: [id], onDelete: SetNull)
+  avaliacoes     PatrimonioAvaliacao[]
+  documentos     PatrimonioDocumento[]
+
+  @@unique([organization_id, codigo])
+  @@index([organization_id])
+  @@index([categoria])
+  @@index([status])
+  @@index([veiculo_id])
+  @@index([conta_bancaria_id])
+  @@index([lancamento_id])
+  @@map("patrimonio_ativos")
+  @@schema("financeiro")
+}
+
+model PatrimonioAvaliacao {
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  patrimonio_ativo_id String   @db.Uuid
+  organization_id     String   @db.Uuid
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @updatedAt @db.Timestamp(6)
+
+  data_avaliacao DateTime @db.Timestamp(6)
+  valor          Decimal  @db.Decimal(15, 2)
+  avaliador      String?  @db.VarChar(255)
+  metodo         String?  @db.VarChar(100)
+  observacoes    String?
+
+  patrimonio_ativo PatrimonioAtivo @relation(fields: [patrimonio_ativo_id], references: [id], onDelete: Cascade)
+  organization     Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([patrimonio_ativo_id])
+  @@index([data_avaliacao])
+  @@map("patrimonio_avaliacoes")
+  @@schema("financeiro")
+}
+
+model PatrimonioDocumento {
+  id                  String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  patrimonio_ativo_id String   @db.Uuid
+  organization_id     String   @db.Uuid
+  created_at          DateTime @default(now()) @db.Timestamp(6)
+  updated_at          DateTime @updatedAt @db.Timestamp(6)
+
+  tipo        String  @db.VarChar(100)
+  nome        String  @db.VarChar(255)
+  url         String?
+  path        String?
+  observacoes String?
+
+  patrimonio_ativo PatrimonioAtivo @relation(fields: [patrimonio_ativo_id], references: [id], onDelete: Cascade)
+  organization     Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([patrimonio_ativo_id])
+  @@map("patrimonio_documentos")
+  @@schema("financeiro")
+}
+
+model PatrimonioPassivo {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  descricao       String                  @db.VarChar(500)
+  tipo            TipoPatrimonioPassivo
+  credor          String?                 @db.VarChar(255)
+  valor_original  Decimal                 @default(0) @db.Decimal(15, 2)
+  saldo_devedor   Decimal                 @default(0) @db.Decimal(15, 2)
+  data_inicio     DateTime?
+  data_vencimento DateTime?
+  taxa_juros      Decimal?                @db.Decimal(5, 2)
+  status          StatusPatrimonioPassivo @default(ABERTO)
+  observacoes     String?
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([tipo])
+  @@index([status])
+  @@index([data_vencimento])
+  @@map("patrimonio_passivos")
+  @@schema("financeiro")
+}
+
 // Extratos Bancários
 model Extrato {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id        String              @db.Uuid
-  conta_bancaria_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  
-  dataExtrato         DateTime
-  saldoInicial        Decimal             @db.Decimal(15, 2)
-  saldoFinal          Decimal             @db.Decimal(15, 2)
-  totalEntradas       Decimal             @db.Decimal(15, 2)
-  totalSaidas         Decimal             @db.Decimal(15, 2)
-  
-  conta_bancaria       ContaBancaria       @relation(fields: [conta_bancaria_id], references: [id], onDelete: Cascade)
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  id                String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id   String   @db.Uuid
+  conta_bancaria_id String   @db.Uuid
+  created_at        DateTime @default(now()) @db.Timestamp(6)
+
+  dataExtrato   DateTime
+  saldoInicial  Decimal  @db.Decimal(15, 2)
+  saldoFinal    Decimal  @db.Decimal(15, 2)
+  totalEntradas Decimal  @db.Decimal(15, 2)
+  totalSaidas   Decimal  @db.Decimal(15, 2)
+
+  conta_bancaria ContaBancaria @relation(fields: [conta_bancaria_id], references: [id], onDelete: Cascade)
+  organization   Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
   @@index([conta_bancaria_id])
   @@index([dataExtrato])
   @@map("extratos")
@@ -611,39 +741,39 @@ model Extrato {
 
 // Configurações Financeiras por Organização
 model ConfiguracaoFinanceira {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @unique @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  moedaPadrao         String              @default("BRL")
-  casasDecimais       Int                 @default(2)
-  diasCarencia        Int                 @default(0)
-  gerarDreAutomatico  Boolean             @default(false)
-  permiteDesconto     Boolean             @default(true)
-  permiteMulta        Boolean             @default(true)
-  asaas_api_key      String?             @db.VarChar(255) // API key do Asaas por organização
-  
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @unique @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  moedaPadrao        String  @default("BRL")
+  casasDecimais      Int     @default(2)
+  diasCarencia       Int     @default(0)
+  gerarDreAutomatico Boolean @default(false)
+  permiteDesconto    Boolean @default(true)
+  permiteMulta       Boolean @default(true)
+  asaas_api_key      String? @db.VarChar(255) // API key do Asaas por organização
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
   @@map("configuracao_financeira")
   @@schema("financeiro")
 }
 
 // Relatórios Salvos
 model Relatorio {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
-  
-  nome                String              @db.VarChar(255)
-  tipo                TipoRelatorio       // FLUXO_CAIXA, DRE, SALDO_CONTAS, etc
-  descricao           String?
-  filtros             String?             // JSON com filtros
-  
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+
+  nome      String        @db.VarChar(255)
+  tipo      TipoRelatorio // FLUXO_CAIXA, DRE, SALDO_CONTAS, etc
+  descricao String?
+  filtros   String? // JSON com filtros
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
   @@index([organization_id])
   @@index([tipo])
   @@map("relatorios")
@@ -651,27 +781,27 @@ model Relatorio {
 }
 
 model FolhaPagamento {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
 
-  competencia         String              @db.VarChar(7) // MM/YYYY
-  tipo                TipoFolhaPagamento  @default(FOLHA_MENSAL)
-  referencia_mes      Int
-  referencia_ano      Int
-  status              StatusFolhaPagamento @default(ABERTA)
-  data_fechamento     DateTime?
-  data_pagamento      DateTime?
-  observacoes         String?
+  competencia     String               @db.VarChar(7) // MM/YYYY
+  tipo            TipoFolhaPagamento   @default(FOLHA_MENSAL)
+  referencia_mes  Int
+  referencia_ano  Int
+  status          StatusFolhaPagamento @default(ABERTA)
+  data_fechamento DateTime?
+  data_pagamento  DateTime?
+  observacoes     String?
 
-  total_proventos     Decimal             @default(0) @db.Decimal(15, 2)
-  total_descontos     Decimal             @default(0) @db.Decimal(15, 2)
-  total_encargos      Decimal             @default(0) @db.Decimal(15, 2)
-  total_liquido       Decimal             @default(0) @db.Decimal(15, 2)
+  total_proventos Decimal @default(0) @db.Decimal(15, 2)
+  total_descontos Decimal @default(0) @db.Decimal(15, 2)
+  total_encargos  Decimal @default(0) @db.Decimal(15, 2)
+  total_liquido   Decimal @default(0) @db.Decimal(15, 2)
 
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  itens               FolhaPagamentoItem[]
+  organization Organization         @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  itens        FolhaPagamentoItem[]
 
   @@unique([organization_id, competencia, tipo])
   @@index([organization_id, referencia_ano, referencia_mes])
@@ -682,21 +812,21 @@ model FolhaPagamento {
 }
 
 model RubricaFolha {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String   @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
 
-  codigo              String?             @db.VarChar(30)
-  nome                String              @db.VarChar(255)
-  tipo_folha          TipoFolhaPagamento
-  tipo_item           TipoFolhaItem        @default(OUTRO)
-  natureza            NaturezaFolhaItem
-  ativo               Boolean             @default(true)
-  ordem               Int                 @default(0)
+  codigo     String?            @db.VarChar(30)
+  nome       String             @db.VarChar(255)
+  tipo_folha TipoFolhaPagamento
+  tipo_item  TipoFolhaItem      @default(OUTRO)
+  natureza   NaturezaFolhaItem
+  ativo      Boolean            @default(true)
+  ordem      Int                @default(0)
 
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  itens               FolhaPagamentoItem[]
+  organization Organization         @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  itens        FolhaPagamentoItem[]
 
   @@unique([organization_id, tipo_folha, nome])
   @@index([organization_id, tipo_folha, ativo])
@@ -706,25 +836,25 @@ model RubricaFolha {
 }
 
 model FolhaPagamentoItem {
-  id                  String              @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  organization_id     String              @db.Uuid
-  folha_pagamento_id  String              @db.Uuid
-  funcionario_id      String              @db.Uuid
-  rubrica_id          String?             @db.Uuid
-  created_at          DateTime            @default(now()) @db.Timestamp(6)
-  updated_at          DateTime            @updatedAt @db.Timestamp(6)
+  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id    String   @db.Uuid
+  folha_pagamento_id String   @db.Uuid
+  funcionario_id     String   @db.Uuid
+  rubrica_id         String?  @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamp(6)
+  updated_at         DateTime @updatedAt @db.Timestamp(6)
 
-  tipo                TipoFolhaItem
-  natureza            NaturezaFolhaItem
-  codigo              String?             @db.VarChar(30)
-  descricao           String              @db.VarChar(255)
-  referencia          String?             @db.VarChar(100)
-  valor               Decimal             @db.Decimal(15, 2)
+  tipo       TipoFolhaItem
+  natureza   NaturezaFolhaItem
+  codigo     String?           @db.VarChar(30)
+  descricao  String            @db.VarChar(255)
+  referencia String?           @db.VarChar(100)
+  valor      Decimal           @db.Decimal(15, 2)
 
-  organization        Organization        @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  folha_pagamento     FolhaPagamento      @relation(fields: [folha_pagamento_id], references: [id], onDelete: Cascade)
-  funcionario         Funcionario         @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
-  rubrica             RubricaFolha?       @relation(fields: [rubrica_id], references: [id], onDelete: SetNull)
+  organization    Organization   @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  folha_pagamento FolhaPagamento @relation(fields: [folha_pagamento_id], references: [id], onDelete: Cascade)
+  funcionario     Funcionario    @relation(fields: [funcionario_id], references: [id], onDelete: Cascade)
+  rubrica         RubricaFolha?  @relation(fields: [rubrica_id], references: [id], onDelete: SetNull)
 
   @@index([organization_id])
   @@index([folha_pagamento_id])
@@ -736,29 +866,29 @@ model FolhaPagamentoItem {
 }
 
 model Pessoa {
-  id          String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at  DateTime        @default(now()) @db.Timestamp(6)
-  updated_at  DateTime        @default(now()) @db.Timestamp(6)
-  tipo        TipoPessoa      @default(F)
-  organization_id String    @db.Uuid
-  organization        Organization    @relation(fields: [organization_id], references: [id])
-  email       String?         @db.VarChar
-  telefone    String?
-  endereco_id String?         @db.Uuid
-  user_id     String?         @db.Uuid
-  tag_id      String?         @db.Uuid
-  created_by_user_id String   @db.Uuid
-  created_by_user    User     @relation(name: "created_by", fields: [created_by_user_id], references: [id], onDelete: Cascade)
-  empresa     Empresa?
-  funcionarios Funcionario[]
-  parceiros     Parceiro[]
-  endereco    Endereco?       @relation(fields: [endereco_id], references: [id], onDelete: Cascade)
-  user        User?           @relation(name: "owner", fields: [user_id], references: [id])
-  tag         Tag?           @relation(fields: [tag_id], references: [id])
-  fisica      PessoaFisica?
-  juridica    PessoaJuridica?
-  deleted_at      DateTime?
-  asaas_customer_id String?  @db.VarChar(255) // ID do cliente no Asaas (para cobranças)
+  id                 String          @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at         DateTime        @default(now()) @db.Timestamp(6)
+  updated_at         DateTime        @default(now()) @db.Timestamp(6)
+  tipo               TipoPessoa      @default(F)
+  organization_id    String          @db.Uuid
+  organization       Organization    @relation(fields: [organization_id], references: [id])
+  email              String?         @db.VarChar
+  telefone           String?
+  endereco_id        String?         @db.Uuid
+  user_id            String?         @db.Uuid
+  tag_id             String?         @db.Uuid
+  created_by_user_id String          @db.Uuid
+  created_by_user    User            @relation(name: "created_by", fields: [created_by_user_id], references: [id], onDelete: Cascade)
+  empresa            Empresa?
+  funcionarios       Funcionario[]
+  parceiros          Parceiro[]
+  endereco           Endereco?       @relation(fields: [endereco_id], references: [id], onDelete: Cascade)
+  user               User?           @relation(name: "owner", fields: [user_id], references: [id])
+  tag                Tag?            @relation(fields: [tag_id], references: [id])
+  fisica             PessoaFisica?
+  juridica           PessoaJuridica?
+  deleted_at         DateTime?
+  asaas_customer_id  String?         @db.VarChar(255) // ID do cliente no Asaas (para cobranças)
 
   @@index([organization_id, deleted_at])
   @@map("pessoas")
@@ -766,9 +896,10 @@ model Pessoa {
 }
 
 model Tag {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  nome        String
-  pessoas     Pessoa[]
+  id      String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nome    String
+  pessoas Pessoa[]
+
   @@map("tag")
   @@schema("common")
 }
@@ -779,9 +910,9 @@ model PessoaFisica {
   cpf             String?   @unique
   data_nascimento DateTime?
   rg              String?
-  organization_id     String   @db.Uuid
+  organization_id String    @db.Uuid
 
-  pessoa          Pessoa    @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
+  pessoa Pessoa @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
 
   @@unique([organization_id, cpf])
   @@map("pessoas_fisica")
@@ -789,34 +920,35 @@ model PessoaFisica {
 }
 
 model PessoaJuridica {
-  pessoa_id     String  @id @db.Uuid
-  nome_fantasia String
-  cnpj          String? @unique
-  razao_social  String?
-  data_abertura DateTime?  @db.Date
-  inscricao_estadual String?
+  pessoa_id           String    @id @db.Uuid
+  nome_fantasia       String
+  cnpj                String?   @unique
+  razao_social        String?
+  data_abertura       DateTime? @db.Date
+  inscricao_estadual  String?
   inscricao_municipal String?
-  organization_id     String   @db.Uuid 
+  organization_id     String    @db.Uuid
 
-  pessoa        Pessoa  @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
+  pessoa Pessoa @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
+
   @@unique([organization_id, cnpj])
   @@map("pessoas_juridica")
   @@schema("common")
 }
 
 model Empresa {
-  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  pessoa_id String    @unique @db.Uuid
-  organization_id String    @db.Uuid
-  organization        Organization    @relation(fields: [organization_id], references: [id])
-  pessoa        Pessoa    @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
-  funcionarios  Funcionario[]
-  ambientes     Ambiente[]
-  licencas      Licenca[]
-  exames        ExameOcupacional[]
-  epcs          EPC[]
-  epis          EPI[]
-  ltcats        LTCAT[]
+  id              String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pessoa_id       String             @unique @db.Uuid
+  organization_id String             @db.Uuid
+  organization    Organization       @relation(fields: [organization_id], references: [id])
+  pessoa          Pessoa             @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
+  funcionarios    Funcionario[]
+  ambientes       Ambiente[]
+  licencas        Licenca[]
+  exames          ExameOcupacional[]
+  epcs            EPC[]
+  epis            EPI[]
+  ltcats          LTCAT[]
 
   @@map("empresas")
   @@schema("common")
@@ -857,39 +989,39 @@ model Municipio {
 }
 
 model Endereco {
-  id           String                @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at   DateTime              @default(now()) @db.Timestamp(6)
-  updated_at   DateTime              @default(now()) @db.Timestamp(6)
-  
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamp(6)
+  updated_at DateTime @default(now()) @db.Timestamp(6)
+
   // Definir limites de caracteres explícitos
-  cep          String?               @db.VarChar(9)      // CEP com máximo 9 caracteres (XXXXX-XXX)
-  logradouro   String?               @db.VarChar(255)    // Aumentado para 255
-  numero       String?               @db.VarChar(20)     // Número da rua
-  bairro       String?               @db.VarChar(100)    // Bairro
-  complemento  String?               @db.VarChar(255)    // Complemento
-  
+  cep         String? @db.VarChar(9) // CEP com máximo 9 caracteres (XXXXX-XXX)
+  logradouro  String? @db.VarChar(255) // Aumentado para 255
+  numero      String? @db.VarChar(20) // Número da rua
+  bairro      String? @db.VarChar(100) // Bairro
+  complemento String? @db.VarChar(255) // Complemento
+
   // Geolocalização
-  lat_lon      Unsupported("point")?
-  
+  lat_lon Unsupported("point")?
+
   // Relacionamentos
   estado_id    Int?
   municipio_id Int?
-  
-  estado       Estado?               @relation(fields: [estado_id], references: [id])
-  municipio    Municipio?            @relation(fields: [municipio_id], references: [id])
-  pessoa       Pessoa[]
+
+  estado    Estado?    @relation(fields: [estado_id], references: [id])
+  municipio Municipio? @relation(fields: [municipio_id], references: [id])
+  pessoa    Pessoa[]
 
   @@map("enderecos")
   @@schema("common")
 }
 
 model TipoLicenca {
-  id        String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  created_at   DateTime              @default(now()) @db.Timestamp(6)
-  updated_at   DateTime              @default(now()) @db.Timestamp(6)
-  nome      String
-  descricao String?
-  licencas  Licenca[]
+  id         String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at DateTime  @default(now()) @db.Timestamp(6)
+  updated_at DateTime  @default(now()) @db.Timestamp(6)
+  nome       String
+  descricao  String?
+  licencas   Licenca[]
 
   @@map("tipos_licenca")
   @@schema("monitoramento")
@@ -920,15 +1052,15 @@ model Licenca {
 }
 
 model VencimentoCondicionante {
-  id                       String                  @id @default(uuid()) @db.Uuid
-  licenca_condicionante_id String                  @db.Uuid
+  id                       String               @id @default(uuid()) @db.Uuid
+  licenca_condicionante_id String               @db.Uuid
   mes                      Int
   status                   String
   data_vencimento          DateTime
   data_cumprimento         DateTime?
   observacao               String?
-  documentos               DocumentoLicenca[]             @relation("vencimento_documentos")
-  licencaCondicionante     LicencaCondicionante    @relation(fields: [licenca_condicionante_id], references: [id], onDelete: Cascade)
+  documentos               DocumentoLicenca[]   @relation("vencimento_documentos")
+  licencaCondicionante     LicencaCondicionante @relation(fields: [licenca_condicionante_id], references: [id], onDelete: Cascade)
 
   @@map("vencimentos_condicionante")
   @@schema("monitoramento")
@@ -948,84 +1080,85 @@ model Condicionante {
 }
 
 model DocumentoLicenca {
-  id                       String                @id @default(uuid())
-  name                     String
-  path                     String
-  type                     String
-  vencimento_id            String?               @db.Uuid
-  createdAt                DateTime              @default(now())
-  size                     Int?
-  vencimento               VencimentoCondicionante? @relation("vencimento_documentos", fields: [vencimento_id], references: [id], onDelete: Cascade)
+  id            String                   @id @default(uuid())
+  name          String
+  path          String
+  type          String
+  vencimento_id String?                  @db.Uuid
+  createdAt     DateTime                 @default(now())
+  size          Int?
+  vencimento    VencimentoCondicionante? @relation("vencimento_documentos", fields: [vencimento_id], references: [id], onDelete: Cascade)
 
   @@map("documentos_licenca")
   @@schema("monitoramento")
 }
 
 model LicencaCondicionante {
-  id                  String        @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  licenca_id          String        @db.Uuid
-  condicionante_id    String        @db.Uuid
-  user_id             String        @db.Uuid
-  data_atribuicao     DateTime
-  dias_antecedencia   Int?
-  meses               Json?
-  status              String?
-  data_vencimento     DateTime?
-  observacao          String?
-  created_at          DateTime              @default(now()) @db.Timestamp(6)
-  updated_at          DateTime              @default(now()) @db.Timestamp(6)
-  vencimentos         VencimentoCondicionante[]
-  condicionante       Condicionante @relation(fields: [condicionante_id], references: [id])
-  licenca             Licenca       @relation(fields: [licenca_id], references: [id])
-  user                User          @relation(fields: [user_id], references: [id])
+  id                String                    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  licenca_id        String                    @db.Uuid
+  condicionante_id  String                    @db.Uuid
+  user_id           String                    @db.Uuid
+  data_atribuicao   DateTime
+  dias_antecedencia Int?
+  meses             Json?
+  status            String?
+  data_vencimento   DateTime?
+  observacao        String?
+  created_at        DateTime                  @default(now()) @db.Timestamp(6)
+  updated_at        DateTime                  @default(now()) @db.Timestamp(6)
+  vencimentos       VencimentoCondicionante[]
+  condicionante     Condicionante             @relation(fields: [condicionante_id], references: [id])
+  licenca           Licenca                   @relation(fields: [licenca_id], references: [id])
+  user              User                      @relation(fields: [user_id], references: [id])
+
   @@unique([licenca_id, condicionante_id])
   @@map("licencas_condicionante")
   @@schema("monitoramento")
 }
 
 model NotificacaoCondicionante {
-    id                     String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-    licenca_id             String                 @db.Uuid
-    condicionante_id       String                 @db.Uuid
-    user_id                String                 @db.Uuid
-    data_envio             DateTime
-    meio_envio             String
-    status_envio           String
-    auditoria_notificacoes AuditoriaNotificacao[]
-    condicionante          Condicionante          @relation(fields: [condicionante_id], references: [id])
-    licenca                Licenca                @relation(fields: [licenca_id], references: [id])
-    user                   User                   @relation(fields: [user_id], references: [id])
+  id                     String                 @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  licenca_id             String                 @db.Uuid
+  condicionante_id       String                 @db.Uuid
+  user_id                String                 @db.Uuid
+  data_envio             DateTime
+  meio_envio             String
+  status_envio           String
+  auditoria_notificacoes AuditoriaNotificacao[]
+  condicionante          Condicionante          @relation(fields: [condicionante_id], references: [id])
+  licenca                Licenca                @relation(fields: [licenca_id], references: [id])
+  user                   User                   @relation(fields: [user_id], references: [id])
 
-    @@map("notificacoes_condicionante")
-    @@schema("monitoramento")
+  @@map("notificacoes_condicionante")
+  @@schema("monitoramento")
 }
 
 model EstudoAmbiental {
-    id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-    licenca_id       String   @db.Uuid
-    tipo_estudo      String
-    data_entrega     DateTime
-    status_avaliacao String
-    licenca          Licenca  @relation(fields: [licenca_id], references: [id])
+  id               String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  licenca_id       String   @db.Uuid
+  tipo_estudo      String
+  data_entrega     DateTime
+  status_avaliacao String
+  licenca          Licenca  @relation(fields: [licenca_id], references: [id])
 
-    @@map("estudos_ambiental")
-    @@schema("monitoramento")
+  @@map("estudos_ambiental")
+  @@schema("monitoramento")
 }
 
 model AuditoriaNotificacao {
-    id             String                   @id @default(uuid()) @db.Uuid
-    notificacao_id String                   @db.Uuid
-    user_id        String                   @db.Uuid
-    tipo           String
-    status         String
-    mensagem       String
-    data_envio     DateTime
-    data_registro  DateTime                 @default(now())
-    notificacao    NotificacaoCondicionante @relation(fields: [notificacao_id], references: [id])
-    user           User                     @relation(fields: [user_id], references: [id])
+  id             String                   @id @default(uuid()) @db.Uuid
+  notificacao_id String                   @db.Uuid
+  user_id        String                   @db.Uuid
+  tipo           String
+  status         String
+  mensagem       String
+  data_envio     DateTime
+  data_registro  DateTime                 @default(now())
+  notificacao    NotificacaoCondicionante @relation(fields: [notificacao_id], references: [id])
+  user           User                     @relation(fields: [user_id], references: [id])
 
-    @@map("auditorias_notificacao")
-    @@schema("monitoramento")
+  @@map("auditorias_notificacao")
+  @@schema("monitoramento")
 }
 
 model AuditoriaLicenca {
@@ -1044,30 +1177,30 @@ model AuditoriaLicenca {
 }
 
 model Fiscalizacao {
-    id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-    licenca_id      String   @db.Uuid
-    user_id         String   @db.Uuid
-    data_visita     DateTime
-    relatorio       String
-    irregularidades String?
-    status          String
-    licenca         Licenca  @relation(fields: [licenca_id], references: [id])
-    user            User     @relation(fields: [user_id], references: [id])
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  licenca_id      String   @db.Uuid
+  user_id         String   @db.Uuid
+  data_visita     DateTime
+  relatorio       String
+  irregularidades String?
+  status          String
+  licenca         Licenca  @relation(fields: [licenca_id], references: [id])
+  user            User     @relation(fields: [user_id], references: [id])
 
-    @@map("fiscalizacoes")
-    @@schema("monitoramento")
+  @@map("fiscalizacoes")
+  @@schema("monitoramento")
 }
 
 enum TipoCondicionante {
-    monitoramento
-    relatorio
-    mitigadora
-    compensatoria
-    legal
-    outro
+  monitoramento
+  relatorio
+  mitigadora
+  compensatoria
+  legal
+  outro
 
-    @@map("tipo_condicionante")
-    @@schema("monitoramento")
+  @@map("tipo_condicionante")
+  @@schema("monitoramento")
 }
 
 enum FrequenciaCondicionante {
@@ -1131,101 +1264,103 @@ view vw_evolucao_cumprimento_mensal {
 
 /// The underlying view does not contain a valid unique identifier and can therefore currently not be handled by Prisma Client.
 view totais_dashboard {
-    id                                Int?
-    total_empresas                    Decimal? @db.Decimal
-    total_condicionantes              Decimal? @db.Decimal
-    total_condicionantes_vencendo_mes Decimal? @db.Decimal
+  id                                Int?
+  total_empresas                    Decimal? @db.Decimal
+  total_condicionantes              Decimal? @db.Decimal
+  total_condicionantes_vencendo_mes Decimal? @db.Decimal
 
-    @@ignore
-    @@schema("monitoramento")
+  @@ignore
+  @@schema("monitoramento")
 }
 
 model Ambiente {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  nome        String
-  empresa_id   String   @db.Uuid
-  empresa     Empresa    @relation(fields: [empresa_id], references: [id])
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nome       String
+  empresa_id String   @db.Uuid
+  empresa    Empresa  @relation(fields: [empresa_id], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
-  riscos      RiscoOcupacional[]
-  cargos      Cargo[]
+  riscos          RiscoOcupacional[]
+  cargos          Cargo[]
   cargos_ambiente CargoAmbiente[]
-  ltcats        LTCAT[]
+  ltcats          LTCAT[]
 
   @@map("ambiente")
   @@schema("seguranca")
 }
 
 model CargoRisco {
-  id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  cargo_id String   @db.Uuid
-  risco_id String   @db.Uuid
+  id       String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  cargo_id String @db.Uuid
+  risco_id String @db.Uuid
 
-  cargo    Cargo    @relation(fields: [cargo_id], references: [id])
-  risco    RiscoOcupacional @relation(fields: [risco_id], references: [id])
+  cargo Cargo            @relation(fields: [cargo_id], references: [id])
+  risco RiscoOcupacional @relation(fields: [risco_id], references: [id])
 
   @@map("cargo_risco")
   @@schema("seguranca")
 }
 
 model CargoExame {
-  id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  cargo_id String   @db.Uuid
-  exame_id String   @db.Uuid
+  id       String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  cargo_id String @db.Uuid
+  exame_id String @db.Uuid
 
-  cargo    Cargo    @relation(fields: [cargo_id], references: [id])
-  exame    Exame    @relation(fields: [exame_id], references: [id])
+  cargo Cargo @relation(fields: [cargo_id], references: [id])
+  exame Exame @relation(fields: [exame_id], references: [id])
 
   @@map("cargo_exame")
   @@schema("seguranca")
 }
 
 model CBO {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  codigo    String   @db.Uuid
-  nome      String   
-  cargos    Cargo[]
+  id     String  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  codigo String  @db.Uuid
+  nome   String
+  cargos Cargo[]
+
   @@map("cbo")
   @@schema("seguranca")
 }
 
 model Cargo {
-  id           String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  nome         String
-  cor          String?
-  icone          String?
+  id                      String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nome                    String
+  cor                     String?
+  icone                   String?
   atividades_executadas   String?
   recomendacoes_seguranca String?
-  cod_gfip_ltcat    String?
-  metodologia_riscos  String?
-  observacoes     String?
-  parecer_ltcat   String?
-  parecer_periculosidade   String?
+  cod_gfip_ltcat          String?
+  metodologia_riscos      String?
+  observacoes             String?
+  parecer_ltcat           String?
+  parecer_periculosidade  String?
   parecer_insalubridade   String?
-  data_inicio_esocial   DateTime?
-  jornada_trabalho  String?
-  ambiente_id  String       @db.Uuid
-  ambiente_principal     Ambiente     @relation(fields: [ambiente_id], references: [id])
-  cbo_id       String?      @db.Uuid
-  cbo          CBO? @relation(fields: [cbo_id], references: [id])
-  riscos       RiscoOcupacional[]
-  exames       CargoExame[]
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  cargos_ambientes CargoAmbiente[]
-  cargos_riscos CargoRisco[]
+  data_inicio_esocial     DateTime?
+  jornada_trabalho        String?
+  ambiente_id             String             @db.Uuid
+  ambiente_principal      Ambiente           @relation(fields: [ambiente_id], references: [id])
+  cbo_id                  String?            @db.Uuid
+  cbo                     CBO?               @relation(fields: [cbo_id], references: [id])
+  riscos                  RiscoOcupacional[]
+  exames                  CargoExame[]
+  createdAt               DateTime           @default(now())
+  updatedAt               DateTime           @updatedAt
+  cargos_ambientes        CargoAmbiente[]
+  cargos_riscos           CargoRisco[]
+
   @@map("cargo")
   @@schema("seguranca")
 }
 
 model CargoAmbiente {
-  id       String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  cargo_id String   @db.Uuid
-  ambiente_id String   @db.Uuid
+  id          String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  cargo_id    String @db.Uuid
+  ambiente_id String @db.Uuid
 
   cargo    Cargo    @relation(fields: [cargo_id], references: [id])
-  ambiente    Ambiente    @relation(fields: [ambiente_id], references: [id])
+  ambiente Ambiente @relation(fields: [ambiente_id], references: [id])
 
   @@map("cargo_ambiente")
   @@schema("seguranca")
@@ -1258,104 +1393,105 @@ model EPC {
 }
 
 model ExameRelacionado {
-  id        String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  risco_id  String   @db.Uuid
-  exame_id  String   @db.Uuid
+  id       String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  risco_id String @db.Uuid
+  exame_id String @db.Uuid
 
-  risco     RiscoOcupacional @relation(fields: [risco_id], references: [id])
-  exame     Exame            @relation(fields: [exame_id], references: [id])
+  risco RiscoOcupacional @relation(fields: [risco_id], references: [id])
+  exame Exame            @relation(fields: [exame_id], references: [id])
 
   @@map("risco_exame")
   @@schema("seguranca")
 }
 
 model Exame {
-  id             String       @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  nome_exame     String
-  cod_tabela_27  String
-  categoria      String
-  descricao      String
-  inserir_aso    Boolean
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nome_exame    String
+  cod_tabela_27 String
+  categoria     String
+  descricao     String
+  inserir_aso   Boolean
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  riscos         ExameRelacionado[]
-  cargos         CargoExame[]
+  riscos ExameRelacionado[]
+  cargos CargoExame[]
 
   @@map("exame")
   @@schema("seguranca")
 }
 
 model RiscoOcupacional {
-  id                      String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  tipo                    String     // físico, químico, biológico etc.
-  agente                  String     // calor, ruído, benzeno etc.
-  ambiente_id             String  @db.Uuid
-  ambiente                Ambiente      @relation(fields: [ambiente_id], references: [id])
-  createdAt               DateTime   @default(now())
-  updatedAt               DateTime   @updatedAt
-  cargos                  Cargo[]
-  cargos_riscos           CargoRisco[]
-  exames_relacionados     ExameRelacionado[]
-  ltcat_riscos            LTCATRisco[]
+  id                  String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tipo                String // físico, químico, biológico etc.
+  agente              String // calor, ruído, benzeno etc.
+  ambiente_id         String             @db.Uuid
+  ambiente            Ambiente           @relation(fields: [ambiente_id], references: [id])
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+  cargos              Cargo[]
+  cargos_riscos       CargoRisco[]
+  exames_relacionados ExameRelacionado[]
+  ltcat_riscos        LTCATRisco[]
+
   @@map("risco_ocupacional")
   @@schema("seguranca")
 }
 
 model ExameOcupacional {
-  id          String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  tipo        String     // admissional, periódico, demissional etc.
-  data        DateTime
-  funcionario_id String     @db.Uuid
-  aso         String     // caminho ou código do ASO emitido
-  riscos      String     // descrição dos riscos avaliados
-  empresa_id  String       @db.Uuid
-  empresa     Empresa    @relation(fields: [empresa_id], references: [id])
-  funcionario Funcionario    @relation(fields: [funcionario_id], references: [id])
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id             String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  tipo           String // admissional, periódico, demissional etc.
+  data           DateTime
+  funcionario_id String      @db.Uuid
+  aso            String // caminho ou código do ASO emitido
+  riscos         String // descrição dos riscos avaliados
+  empresa_id     String      @db.Uuid
+  empresa        Empresa     @relation(fields: [empresa_id], references: [id])
+  funcionario    Funcionario @relation(fields: [funcionario_id], references: [id])
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   @@map("exame_ocupacional")
   @@schema("seguranca")
 }
 
 model CategoriaExame {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  nome       String
+  id   String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nome String
 
   @@map("categoria_exame")
   @@schema("seguranca")
 }
 
 model Funcionario {
-  id         String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  nis   Int?
-  pessoa_id  String   @db.Uuid
-  empresa_id String   @db.Uuid
-  organization_id  String   @db.Uuid
-  cargo_id         String?  @db.Uuid
-  matricula        String?  @db.VarChar(50)
-  departamento     String?  @db.VarChar(120)
-  data_admissao    DateTime?
-  data_demissao    DateTime?
-  tipo_contrato    TipoContratoFuncionario @default(CLT)
-  ativo            Boolean  @default(true)
+  id              String                  @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  nis             Int?
+  pessoa_id       String                  @db.Uuid
+  empresa_id      String                  @db.Uuid
+  organization_id String                  @db.Uuid
+  cargo_id        String?                 @db.Uuid
+  matricula       String?                 @db.VarChar(50)
+  departamento    String?                 @db.VarChar(120)
+  data_admissao   DateTime?
+  data_demissao   DateTime?
+  tipo_contrato   TipoContratoFuncionario @default(CLT)
+  ativo           Boolean                 @default(true)
 
-  pessoa     Pessoa   @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
-  empresa    Empresa  @relation(fields: [empresa_id], references: [id])
-  organization     Organization @relation(fields: [organization_id], references: [id])
-  cargo_funcionario CargoFuncionario? @relation(fields: [cargo_id], references: [id], onDelete: SetNull)
-  profissionais Profissional[]
-  funcionarios     ExameOcupacional[]
+  pessoa                 Pessoa               @relation(fields: [pessoa_id], references: [id], onDelete: Cascade)
+  empresa                Empresa              @relation(fields: [empresa_id], references: [id])
+  organization           Organization         @relation(fields: [organization_id], references: [id])
+  cargo_funcionario      CargoFuncionario?    @relation(fields: [cargo_id], references: [id], onDelete: SetNull)
+  profissionais          Profissional[]
+  funcionarios           ExameOcupacional[]
   folhas_pagamento_itens FolhaPagamentoItem[]
-  @@map("funcionario")
-  @@schema("common")
 
+  @@unique([organization_id, matricula])
+  @@unique([empresa_id, pessoa_id])
   @@index([organization_id])
   @@index([ativo])
   @@index([cargo_id])
-  @@unique([organization_id, matricula])
-  @@unique([empresa_id, pessoa_id])
+  @@map("funcionario")
+  @@schema("common")
 }
 
 model CargoFuncionario {
@@ -1369,8 +1505,8 @@ model CargoFuncionario {
   salario_base    Decimal  @default(0) @db.Decimal(15, 2)
   ativo           Boolean  @default(true)
 
-  organization    Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  funcionarios    Funcionario[]
+  organization Organization  @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  funcionarios Funcionario[]
 
   @@unique([organization_id, nome])
   @@unique([organization_id, codigo])
@@ -1380,47 +1516,47 @@ model CargoFuncionario {
 }
 
 model Profissional {
-  id          String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  funcionario_id     String     @db.Uuid
-  registro    String
-  tipo        String   // médico, engenheiro, técnico, etc.
-  conselho    String   // CRM, CREA, etc.
-  funcionario        Funcionario    @relation(fields: [funcionario_id], references: [id])
-  ativo       Boolean  @default(true)
+  id             String      @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  funcionario_id String      @db.Uuid
+  registro       String
+  tipo           String // médico, engenheiro, técnico, etc.
+  conselho       String // CRM, CREA, etc.
+  funcionario    Funcionario @relation(fields: [funcionario_id], references: [id])
+  ativo          Boolean     @default(true)
 
   @@map("profissional")
   @@schema("seguranca")
 }
 
 model LTCAT {
-  id             String     @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  empresa_id     String     @db.Uuid
-  ambiente_id    String     @db.Uuid
-  profissional   String     // Nome do engenheiro/médico responsável
-  registro_prof  String     // CREA, CRM, etc.
-  numero_laudo   String     // Código interno do laudo
-  data_emissao   DateTime
-  data_validade  DateTime?
-  observacoes    String?
+  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  empresa_id    String    @db.Uuid
+  ambiente_id   String    @db.Uuid
+  profissional  String // Nome do engenheiro/médico responsável
+  registro_prof String // CREA, CRM, etc.
+  numero_laudo  String // Código interno do laudo
+  data_emissao  DateTime
+  data_validade DateTime?
+  observacoes   String?
 
-  empresa        Empresa    @relation(fields: [empresa_id], references: [id])
-  ambiente       Ambiente   @relation(fields: [ambiente_id], references: [id])
-  riscos         LTCATRisco[]
+  empresa  Empresa      @relation(fields: [empresa_id], references: [id])
+  ambiente Ambiente     @relation(fields: [ambiente_id], references: [id])
+  riscos   LTCATRisco[]
 
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("ltcat")
   @@schema("seguranca")
 }
 
 model LTCATRisco {
-  id        String             @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  ltcat_id  String             @db.Uuid
-  risco_id  String             @db.Uuid
+  id       String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  ltcat_id String @db.Uuid
+  risco_id String @db.Uuid
 
-  ltcat     LTCAT              @relation(fields: [ltcat_id], references: [id])
-  risco     RiscoOcupacional   @relation(fields: [risco_id], references: [id])
+  ltcat LTCAT            @relation(fields: [ltcat_id], references: [id])
+  risco RiscoOcupacional @relation(fields: [risco_id], references: [id])
 
   @@map("ltcat_risco")
   @@schema("seguranca")
@@ -1441,12 +1577,13 @@ model Veiculo {
   created_at      DateTime @default(now()) @db.Timestamp(6)
   updated_at      DateTime @updatedAt @db.Timestamp(6)
 
-  organization   Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
-  abastecimentos Abastecimento[]
-  manutencoes    Manutencao[]
-  viagens        Viagem[]
+  organization     Organization             @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  abastecimentos   Abastecimento[]
+  manutencoes      Manutencao[]
+  viagens          Viagem[]
   disponibilidades VeiculoDisponibilidade[]
-  lancamentos    Lancamento[] @relation("VeiculoLancamento")
+  lancamentos      Lancamento[]             @relation("VeiculoLancamento")
+  patrimonioAtivos PatrimonioAtivo[]
 
   @@unique([organization_id, placa])
   @@index([organization_id])
@@ -1477,16 +1614,16 @@ model VeiculoDisponibilidade {
 }
 
 model Abastecimento {
-  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  veiculo_id    String    @db.Uuid
-  data          DateTime  @db.Timestamp(6)
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  veiculo_id    String   @db.Uuid
+  data          DateTime @db.Timestamp(6)
   litros        Float
-  valor         Decimal   @db.Decimal(15, 2)
+  valor         Decimal  @db.Decimal(15, 2)
   km            Float?
-  lancamento_id String?   @unique @db.Uuid
+  lancamento_id String?  @unique @db.Uuid
 
-  veiculo     Veiculo     @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
-  lancamento  Lancamento? @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
+  veiculo    Veiculo     @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
+  lancamento Lancamento? @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
 
   @@index([veiculo_id])
   @@index([data])
@@ -1495,16 +1632,16 @@ model Abastecimento {
 }
 
 model Manutencao {
-  id            String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
-  veiculo_id    String    @db.Uuid
-  tipo          String    @db.VarChar(100)
+  id            String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  veiculo_id    String   @db.Uuid
+  tipo          String   @db.VarChar(100)
   descricao     String?
-  data          DateTime  @db.Timestamp(6)
-  valor         Decimal   @db.Decimal(15, 2)
-  lancamento_id String?   @unique @db.Uuid
+  data          DateTime @db.Timestamp(6)
+  valor         Decimal  @db.Decimal(15, 2)
+  lancamento_id String?  @unique @db.Uuid
 
-  veiculo     Veiculo     @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
-  lancamento  Lancamento? @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
+  veiculo    Veiculo     @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
+  lancamento Lancamento? @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
 
   @@index([veiculo_id])
   @@index([data])
@@ -1523,8 +1660,8 @@ model Viagem {
   valor         Decimal?  @db.Decimal(15, 2)
   lancamento_id String?   @unique @db.Uuid
 
-  veiculo     Veiculo     @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
-  lancamento  Lancamento? @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
+  veiculo    Veiculo     @relation(fields: [veiculo_id], references: [id], onDelete: Cascade)
+  lancamento Lancamento? @relation(fields: [lancamento_id], references: [id], onDelete: Cascade)
 
   @@index([veiculo_id])
   @@index([data_inicio])
@@ -1534,10 +1671,64 @@ model Viagem {
 
 // ==================== ENUMS ====================
 
+enum CategoriaPatrimonio {
+  IMOVEL
+  VEICULO
+  MAQUINA_EQUIPAMENTO
+  MOVEL_UTENSILIO
+  INFORMATICA
+  INVESTIMENTO
+  ESTOQUE
+  OUTRO
+
+  @@schema("financeiro")
+}
+
+enum MetodoDepreciacaoPatrimonio {
+  LINEAR
+  ACELERADA
+  MANUAL
+  NAO_DEPRECIA
+
+  @@schema("financeiro")
+}
+
+enum StatusPatrimonioAtivo {
+  ATIVO
+  BAIXADO
+  VENDIDO
+  MANUTENCAO
+  INATIVO
+
+  @@schema("financeiro")
+}
+
+enum TipoPatrimonioPassivo {
+  EMPRESTIMO
+  FINANCIAMENTO
+  PARCELAMENTO
+  FORNECEDOR
+  TRIBUTO
+  TRABALHISTA
+  OUTRO
+
+  @@schema("financeiro")
+}
+
+enum StatusPatrimonioPassivo {
+  ABERTO
+  QUITADO
+  CANCELADO
+  ATRASADO
+
+  @@schema("financeiro")
+}
+
 enum TipoParceiro {
   CLIENTE
   FORNECEDOR
   AMBOS
+
   @@schema("financeiro")
 }
 
@@ -1546,12 +1737,14 @@ enum TipoContaBancaria {
   POUPANCA
   INVESTIMENTO
   CREDITO
+
   @@schema("financeiro")
 }
 
 enum TipoConta {
   BANCARIA
   CONTABIL
+
   @@schema("financeiro")
 }
 
@@ -1559,6 +1752,7 @@ enum TipoRepeticao {
   NENHUMA
   RECORRENTE
   PARCELADO
+
   @@schema("financeiro")
 }
 
@@ -1571,12 +1765,14 @@ enum Periodicidade {
   TRIMESTRAL
   SEMESTRAL
   ANUAL
+
   @@schema("financeiro")
 }
 
 enum TipoCategoria {
   RECEITA
   DESPESA
+
   @@schema("financeiro")
 }
 
@@ -1584,6 +1780,7 @@ enum TipoLancamento {
   RECEITA
   DESPESA
   TRANSFERENCIA
+
   @@schema("financeiro")
 }
 
@@ -1592,6 +1789,7 @@ enum FormaParcelamento {
   FIXA
   PROGRESSIVA
   RECORRENTE
+
   @@schema("financeiro")
 }
 
@@ -1601,6 +1799,7 @@ enum StatusLancamento {
   PAGO
   CANCELADO
   ATRASADO
+
   @@schema("financeiro")
 }
 
@@ -1609,6 +1808,7 @@ enum StatusParcela {
   PAGA
   CANCELADA
   ATRASADA
+
   @@schema("financeiro")
 }
 
@@ -1619,6 +1819,7 @@ enum TipoDocumento {
   BOLETO
   CHEQUE
   OUTRO
+
   @@schema("financeiro")
 }
 
@@ -1627,6 +1828,7 @@ enum TipoContaPlano {
   PASSIVA
   RECEITA
   DESPESA
+
   @@schema("financeiro")
 }
 
@@ -1637,6 +1839,7 @@ enum TipoRelatorio {
   CONTAS_A_RECEBER
   CONTAS_A_PAGAR
   LUCRO_PREJUIZO
+
   @@schema("financeiro")
 }
 
@@ -1645,6 +1848,7 @@ enum StatusFolhaPagamento {
   FECHADA
   PAGA
   CANCELADA
+
   @@schema("financeiro")
 }
 
@@ -1653,6 +1857,7 @@ enum TipoFolhaPagamento {
   FERIAS
   DECIMO_TERCEIRO
   RESCISAO
+
   @@schema("financeiro")
 }
 
@@ -1665,6 +1870,7 @@ enum TipoFolhaItem {
   FGTS
   IRRF
   OUTRO
+
   @@schema("financeiro")
 }
 
@@ -1672,6 +1878,7 @@ enum NaturezaFolhaItem {
   PROVENTO
   DESCONTO
   ENCARGO
+
   @@schema("financeiro")
 }
 
@@ -1681,5 +1888,6 @@ enum TipoContratoFuncionario {
   ESTAGIO
   TEMPORARIO
   APRENDIZ
+
   @@schema("common")
 }

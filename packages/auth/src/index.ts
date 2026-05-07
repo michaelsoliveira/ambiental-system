@@ -15,6 +15,7 @@ import { ContaBancariaSubject } from "./subjects/conta-bancaria";
 import { CentroCustoSubject } from "./subjects/centro-custo";
 import { CategoriaFinanceiraSubject } from "./subjects/categoria-financeira";
 import { LancamentoSubject } from "./subjects/lancamento";
+import { PatrimonioSubject } from "./subjects/patrimonio";
 
 // Combine todos os subjects em um único union sem z.union()
 type AppSubjects = 
@@ -28,6 +29,7 @@ type AppSubjects =
   | CategoriaFinanceiraSubject
   | PessoaSubject
   | LancamentoSubject
+  | PatrimonioSubject
   | ['manage', 'all'];
 
 export type AppAbility = MongoAbility<AppSubjects>;
@@ -40,6 +42,7 @@ export * from './models/centro-custo'
 export * from './models/conta-bancaria'
 export * from './models/parceiro'
 export * from './models/lancamento'
+export * from './models/patrimonio'
 export * from './roles'
 export * from './models/pessoa'
 export * from './models/lancamento'
@@ -91,6 +94,10 @@ export function defineAbilitiesFor(user: User): AppAbility {
           { action: "get", subject: "Lancamento" },
           { action: "update", subject: "Lancamento" },
           { action: "delete", subject: "Lancamento" },
+          { action: "create", subject: "Patrimonio" },
+          { action: "get", subject: "Patrimonio" },
+          { action: "update", subject: "Patrimonio" },
+          { action: "delete", subject: "Patrimonio" },
           { action: "get", subject: "User" },
           { action: "update", subject: "Organization", conditions: { owner_id: user.id } }
         );
@@ -113,6 +120,9 @@ export function defineAbilitiesFor(user: User): AppAbility {
           { action: "create", subject: "Lancamento" },
           { action: "get", subject: "Lancamento" },
           { action: "update", subject: "Lancamento" },
+          { action: "create", subject: "Patrimonio" },
+          { action: "get", subject: "Patrimonio" },
+          { action: "update", subject: "Patrimonio" },
           { action: "get", subject: "User" }
         );
         break;
