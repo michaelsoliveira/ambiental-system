@@ -34,14 +34,25 @@ export function formatCurrency(value: number | string): string {
    * Formata uma data curta (dd/mm/yyyy)
    */
   export function formatDateShort(date: Date | string): string {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
+    const dateObj = typeof date === 'string' ? parseDateWithoutTimezoneShift(date) : date
   
     return new Intl.DateTimeFormat('pt-BR', {
-      timeZone: 'America/Sao_Paulo',
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
     }).format(dateObj)
+  }
+
+  function parseDateWithoutTimezoneShift(date: string): Date {
+    const dateOnlyMatch = date.match(/^(\d{4})-(\d{2})-(\d{2})/)
+
+    if (!dateOnlyMatch) {
+      return new Date(date)
+    }
+
+    const [, year, month, day] = dateOnlyMatch
+
+    return new Date(Number(year), Number(month) - 1, Number(day))
   }
   
   /**

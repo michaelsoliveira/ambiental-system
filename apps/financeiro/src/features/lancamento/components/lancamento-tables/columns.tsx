@@ -2,7 +2,7 @@
 import { ColumnDef } from '@tanstack/react-table';
 
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatDate, formatDateShort } from '@/lib/format';
+import { formatCurrency, formatDateShort } from '@/lib/format';
 
 import { CellAction } from './cell-action';
 import { StatusQuickAction } from './status-quick-action';
@@ -98,7 +98,7 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
           className="text-muted-foreground cursor-pointer text-sm"
           onClick={() => onRowClick?.(row.original)}
         >
-          {data ? formatDateShort(new Date(data)) : 'N/A'}
+          {data ? formatDateShort(data) : 'N/A'}
         </div>
       );
     }
@@ -118,7 +118,7 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
           }`}
           onClick={() => onRowClick?.(row.original)}
         >
-          {data_vencimento ? formatDateShort(new Date(data_vencimento)) : 'N/A'}
+          {data_vencimento ? formatDateShort(data_vencimento) : 'N/A'}
         </div>
       );
     }
