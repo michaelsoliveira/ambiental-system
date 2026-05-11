@@ -13,11 +13,11 @@ export async function getCategoriaFinanceira(app: FastifyInstance) {
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .get(
-      '/organizations/:slug/financial/categorias/:categoriaId',
+      '/organizations/:slug/financeiro/categorias/:categoriaId',
       {
         schema: {
-          tags: ['Financeiro - Parceiros'],
-          summary: 'Obter detalhes de um parceiro',
+          tags: ['Financeiro - Categorias'],
+          summary: 'Obter detalhes de uma categoria financeira',
           security: [{ bearerAuth: [] }],
           params: z.object({ slug: z.string(), categoriaId: z.string().uuid() }),
           response: {
@@ -56,7 +56,7 @@ export async function getCategoriaFinanceira(app: FastifyInstance) {
         })
 
         if (!categoria) {
-          throw new BadRequestError('Parceiro não encontrado.')
+          throw new BadRequestError('Categoria não encontrada.')
         }
 
         return reply.send({ categoria })

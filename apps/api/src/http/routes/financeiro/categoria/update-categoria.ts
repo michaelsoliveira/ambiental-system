@@ -7,22 +7,31 @@ import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { prisma } from '@/lib/prisma'
 import { getUserPermissions } from '@/utils/get-user-permissions'
-import { parceiroSchema } from '@saas/auth'
+
+const updateCategoriaBodySchema = z.object({
+  codigo: z.string().optional(),
+  nome: z.string().min(1).optional(),
+  descricao: z.string().nullable().optional(),
+  tipo: z.enum(['RECEITA', 'DESPESA']).optional(),
+  nivel: z.number().int().optional(),
+  parent_id: z.string().uuid().nullable().optional(),
+  ativo: z.boolean().optional(),
+})
 
 export async function updateCategoriaFinanceira(app: FastifyInstance) {
   app
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .put(
-      '/organizations/:slug/financial/categorias/:categoriaId',
+      '/organizations/:slug/financeiro/categorias/:categoriaId',
       {
         schema: {
-          tags: ['Financeiro - Parceiros'],
+          tags: ['Financeiro - Categorias'],
           summary: 'Atualizar categoria financeira',
           security: [{ bearerAuth: [] }],
           params: z.object({ slug: z.string(), categoriaId: z.string().uuid() }),
-          body: parceiroSchema.partial(),
-          response: { 204: z.null() },
+          body: updateCategoriaBodySchema,
+          response: { 200: z.object({ categoriaId: z.string().uuid() }) },
         },
       },
       async (request, reply) => {
@@ -44,7 +53,7 @@ export async function updateCategoriaFinanceira(app: FastifyInstance) {
         })
 
         if (!categoriaFinanceira) {
-          throw new BadRequestError('Categoria não encontrado.')
+          throw new BadRequestError('Categoria não encontrada.')
         }
 
         await prisma.categoriaFinanceira.update({
@@ -52,7 +61,7 @@ export async function updateCategoriaFinanceira(app: FastifyInstance) {
           data: request.body,
         })
 
-        return reply.status(204).send()
+        return reply.status(200).send({ categoriaId: categoriaId })
       },
     )
 }

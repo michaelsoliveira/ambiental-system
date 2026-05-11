@@ -13,11 +13,11 @@ export async function deleteCategoriaFinanceira(app: FastifyInstance) {
     .withTypeProvider<ZodTypeProvider>()
     .register(auth)
     .delete(
-      '/organizations/:slug/financial/categorias/:categoriaId',
+      '/organizations/:slug/financeiro/categorias/:categoriaId',
       {
         schema: {
-          tags: ['Financeiro - Parceiros'],
-          summary: 'Deletar categoria',
+          tags: ['Financeiro - Categorias'],
+          summary: 'Deletar categoria financeira',
           security: [{ bearerAuth: [] }],
           params: z.object({ slug: z.string(), categoriaId: z.string().uuid() }),
           response: { 204: z.null() },
@@ -42,10 +42,10 @@ export async function deleteCategoriaFinanceira(app: FastifyInstance) {
         })
 
         if (!categoria) {
-          throw new BadRequestError('Parceiro não encontrado.')
+          throw new BadRequestError('Categoria não encontrada.')
         }
 
-        await prisma.parceiro.delete({ where: { id: categoriaId } })
+        await prisma.categoriaFinanceira.delete({ where: { id: categoriaId } })
 
         return reply.status(204).send()
       },
