@@ -1,7 +1,8 @@
 import { Plus, RefreshCw, Trash2 } from "lucide-react"
 import { useFieldArray, useFormContext } from "react-hook-form"
 
-import { gerarParcelasPadrao } from "@/features/lancamento/utils/parcelas"
+import type { LancamentoFormValues } from "@/features/lancamento/utils/form-schema"
+import { ParcelaFormItem, gerarParcelasPadrao } from "@/features/lancamento/utils/parcelas"
 
 import { SelectSearchable } from "@/components/select-searchable"
 import { Button } from "@/components/ui/button"
@@ -69,10 +70,13 @@ export function ParcelasTab() {
     form.setValue('parcelas', parcelas, { shouldDirty: true, shouldValidate: true })
   }
 
-  const totalParcelas = parcelasValues.reduce((total, parcela) => {
-    const val = parseFloat(String(parcela?.valor ?? '0'))
-    return total + (Number.isNaN(val) ? 0 : val)
-  }, 0)
+  const totalParcelas = (parcelasValues as NonNullable<LancamentoFormValues['parcelas']>).reduce(
+    (total: number, parcela: ParcelaFormItem) => {
+      const val = parseFloat(String(parcela?.valor ?? '0'))
+      return total + (Number.isNaN(val) ? 0 : val)
+    },
+    0,
+  )
   const valorOriginal = parseFloat(valor || '0')
   const diferenca = isRecorrente ? 0 : valorOriginal - totalParcelas
 
