@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react"
+import { useParams } from "next/navigation"
 import { useFormContext } from "react-hook-form"
 
 import { gerarParcelasPadrao } from "@/features/lancamento/utils/parcelas"
@@ -15,6 +16,7 @@ import {
   FormMessage} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { useParceiroSelect } from "@/hooks/use-parceiro-select"
 
 interface DadosLancamentoTabProps {
   categorias: any
@@ -31,6 +33,16 @@ export function DadosLancamentoTab({
 }: DadosLancamentoTabProps) {
   const form = useFormContext()
   const { watch, setValue } = form
+  const { slug: org } = useParams<{ slug: string }>()
+  const parceiroId = watch('parceiro_id')
+  const {
+    options: parceirosOptions,
+    isLoading: loadingParceiros,
+    isLoadingMore: loadingMoreParceiros,
+    hasMore: hasMoreParceiros,
+    onSearchChange: onParceiroSearchChange,
+    onLoadMore: onParceiroLoadMore,
+  } = useParceiroSelect(org ?? '', parceiroId)
   
   const tipoLancamento = watch('tipo')
   const controleInterno = watch('controle_interno')
@@ -76,14 +88,6 @@ export function DadosLancamentoTab({
       value: conta.id
     }))
   }, [contas])
-
-  const parceirosOptions = useMemo(() => {
-    if (!parceiros || !Array.isArray(parceiros)) return []
-    return parceiros.map((parceiro: any) => ({
-      label: parceiro.pessoa_nome,
-      value: parceiro.id
-    }))
-  }, [parceiros])
 
   const centrosCustoOptions = useMemo(() => {
     if (!centrosCusto || !Array.isArray(centrosCusto)) return []
@@ -157,8 +161,13 @@ export function DadosLancamentoTab({
                     value={field.value}
                     onValueChange={field.onChange}
                     placeholder="Selecione o parceiro"
-                    emptyText="Nenhuma parceiro encontrada"
+                    emptyText="Nenhum parceiro encontrado"
                     searchPlaceholder="Buscar parceiro..."
+                    isLoading={loadingParceiros}
+                    onSearchChange={onParceiroSearchChange}
+                    hasMore={hasMoreParceiros}
+                    onLoadMore={onParceiroLoadMore}
+                    isLoadingMore={loadingMoreParceiros}
                   />
                   <FormMessage />
                 </FormItem>

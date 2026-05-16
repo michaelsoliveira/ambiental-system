@@ -164,7 +164,7 @@ export function SelectSearchable({
           className="p-0"
           align="start"
         >
-          <Command className="w-full">
+          <Command className="w-full" shouldFilter={!onSearchChange}>
             <CommandInput 
               value={searchValue}
               onValueChange={handleSearchChange}

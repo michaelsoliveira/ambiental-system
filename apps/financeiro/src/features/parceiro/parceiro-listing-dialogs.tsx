@@ -33,18 +33,17 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { deleteParceiro } from '@/http/parceiro/delete-parceiro'
+import { queryClient } from '@/lib/react-query'
 import type { ParceiroListRecord } from '@/http/parceiro/get-parceiros'
 import {
   type TipoParceiro,
   updateParceiro,
 } from '@/http/parceiro/update-parceiro'
 
+import { getParceiroDisplayName } from '@/lib/parceiro-display-name'
+
 function getParceiroNome(p: ParceiroListRecord) {
-  return (
-    p.pessoa.fisica?.nome ||
-    p.pessoa.juridica?.nome_fantasia ||
-    'Nome não informado'
-  )
+  return getParceiroDisplayName(p)
 }
 
 function parseTipo(t: string): TipoParceiro {
@@ -89,6 +88,8 @@ export function ParceiroEditDialog({
         ativo,
       })
       toast.success('Parceiro atualizado.')
+      await queryClient.invalidateQueries({ queryKey: ['parceiros', orgSlug] })
+      queryClient.invalidateQueries({ queryKey: ['parceiros'] })
       onClose()
       router.refresh()
     } catch (err) {
@@ -202,6 +203,8 @@ export function ParceiroDeleteAlert({
     try {
       await deleteParceiro(orgSlug, parceiro.id)
       toast.success('Parceiro excluído.')
+      await queryClient.invalidateQueries({ queryKey: ['parceiros', orgSlug] })
+      queryClient.invalidateQueries({ queryKey: ['parceiros'] })
       onClose()
       router.refresh()
     } catch (err) {

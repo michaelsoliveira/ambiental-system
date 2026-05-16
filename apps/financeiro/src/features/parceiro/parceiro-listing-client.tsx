@@ -42,12 +42,10 @@ import {
 
 dayjs.extend(relativeTime)
 
+import { getParceiroDisplayName } from '@/lib/parceiro-display-name'
+
 function getParceiroNome(p: ParceiroListRecord) {
-  return (
-    p.pessoa.fisica?.nome ||
-    p.pessoa.juridica?.nome_fantasia ||
-    'Nome não informado'
-  )
+  return getParceiroDisplayName(p)
 }
 
 function getParceiroDocumento(p: ParceiroListRecord) {

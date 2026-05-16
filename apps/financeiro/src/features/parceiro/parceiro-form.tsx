@@ -35,9 +35,8 @@ export function ParceiroForm() {
   const [{ errors, message, success }, handleSubmit, isPending] = useFormState(
     createParceiroAction,
     () => {
-      queryClient.invalidateQueries({
-        queryKey: [org, 'parceiros'],
-      })
+      queryClient.invalidateQueries({ queryKey: ['parceiros', org] })
+      queryClient.invalidateQueries({ queryKey: ['parceiros'] })
       toast.success(message ?? 'Parceiro cadastrado com sucesso!')
     },
   )

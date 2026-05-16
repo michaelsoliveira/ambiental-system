@@ -70,12 +70,9 @@ export async function getParceiros(app: FastifyInstance) {
           throw new UnauthorizedError('Você não tem permissão para visualizar parceiros.')
         }
 
-        const where = {
-          organization_id: organization.id,
-          ...(ativo !== undefined && { ativo }),
-          ...(tipo_parceiro && { tipo_parceiro }),
-          ...(search && {
-            OR: [
+        const cnpjDigits = search?.replace(/\D/g, '') ?? ''
+        const searchOr = search
+          ? [
               { observacoes: { contains: search, mode: 'insensitive' as const } },
               {
                 pessoa: {
@@ -91,8 +88,32 @@ export async function getParceiros(app: FastifyInstance) {
                   },
                 },
               },
-            ],
-          }),
+              {
+                pessoa: {
+                  juridica: {
+                    razao_social: { contains: search, mode: 'insensitive' as const },
+                  },
+                },
+              },
+              ...(cnpjDigits.length >= 3
+                ? [
+                    {
+                      pessoa: {
+                        juridica: {
+                          cnpj: { contains: cnpjDigits, mode: 'insensitive' as const },
+                        },
+                      },
+                    },
+                  ]
+                : []),
+            ]
+          : undefined
+
+        const where = {
+          organization_id: organization.id,
+          ...(ativo !== undefined && { ativo }),
+          ...(tipo_parceiro && { tipo_parceiro }),
+          ...(searchOr && { OR: searchOr }),
         }
 
         const [parceiros, total] = await Promise.all([
@@ -117,7 +138,12 @@ export async function getParceiros(app: FastifyInstance) {
         return reply.send({ 
           parceiros: parceiros.map((parceiro) => ({
             ...parceiro,
-            pessoa_nome: parceiro.pessoa.tipo === 'F' ? parceiro.pessoa.fisica?.nome : parceiro.pessoa.juridica?.nome_fantasia
+            pessoa_nome:
+              parceiro.pessoa.tipo === 'F'
+                ? parceiro.pessoa.fisica?.nome ?? null
+                : parceiro.pessoa.juridica?.nome_fantasia ||
+                  parceiro.pessoa.juridica?.razao_social ||
+                  null,
           })), 
           total,
           pagination: {
