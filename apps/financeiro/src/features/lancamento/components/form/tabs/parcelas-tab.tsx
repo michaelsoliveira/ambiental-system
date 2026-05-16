@@ -1,5 +1,7 @@
-import { Plus,Trash2 } from "lucide-react"
-import { useFieldArray,useFormContext } from "react-hook-form"
+import { Plus, RefreshCw, Trash2 } from "lucide-react"
+import { useFieldArray, useFormContext } from "react-hook-form"
+
+import { gerarParcelasPadrao } from "@/features/lancamento/utils/parcelas"
 
 import { SelectSearchable } from "@/components/select-searchable"
 import { Button } from "@/components/ui/button"
@@ -31,6 +33,8 @@ export function ParcelasTab() {
   const formaParcelamento = form.watch('forma_parcelamento')
   const valor = form.watch('valor')
   const numeroParcelas = form.watch('numero_parcelas')
+  const dataVencimento = form.watch('data_vencimento')
+  const parcelasValues = form.watch('parcelas') ?? []
   const isRecorrente = formaParcelamento === 'RECORRENTE'
 
   const statusOptions = [
@@ -51,14 +55,24 @@ export function ParcelasTab() {
     append(novaParcela)
   }
 
-  const calcularTotalParcelas = () => {
-    return fields.reduce((total, field: any) => {
-      const val = parseFloat(field.valor || '0')
-      return total + (isNaN(val) ? 0 : val)
-    }, 0)
+  const handleRegenerarParcelas = () => {
+    const num = parseInt(numeroParcelas || '0', 10)
+    const valorNum = parseFloat(valor || '0')
+    if (!(num > 0 && valorNum > 0)) return
+
+    const parcelas = gerarParcelasPadrao({
+      formaParcelamento,
+      numeroParcelas: num,
+      valorTotal: valorNum,
+      dataVencimento: dataVencimento || undefined,
+    })
+    form.setValue('parcelas', parcelas, { shouldDirty: true, shouldValidate: true })
   }
 
-  const totalParcelas = calcularTotalParcelas()
+  const totalParcelas = parcelasValues.reduce((total, parcela) => {
+    const val = parseFloat(String(parcela?.valor ?? '0'))
+    return total + (Number.isNaN(val) ? 0 : val)
+  }, 0)
   const valorOriginal = parseFloat(valor || '0')
   const diferenca = isRecorrente ? 0 : valorOriginal - totalParcelas
 
@@ -109,18 +123,30 @@ export function ParcelasTab() {
 
       {/* Tabela de Parcelas */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className="text-base font-semibold">Detalhes das Parcelas</h3>
-          <Button 
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={handleAddParcela}
-            className="gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Adicionar Parcela
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleRegenerarParcelas}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Recalcular parcelas
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddParcela}
+              className="gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Parcela
+            </Button>
+          </div>
         </div>
 
         {fields.length > 0 ? (
@@ -139,7 +165,7 @@ export function ParcelasTab() {
                 {fields.map((field: any, index: number) => (
                   <TableRow key={field.id} className="hover:bg-muted/50">
                     <TableCell className="font-medium">
-                      {field.numero_parcela}
+                      {parcelasValues[index]?.numero_parcela ?? index + 1}
                     </TableCell>
                     
                     <TableCell>

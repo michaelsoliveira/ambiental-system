@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo } from "react"
 import { useFormContext } from "react-hook-form"
+
+import { gerarParcelasPadrao } from "@/features/lancamento/utils/parcelas"
 
 import { SelectSearchable } from "@/components/select-searchable"
 import { Button } from "@/components/ui/button"
@@ -36,6 +38,7 @@ export function DadosLancamentoTab({
   const numeroParcelas = watch('numero_parcelas')
   const valor = watch('valor')
   const dataVencimento = watch('data_vencimento')
+  const parcelasAtuais = watch('parcelas')
 
   const tiposOptions = [
     { label: 'Receita', value: 'RECEITA' },
@@ -90,34 +93,39 @@ export function DadosLancamentoTab({
     }))
   }, [centrosCusto])
 
-  // Gerar parcelas automaticamente quando número de parcelas muda
+  // Gera parcelas só quando a quantidade muda (não sobrescreve edições manuais de data/valor)
   useEffect(() => {
-    if (formaParcelamento !== 'UNICA' && numeroParcelas && valor) {
-      const numParcelas = parseInt(numeroParcelas)
-      const valorNumerico = parseFloat(valor)
-      
-      if (numParcelas > 0 && valorNumerico > 0) {
-        const parcelas: any = []
-        const valorPorParcela = formaParcelamento === 'RECORRENTE' ? valorNumerico : valorNumerico / numParcelas
-        const dataBase = dataVencimento ? new Date(`${dataVencimento}T00:00:00`) : new Date()
-
-        for (let i = 1; i <= numParcelas; i++) {
-          const dataVencimentoParcela = new Date(dataBase)
-          dataVencimentoParcela.setMonth(dataVencimentoParcela.getMonth() + (i - 1))
-          
-          parcelas.push({
-            numero_parcela: i,
-            data_vencimento: dataVencimentoParcela.toISOString().split('T')[0],
-            valor: valorPorParcela.toFixed(2),
-            pago: false,
-            status_parcela: 'PENDENTE'
-          })
-        }
-
-        setValue('parcelas', parcelas)
+    if (formaParcelamento === 'UNICA') {
+      if (parcelasAtuais?.length) {
+        setValue('parcelas', [], { shouldDirty: true })
       }
+      return
     }
-  }, [formaParcelamento, numeroParcelas, valor, dataVencimento, setValue])
+
+    const numParcelas = parseInt(numeroParcelas || '0', 10)
+    const valorNumerico = parseFloat(valor || '0')
+    if (!(numParcelas > 0 && valorNumerico > 0)) return
+
+    const qtdAtual = parcelasAtuais?.length ?? 0
+    const temParcelasSalvas = parcelasAtuais?.some((p: { id?: string }) => Boolean(p?.id))
+    if (qtdAtual === numParcelas && (qtdAtual === 0 || temParcelasSalvas)) return
+
+    const parcelas = gerarParcelasPadrao({
+      formaParcelamento,
+      numeroParcelas: numParcelas,
+      valorTotal: valorNumerico,
+      dataVencimento: dataVencimento || undefined,
+    })
+
+    setValue('parcelas', parcelas, { shouldDirty: true, shouldValidate: true })
+  }, [
+    formaParcelamento,
+    numeroParcelas,
+    valor,
+    dataVencimento,
+    parcelasAtuais?.length,
+    setValue,
+  ])
 
   return (
     <div className="space-y-6">

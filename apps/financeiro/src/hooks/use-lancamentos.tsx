@@ -107,14 +107,15 @@ export function useLancamentos(org: string, params: Record<string, any>) {
 }
 
 export function useLancamento(org: string, lancamentoId: string, enabled: boolean = true) {
-
   return useQuery({
-    queryKey: ['lancamento', lancamentoId],
+    queryKey: ['lancamento', org, lancamentoId],
     queryFn: async () => {
-      const result = await api.get(`organizations/${org}/financeiro/lancamentos/${lancamentoId}`).json<any>()
-      return result
+      const { lancamento } = await api
+        .get(`organizations/${org}/financeiro/lancamentos/${lancamentoId}`)
+        .json<{ lancamento: Record<string, unknown> }>()
+      return lancamento
     },
-    enabled: !!lancamentoId && enabled,
+    enabled: !!org && !!lancamentoId && enabled,
     staleTime: 1000 * 60 * 5,
   })
 }
@@ -155,6 +156,7 @@ export function useUpdateLancamento(org: string) {
     onSuccess: (data) => {
       toast.success('Lançamento atualizado com sucesso!')
       queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
+      queryClient.invalidateQueries({ queryKey: ['lancamento'] })
     },
     onError: (error: any) => {
       const message = error.response?.data?.message || 'Erro ao atualizar lançamento'

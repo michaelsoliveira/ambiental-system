@@ -1,9 +1,11 @@
 'use client'
 
-import { Copy, Maximize2, Minimize2, X } from 'lucide-react'
+import { Copy, Loader2, Maximize2, Minimize2, X } from 'lucide-react'
+import { useParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { useLancamento } from '@/hooks/use-lancamentos'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import {
@@ -37,8 +39,17 @@ export function LancamentoSheet({
     parceiros,
     className
 }: LancamentoSheetProps) {
+    const { slug } = useParams<{ slug: string }>()
     const [isExpanded, setIsExpanded] = useState(false)
     const scrollRef = useRef<HTMLDivElement>(null)
+
+    const lancamentoId = initialData?.id as string | undefined
+    const { data: lancamentoDetalhe, isLoading: isLoadingDetalhe } = useLancamento(
+      slug ?? '',
+      lancamentoId ?? '',
+      open && !!lancamentoId,
+    )
+    const formData = lancamentoDetalhe ?? initialData
 
     useEffect(() => {
     if (open) {
@@ -72,8 +83,8 @@ export function LancamentoSheet({
     }
 
     const HeaderContent = () => {
-      const descricao = initialData?.descricao || 'Novo lançamento'
-      const numero = initialData?.numero || ''
+      const descricao = formData?.descricao || 'Novo lançamento'
+      const numero = formData?.numero || ''
       
       return (
         <>
@@ -123,9 +134,9 @@ export function LancamentoSheet({
             </TooltipProvider>
             </div>
         </div>
-        {initialData && initialData?.numero_parcelas && (
+        {formData && formData?.numero_parcelas && (
             <span className='flex flex-row text-sm text-muted-foreground gap-1'>
-            <span>Parcelas: {initialData.numero_parcelas}</span>
+            <span>Parcelas: {formData.numero_parcelas}</span>
             </span>
         )}
         </> 
@@ -139,16 +150,27 @@ const FooterContent = () => (
     </div>
   )
 
-  const FormContent = () => (
-    <LancamentoForm
-        initialData={initialData}
+  const FormContent = () => {
+    if (lancamentoId && isLoadingDetalhe) {
+      return (
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      )
+    }
+
+    return (
+      <LancamentoForm
+        key={formData?.id ? `lancamento-${formData.id}-${formData.updated_at}` : 'novo'}
+        initialData={formData}
         onClose={handleClose}
         categorias={categorias}
         contas={contas}
         centrosCusto={centrosCusto}
         parceiros={parceiros}
-    />
-  )
+      />
+    )
+  }
 
   if (isExpanded) {
     return (

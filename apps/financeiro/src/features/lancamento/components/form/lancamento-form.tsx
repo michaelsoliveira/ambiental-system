@@ -11,6 +11,7 @@ import { useCreateLancamento, useUpdateLancamento } from '@/hooks/use-lancamento
 import { prepareFormData } from '@/lib/file-upload'
 import { zodV4Resolver } from '@/lib/zod-v4-resolver'
 
+import { mapLancamentoToFormValues } from '../../utils/map-lancamento-to-form'
 import { LancamentoFormValues, lancamentoSchema } from '../../utils/form-schema'
 import { FormErrorWarning } from './form-error-warning'
 import { DadosLancamentoTab } from './tabs/dados-lancamento-tab'
@@ -37,29 +38,12 @@ export function LancamentoForm({
     mode: 'onChange',
     reValidateMode: 'onChange',
     resolver: zodV4Resolver(lancamentoSchema) as any,
-    defaultValues: {
-      id: initialData?.id ?? undefined,
-      numero: initialData?.numero ?? "",
-      tipo: initialData?.tipo ?? "DESPESA",
-      controle_interno: initialData?.controle_interno ?? ((initialData?.tipo ?? 'DESPESA') === 'DESPESA'),
-      gerar_boleto: initialData?.gerar_boleto ?? false,
-      permitir_pix: initialData?.permitir_pix ?? false,
-      data: initialData?.data ? new Date(initialData.data).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      data_vencimento: initialData?.data_vencimento ? new Date(initialData.data_vencimento).toISOString().split('T')[0] : "",
-      descricao: initialData?.descricao ?? "",
-      valor: initialData?.valor?.toString() ?? "",
-      categoria_id: initialData?.categoria_id ?? "",
-      conta_bancaria_id: initialData?.conta_bancaria_id ?? "",
-      centro_custo_id: initialData?.centro_custo_id ?? "",
-      parceiro_id: initialData?.parceiro_id ?? "",
-      forma_parcelamento: initialData?.forma_parcelamento ?? "UNICA",
-      numero_parcelas: initialData?.numero_parcelas?.toString() ?? "1",
-      pago: initialData?.pago ?? false,
-      status_lancamento: initialData?.status_lancamento ?? "PENDENTE",
-      observacoes: initialData?.observacoes ?? "",
-      parcelas: initialData?.parcelas ?? []
-    }
+    defaultValues: mapLancamentoToFormValues(initialData),
   })
+
+  useEffect(() => {
+    form.reset(mapLancamentoToFormValues(initialData))
+  }, [initialData?.id, initialData?.updated_at, form])
 
   const { slug } = useParams<{ slug: string }>()
 
@@ -146,6 +130,20 @@ export function LancamentoForm({
 
   const onSubmit: SubmitHandler<LancamentoFormValues> = async (data) => {
     try {
+      const payload = { ...data }
+
+      if (
+        payload.forma_parcelamento !== 'UNICA' &&
+        payload.forma_parcelamento !== 'RECORRENTE' &&
+        payload.parcelas?.length
+      ) {
+        const somaParcelas = payload.parcelas.reduce((total, parcela) => {
+          const val = parseFloat(String(parcela.valor ?? '0'))
+          return total + (Number.isNaN(val) ? 0 : val)
+        }, 0)
+        payload.valor = somaParcelas.toFixed(2)
+      }
+
       if (!isValid || Object.keys(errors).length > 0) {
         const tabWithError = getTabWithFirstError(errors)
         setCurrentTab(tabWithError)
@@ -157,10 +155,10 @@ export function LancamentoForm({
         return
       }
       
-      const formData: FormData = prepareFormData(data, 'data')
-      
+      const formData: FormData = prepareFormData(payload, 'data')
+
       if (initialData?.id) {
-        updateLancamentoMutate({ lancamentoId: initialData.id, formData }) 
+        updateLancamentoMutate({ lancamentoId: initialData.id, formData })
       } else {
         createLancamentoMutate({ formData })
       }

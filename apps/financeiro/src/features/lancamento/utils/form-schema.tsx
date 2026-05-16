@@ -24,7 +24,7 @@ export const lancamentoSchema = z.object({
   controle_interno: z.boolean().default(false),
   gerar_boleto: z.boolean().default(false),
   permitir_pix: z.boolean().default(false),
-  observacoes: z.string().optional(),
+  observacoes: z.string().nullish(),
   parcelas: z.array(z.object({
     id: z.string().optional(),
     numero_parcela: z.number(),
@@ -32,7 +32,7 @@ export const lancamentoSchema = z.object({
     valor: z.string(),
     pago: z.boolean().default(false),
     status_parcela: z.enum(['PENDENTE', 'PAGA', 'CANCELADA', 'ATRASADA']).default('PENDENTE'),
-    observacoes: z.string().optional()
+    observacoes: z.string().nullish(),
   })).optional()
 })
 

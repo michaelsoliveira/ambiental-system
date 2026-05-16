@@ -8,6 +8,24 @@ import { getUserPermissions } from '@/utils/get-user-permissions'
 import { LancamentoService } from '@/services/lancamento.service'
 import { parseMultipartForm } from '@/utils/helpers'
 
+export const parcelaInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  numero_parcela: z.coerce.number().int().min(1),
+  data_vencimento: z
+    .string()
+    .refine((date) => !Number.isNaN(Date.parse(date)), 'Data de vencimento da parcela inválida'),
+  valor: z
+    .union([z.string(), z.number()])
+    .transform((val) => (typeof val === 'number' ? val : parseFloat(val)))
+    .refine((val) => !Number.isNaN(val) && val >= 0, 'Valor da parcela inválido'),
+  pago: z.boolean().optional().default(false),
+  status_parcela: z
+    .enum(['PENDENTE', 'PAGA', 'CANCELADA', 'ATRASADA'])
+    .optional()
+    .default('PENDENTE'),
+  observacoes: z.string().nullish(),
+})
+
 export const lancamentoCreateSchema = z.object({
   numero: z.string().min(1, 'Número do lançamento é obrigatório'),
   tipo: z.enum(['RECEITA', 'DESPESA', 'TRANSFERENCIA']),
@@ -74,6 +92,7 @@ export const lancamentoCreateSchema = z.object({
     (v) => (v === true || v === 'true' || v === '1'),
     z.boolean()
   ).optional().default(false),
+  parcelas: z.array(parcelaInputSchema).optional(),
 })
 
 export async function createLancamento(app: FastifyInstance) {

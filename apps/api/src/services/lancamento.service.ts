@@ -2,6 +2,7 @@ import { Prisma, Lancamento } from '@prisma/client'
 import { Decimal } from '@prisma/client/runtime/library'
 import { prisma } from '@/lib/prisma'
 import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
+import { AsaasService } from '@/services/asaas.service'
 
 export interface LancamentoFilters {
   search?: string
@@ -25,6 +26,17 @@ export interface LancamentoFilters {
   limit?: number
   orderBy?: string
   order?: 'asc' | 'desc'
+}
+
+export interface ParcelaInput {
+  /** Presente ao editar parcelas já salvas no banco */
+  id?: string
+  numero_parcela: number
+  data_vencimento: string
+  valor: number
+  pago?: boolean
+  status_parcela?: 'PENDENTE' | 'PAGA' | 'CANCELADA' | 'ATRASADA'
+  observacoes?: string
 }
 
 export interface CreateLancamentoData {
@@ -55,6 +67,8 @@ export interface CreateLancamentoData {
   tipo_repeticao?: 'NENHUMA' | 'RECORRENTE' | 'PARCELADO'
   periodicidade?: 'DIARIA' | 'SEMANAL' | 'QUINZENAL' | 'MENSAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL'
   data_fim_repeticao?: string
+  /** Parcelas editadas no formulário (datas e valores customizados) */
+  parcelas?: ParcelaInput[]
 }
 
 export interface UpdateLancamentoData extends Partial<CreateLancamentoData> {}
@@ -90,6 +104,139 @@ export interface LancamentoWithRelations extends Lancamento {
 }
 
 export class LancamentoService {
+  private static readonly TOLERANCIA_SOMA_PARCELAS = 0.02
+
+  private static buildParcelasPadrao(data: CreateLancamentoData): ParcelaInput[] {
+    const numeroParcelas = data.numero_parcelas || 1
+    const valorPorParcela =
+      data.forma_parcelamento === 'RECORRENTE'
+        ? data.valor
+        : data.valor / numeroParcelas
+    const dataBase = data.data_vencimento
+      ? new Date(data.data_vencimento)
+      : new Date(data.data)
+
+    const parcelas: ParcelaInput[] = []
+    for (let i = 1; i <= numeroParcelas; i++) {
+      const dataVencimentoParcela = new Date(dataBase)
+      dataVencimentoParcela.setMonth(dataVencimentoParcela.getMonth() + (i - 1))
+      parcelas.push({
+        numero_parcela: i,
+        data_vencimento: dataVencimentoParcela.toISOString().split('T')[0]!,
+        valor: Math.round(valorPorParcela * 100) / 100,
+        pago: false,
+        status_parcela: 'PENDENTE',
+      })
+    }
+    return parcelas
+  }
+
+  private static resolveParcelas(data: CreateLancamentoData): ParcelaInput[] {
+    if (data.forma_parcelamento === 'UNICA') return []
+
+    const fromForm = (data.parcelas ?? []).filter((p) => p.numero_parcela > 0)
+    if (fromForm.length > 0) {
+      return fromForm
+        .sort((a, b) => a.numero_parcela - b.numero_parcela)
+        .map((p, index) => ({
+          ...p,
+          numero_parcela: index + 1,
+        }))
+    }
+    if (data.numero_parcelas > 1) {
+      return this.buildParcelasPadrao(data)
+    }
+    return []
+  }
+
+  private static validateParcelas(
+    data: CreateLancamentoData,
+    parcelas: ParcelaInput[],
+  ) {
+    if (!parcelas.length) return
+
+    const soma = parcelas.reduce((acc, p) => acc + p.valor, 0)
+    const esperado =
+      data.forma_parcelamento === 'RECORRENTE'
+        ? data.valor * parcelas.length
+        : data.valor
+
+    if (Math.abs(soma - esperado) > this.TOLERANCIA_SOMA_PARCELAS) {
+      throw new BadRequestError(
+        `A soma das parcelas (${soma.toFixed(2)}) deve ser igual ao valor esperado (${esperado.toFixed(2)}).`,
+      )
+    }
+  }
+
+  private static async persistParcelas(
+    organizationId: string,
+    lancamentoId: string,
+    parcelas: ParcelaInput[],
+  ) {
+    if (!parcelas.length) return
+
+    await prisma.parcela.createMany({
+      data: parcelas.map((p) => ({
+        lancamento_id: lancamentoId,
+        organization_id: organizationId,
+        numero_parcela: p.numero_parcela,
+        data_vencimento: new Date(p.data_vencimento),
+        valor: new Decimal(p.valor),
+        pago: p.pago ?? false,
+        status_parcela: p.status_parcela ?? 'PENDENTE',
+        observacoes: p.observacoes ?? null,
+      })),
+    })
+  }
+
+  private static async syncParcelas(
+    organizationId: string,
+    lancamentoId: string,
+    parcelas: ParcelaInput[],
+  ) {
+    const existing = await prisma.parcela.findMany({
+      where: { lancamento_id: lancamentoId, organization_id: organizationId },
+    })
+    const keepIds: string[] = []
+
+    for (const parcela of parcelas) {
+      const payload = {
+        numero_parcela: parcela.numero_parcela,
+        data_vencimento: new Date(parcela.data_vencimento),
+        valor: new Decimal(parcela.valor),
+        pago: parcela.pago ?? false,
+        status_parcela: parcela.status_parcela ?? 'PENDENTE',
+        observacoes: parcela.observacoes ?? null,
+      }
+
+      if (parcela.id && existing.some((row) => row.id === parcela.id)) {
+        await prisma.parcela.update({
+          where: { id: parcela.id },
+          data: payload,
+        })
+        keepIds.push(parcela.id)
+        continue
+      }
+
+      const created = await prisma.parcela.create({
+        data: {
+          ...payload,
+          lancamento_id: lancamentoId,
+          organization_id: organizationId,
+        },
+      })
+      keepIds.push(created.id)
+    }
+
+    await prisma.parcela.deleteMany({
+      where: {
+        lancamento_id: lancamentoId,
+        organization_id: organizationId,
+        ...(keepIds.length > 0 ? { id: { notIn: keepIds } } : {}),
+      },
+    })
+  }
+
   private static addPeriod(date: Date, periodicidade: NonNullable<CreateLancamentoData['periodicidade']>, index: number) {
     const next = new Date(date)
     if (periodicidade === 'DIARIA') next.setDate(next.getDate() + index)
@@ -496,15 +643,20 @@ export class LancamentoService {
     data: CreateLancamentoData
   ) {
     const dataLancamento = data.data.split('T')[0]!
+    const parcelas = this.resolveParcelas(data)
+    this.validateParcelas(data, parcelas)
+    const primeiraParcela = parcelas[0]
 
     const lancamento = await prisma.lancamento.create({
       data: {
         numero: data.numero,
         tipo: data.tipo,
         data: new Date(dataLancamento),
-        data_vencimento: data.data_vencimento
-          ? new Date(data.data_vencimento)
-          : null,
+        data_vencimento: primeiraParcela
+          ? new Date(primeiraParcela.data_vencimento)
+          : data.data_vencimento
+            ? new Date(data.data_vencimento)
+            : null,
         data_competencia: data.data_competencia || null,
         descricao: data.descricao,
         observacoes: data.observacoes ?? null,
@@ -561,6 +713,8 @@ export class LancamentoService {
       }
     }
 
+    await this.persistParcelas(organizationId, lancamento.id, parcelas)
+
     return prisma.lancamento.findUniqueOrThrow({
       where: { id: lancamento.id },
     })
@@ -571,9 +725,6 @@ export class LancamentoService {
     lancamento: { id: string; valor: any; descricao: string; data_vencimento: Date | null },
     data: CreateLancamentoData
   ): Promise<{ id: string; invoiceUrl?: string; bankSlipUrl?: string; identificationField?: string; billingType: string } | null> {
-    const { prisma } = await import('@/lib/prisma')
-    const { AsaasService } = await import('@/services/asaas.service')
-
     const config = await prisma.configuracaoFinanceira.findUnique({
       where: { organization_id: organizationId },
     })
@@ -614,7 +765,9 @@ export class LancamentoService {
     }
 
     const billingType = (data.gerar_boleto ? 'BOLETO' : 'PIX') as 'BOLETO' | 'PIX'
-    const dueDate = (data.data_vencimento ?? '').split('T')[0] || new Date().toISOString().split('T')[0]
+    const dueDate =
+      (data.data_vencimento ?? '').split('T')[0] ??
+      new Date().toISOString().split('T')[0]!
     const response = await asaas.criarCobranca({
       customer: customerId,
       value: data.valor,
@@ -737,9 +890,16 @@ export class LancamentoService {
       },
     })
 
+    const parcelasForm = this.resolveParcelas(data)
+    this.validateParcelas(data, parcelasForm)
+
     let primeiroLancamento: Lancamento | null = null
     for (let i = 1; i <= numeroParcelas; i++) {
-      const dataVencimentoParcela = LancamentoService.addPeriod(dataInicio, periodicidade, i - 1)
+      const parcelaCfg = parcelasForm[i - 1]
+      const dataVencimentoParcela = parcelaCfg
+        ? new Date(parcelaCfg.data_vencimento)
+        : LancamentoService.addPeriod(dataInicio, periodicidade, i - 1)
+      const valorParcela = parcelaCfg?.valor ?? data.valor
       const lancamento = await prisma.lancamento.create({
         data: {
           numero: numeroParcelas === 1 ? data.numero : `${data.numero}-${i}/${numeroParcelas}`,
@@ -749,7 +909,7 @@ export class LancamentoService {
           data_competencia: data.data_competencia || null,
           descricao: numeroParcelas === 1 ? data.descricao : `${data.descricao} - Recorrência ${i}/${numeroParcelas}`,
           observacoes: data.observacoes ?? null,
-          valor: new Decimal(data.valor),
+          valor: new Decimal(valorParcela),
           valor_pago: i === 1 && data.valor_pago ? new Decimal(data.valor_pago) : null,
           pago: i === 1 ? data.pago : false,
           data_pagamento: i === 1 && data.data_pagamento ? new Date(data.data_pagamento) : null,
@@ -840,6 +1000,45 @@ export class LancamentoService {
       updateData.parceiro_id = data.parceiro_id ?? null
     if (data.veiculo_id !== undefined)
       updateData.veiculo_id = data.veiculo_id ?? null
+
+    if (Array.isArray(data.parcelas)) {
+      const formaParcelamento =
+        data.forma_parcelamento ?? lancamentoExistente.forma_parcelamento
+      const merged: CreateLancamentoData = {
+        numero: data.numero ?? lancamentoExistente.numero,
+        tipo: (data.tipo ?? lancamentoExistente.tipo) as CreateLancamentoData['tipo'],
+        data: data.data ?? lancamentoExistente.data.toISOString(),
+        valor: data.valor ?? lancamentoExistente.valor.toNumber(),
+        forma_parcelamento: formaParcelamento,
+        numero_parcelas: data.numero_parcelas ?? lancamentoExistente.numero_parcelas,
+        descricao: data.descricao ?? lancamentoExistente.descricao,
+        categoria_id: data.categoria_id ?? lancamentoExistente.categoria_id,
+        conta_bancaria_id:
+          data.conta_bancaria_id ?? lancamentoExistente.conta_bancaria_id,
+        pago: data.pago ?? lancamentoExistente.pago,
+        status_lancamento:
+          data.status_lancamento ?? lancamentoExistente.status_lancamento,
+        parcelas: data.parcelas,
+      }
+
+      const parcelas = this.resolveParcelas(merged)
+      this.validateParcelas(merged, parcelas)
+
+      if (formaParcelamento !== 'UNICA') {
+        await this.syncParcelas(organizationId, lancamentoId, parcelas)
+        if (parcelas[0]) {
+          updateData.data_vencimento = new Date(parcelas[0].data_vencimento)
+        }
+        if (formaParcelamento !== 'RECORRENTE' && parcelas.length > 0) {
+          const soma = parcelas.reduce((acc, p) => acc + p.valor, 0)
+          updateData.valor = new Decimal(soma)
+        }
+      } else {
+        await prisma.parcela.deleteMany({
+          where: { lancamento_id: lancamentoId, organization_id: organizationId },
+        })
+      }
+    }
 
     const lancamento = await prisma.lancamento.update({
       where: { id: lancamentoId },
