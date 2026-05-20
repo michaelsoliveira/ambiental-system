@@ -356,6 +356,63 @@ export class FolhaPagamentoService {
     await this.recalculateTotals(folhaId, organizationId)
   }
 
+  async updateItem(
+    folhaId: string,
+    itemId: string,
+    data: z.infer<typeof folhaItemCreateSchema>,
+    organizationId: string,
+  ) {
+    const folha = await prisma.folhaPagamento.findFirst({
+      where: { id: folhaId, organization_id: organizationId },
+    })
+    if (!folha) throw new BadRequestError('Folha não encontrada.')
+    if (folha.status !== StatusFolhaPagamento.ABERTA) {
+      throw new BadRequestError('Só é possível editar itens com a folha aberta.')
+    }
+
+    const item = await prisma.folhaPagamentoItem.findFirst({
+      where: {
+        id: itemId,
+        folha_pagamento_id: folhaId,
+        organization_id: organizationId,
+      },
+    })
+    if (!item) throw new BadRequestError('Item da folha não encontrado.')
+
+    const funcionario = await prisma.funcionario.findFirst({
+      where: { id: data.funcionario_id, organization_id: organizationId, ativo: true },
+    })
+    if (!funcionario) throw new BadRequestError('Funcionário não encontrado.')
+
+    const rubrica = await prisma.rubricaFolha.findFirst({
+      where: {
+        id: data.rubrica_id,
+        organization_id: organizationId,
+        ativo: true,
+      },
+    })
+    if (!rubrica) throw new BadRequestError('Rubrica não encontrada.')
+    if (rubrica.tipo_folha !== folha.tipo) {
+      throw new BadRequestError('Rubrica não pertence ao tipo da folha selecionada.')
+    }
+
+    await prisma.folhaPagamentoItem.update({
+      where: { id: itemId },
+      data: {
+        funcionario_id: data.funcionario_id,
+        rubrica_id: rubrica.id,
+        tipo: rubrica.tipo_item,
+        natureza: rubrica.natureza,
+        codigo: data.codigo ?? rubrica.codigo,
+        descricao: data.descricao?.trim() || rubrica.nome,
+        referencia: data.referencia ?? null,
+        valor: data.valor,
+      },
+    })
+
+    await this.recalculateTotals(folhaId, organizationId)
+  }
+
   async removeItem(folhaId: string, itemId: string, organizationId: string) {
     const folha = await prisma.folhaPagamento.findFirst({
       where: { id: folhaId, organization_id: organizationId },

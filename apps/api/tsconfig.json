@@ -2,8 +2,10 @@
     "extends": ["@saas/tsconfig/library.json"],
     "include": ["src/**/*", "scripts"],
     "compilerOptions": {
+        "module": "ESNext",
+        "moduleResolution": "Bundler",
         "paths": {
             "@/*": ["./src/*"]
-        },
-    },
+        }
+    }
 }

@@ -8,7 +8,6 @@
     ".": "./index.ts",
     "./next": "./next-app.ts"
   },
-  "type": "module",
   "devDependencies": {
     "@saas/eslint": "workspace:*",
     "@saas/prettier": "workspace:*",

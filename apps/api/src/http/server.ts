@@ -108,6 +108,7 @@ import { getFolhasPagamento } from "./routes/financeiro/folha-pagamento/get-folh
 import { getFolhasPagamentoRelatorio } from "./routes/financeiro/folha-pagamento/get-folhas-pagamento-relatorio";
 import { getRubricasFolha } from "./routes/financeiro/folha-pagamento/get-rubricas-folha";
 import { deleteFolhaPagamentoItem } from "./routes/financeiro/folha-pagamento/delete-folha-pagamento-item";
+import { updateFolhaPagamentoItem } from "./routes/financeiro/folha-pagamento/update-folha-pagamento-item";
 import { closeFolhaPagamento } from "./routes/financeiro/folha-pagamento/close-folha-pagamento";
 import { reopenFolhaPagamento } from "./routes/financeiro/folha-pagamento/reopen-folha-pagamento";
 import { payFolhaPagamento } from "./routes/financeiro/folha-pagamento/pay-folha-pagamento";
@@ -266,6 +267,7 @@ app.register(getFolhasPagamentoRelatorio)
 app.register(getFolhaPagamento)
 app.register(createFolhaPagamentoItem)
 app.register(deleteFolhaPagamentoItem)
+app.register(updateFolhaPagamentoItem)
 app.register(closeFolhaPagamento)
 app.register(reopenFolhaPagamento)
 app.register(payFolhaPagamento)

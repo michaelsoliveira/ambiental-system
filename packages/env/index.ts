@@ -1,1 +1,1 @@
-export { env } from './api.js'
+export { env } from './api'

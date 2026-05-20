@@ -2,9 +2,20 @@
 
 import { useParams } from 'next/navigation'
 import { type ReactNode, useCallback, useMemo, useState } from 'react'
-import { CheckCircle2Icon, DownloadIcon, FileTextIcon, LockIcon, PlusIcon, RotateCcwIcon, Undo2Icon } from 'lucide-react'
+import {
+  CheckCircle2Icon,
+  DownloadIcon,
+  EyeIcon,
+  FileTextIcon,
+  LockIcon,
+  PlusIcon,
+  RotateCcwIcon,
+  Undo2Icon,
+} from 'lucide-react'
 import { ColumnDef } from '@tanstack/react-table'
+import { toast } from 'sonner'
 
+import { InputMasked } from '@/components/input-masked'
 import { SelectSearchable } from '@/components/select-searchable'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DataTable } from '@/components/ui/table/data-table'
@@ -38,8 +49,14 @@ import {
   useRubricasFolha,
 } from '@/hooks/use-folha-pagamento'
 
+import {
+  competenciaAtual,
+  isValidCompetencia,
+  normalizeCompetencia,
+} from '../lib/competencia'
 import { FolhaPagamentoRelatorioPDF } from './folha-pagamento-relatorio-pdf'
 import { FolhaPagamentoRelatorioTable } from './folha-pagamento-relatorio-table'
+import { FolhaPagamentoViewDialog } from './folha-pagamento-view-dialog'
 
 function labelFuncionario(f: any) {
   return (
@@ -126,13 +143,19 @@ function ActionIconButton({
 export function FolhaPagamentoPage() {
   const { slug } = useParams<{ slug: string }>()
   const [activeView, setActiveView] = useState<'folhas' | 'relatorio'>('folhas')
-  const [competencia, setCompetencia] = useState('')
+  const [competencia, setCompetencia] = useState(competenciaAtual)
   const [tipoFolha, setTipoFolha] = useState('FOLHA_MENSAL')
   const [searchFuncionario, setSearchFuncionario] = useState('')
   const [searchFuncionarioRelatorio, setSearchFuncionarioRelatorio] = useState('')
   const [relatorioFilters, setRelatorioFilters] = useState(defaultRelatorioFilters())
   const [appliedRelatorioFilters, setAppliedRelatorioFilters] = useState<Record<string, any> | null>(null)
   const [novoLancamentoOpen, setNovoLancamentoOpen] = useState(false)
+  const [folhaParaVisualizar, setFolhaParaVisualizar] = useState<{
+    id: string
+    competencia: string
+    tipo: string
+    status: string
+  } | null>(null)
   const [folhaParaItem, setFolhaParaItem] = useState<{ id: string; competencia: string; tipo: string } | null>(null)
   const [itemForm, setItemForm] = useState<any>(defaultItemForm())
 
@@ -227,6 +250,21 @@ export function FolhaPagamentoPage() {
 
           return (
             <div className="flex flex-wrap gap-2">
+              <ActionIconButton
+                label="Visualizar competência e lançamentos"
+                variant="outline"
+                className="border-slate-200 text-slate-700 hover:bg-slate-50 hover:text-slate-900"
+                onClick={() =>
+                  setFolhaParaVisualizar({
+                    id: row.original.id,
+                    competencia: row.original.competencia,
+                    tipo: row.original.tipo,
+                    status: row.original.status,
+                  })
+                }
+              >
+                <EyeIcon className="h-4 w-4" />
+              </ActionIconButton>
               {isAberta && (
                 <>
                   <ActionIconButton
@@ -305,6 +343,20 @@ export function FolhaPagamentoPage() {
     a.click()
   }
 
+  function handleCreateFolha() {
+    const normalized = normalizeCompetencia(competencia)
+    if (!normalized) {
+      toast.error('Informe a competência no formato MM/AAAA (ex.: 04/2026).')
+      return
+    }
+    createFolha.mutate(
+      { competencia: normalized, tipo: tipoFolha },
+      {
+        onSuccess: () => setCompetencia(competenciaAtual()),
+      },
+    )
+  }
+
   function visualizarRelatorio() {
     const filters = {
       competencia: relatorioFilters.competencia || undefined,
@@ -337,7 +389,9 @@ export function FolhaPagamentoPage() {
           <div className="flex min-w-0 flex-1 flex-wrap items-end gap-2 sm:flex-initial">
             <div className="min-w-[140px] flex-1 space-y-1 sm:max-w-[11rem]">
               <Label className="text-xs text-muted-foreground">Nova competência (MM/AAAA)</Label>
-              <Input
+              <InputMasked
+                mask="__/____"
+                replacement={{ _: /\d/ }}
                 placeholder="MM/AAAA"
                 value={competencia}
                 onChange={(e) => setCompetencia(e.target.value)}
@@ -359,9 +413,9 @@ export function FolhaPagamentoPage() {
               </Select>
             </div>
             <Button
-              onClick={() => createFolha.mutate({ competencia, tipo: tipoFolha })}
+              onClick={handleCreateFolha}
               className="w-full sm:w-auto"
-              disabled={createFolha.isPending}
+              disabled={createFolha.isPending || !isValidCompetencia(competencia)}
             >
               <PlusIcon className="mr-2 h-4 w-4" />
               Criar Folha
@@ -388,6 +442,15 @@ export function FolhaPagamentoPage() {
           Relatório
         </Button>
       </div>
+
+      <FolhaPagamentoViewDialog
+        org={slug}
+        folha={folhaParaVisualizar}
+        open={!!folhaParaVisualizar}
+        onOpenChange={(open) => {
+          if (!open) setFolhaParaVisualizar(null)
+        }}
+      />
 
       <Dialog
         open={novoLancamentoOpen}

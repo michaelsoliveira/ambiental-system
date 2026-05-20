@@ -53,6 +53,9 @@ export function useCreateFolhaPagamento(org: string) {
       queryClient.invalidateQueries({ queryKey: ['folhas-pagamento', org] })
       toast.success('Folha criada com sucesso.')
     },
+    onError: (error: any) => {
+      toast.error(error?.message ?? error?.response?.message ?? 'Não foi possível criar a folha.')
+    },
   })
 }
 
@@ -66,6 +69,40 @@ export function useCreateFolhaItem(org: string) {
       queryClient.invalidateQueries({ queryKey: ['folhas-pagamento', org] })
       queryClient.invalidateQueries({ queryKey: ['folha-pagamento', org] })
       toast.success('Item da folha adicionado.')
+    },
+  })
+}
+
+export function useUpdateFolhaItem(org: string) {
+  return useMutation({
+    mutationFn: async ({ folhaId, itemId, ...data }: any) =>
+      api
+        .patch(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/itens/${itemId}`, {
+          json: data,
+        })
+        .json<any>(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folhas-pagamento', org] })
+      queryClient.invalidateQueries({ queryKey: ['folha-pagamento', org] })
+      toast.success('Item da folha atualizado.')
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? 'Erro ao atualizar item da folha.')
+    },
+  })
+}
+
+export function useDeleteFolhaItem(org: string) {
+  return useMutation({
+    mutationFn: async ({ folhaId, itemId }: { folhaId: string; itemId: string }) =>
+      api.delete(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/itens/${itemId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['folhas-pagamento', org] })
+      queryClient.invalidateQueries({ queryKey: ['folha-pagamento', org] })
+      toast.success('Item da folha removido.')
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? 'Erro ao remover item da folha.')
     },
   })
 }

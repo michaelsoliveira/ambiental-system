@@ -31,6 +31,7 @@
         "db:studio": "pnpm env:load prisma studio",
         "env:load": "dotenv -e ../../.env --",
         "build": "tsup",
+        "check-types": "tsc --noEmit",
         "start": "node dist/server.js",
         "convert:csv": "tsx src/scripts/convert-csv-to-sql.ts src/scripts/data/municipios.csv src/scripts/data/municipios.sql"
     },
