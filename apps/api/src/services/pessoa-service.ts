@@ -45,7 +45,7 @@ const enderecoSchema = z.object({
   logradouro: optionalFieldMin({ field: 'logradouro', min: 5 }),
   numero: optionalFieldMin({ field: 'numero', min: 1 }),
   complemento: z.string().nullable(),
-  bairro: optionalFieldMin({ field: 'bairro', min: 5 }),
+  bairro: optionalFieldMin({ field: 'bairro', min: 1 }),
   municipio_id: z.string().optional(),
   estado_id: z.string().optional(),
   municipio_nome: z.string().nullable().optional(),

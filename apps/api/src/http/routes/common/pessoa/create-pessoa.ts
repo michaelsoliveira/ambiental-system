@@ -16,7 +16,7 @@ const paramsSchema = z.object({
 
 // Schema para response
 const responseSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   message: z.string(),
   success: z.boolean().default(false)
 });
@@ -39,6 +39,9 @@ export async function createPessoa(app: FastifyInstance) {
             201: responseSchema,
             400: z.object({
               error: z.string(),
+              details: z
+                .array(z.object({ field: z.string(), message: z.string() }))
+                .optional(),
             }),
             401: z.object({
               error: z.string(),
@@ -135,6 +138,10 @@ export async function createPessoa(app: FastifyInstance) {
           if (error instanceof z.ZodError) {
             return reply.code(400).send({
               error: 'Dados inválidos',
+              details: error.issues.map((e) => ({
+                field: e.path.join('.'),
+                message: e.message,
+              })),
             });
           }
 
