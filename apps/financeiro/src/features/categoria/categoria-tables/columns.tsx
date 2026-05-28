@@ -22,10 +22,11 @@ export const columns: ColumnDef<Categoria>[] = [
   {
     accessorKey: 'codigo',
     header: 'Código',
+    size: 240,
     cell: ({ row }) => {
       const codigo = row.getValue('codigo') as string
       return (
-        <div className="w-24">
+        <div className="break-all text-wrap">
           {codigo || '-'}
         </div>
       )
@@ -34,10 +35,11 @@ export const columns: ColumnDef<Categoria>[] = [
   {
     accessorKey: 'nome',
     header: 'Nome',
+    size: 280,
     cell: ({ row }) => {
       const nivel = row.original.nivel
       return (
-        <div className="font-medium" style={{ paddingLeft: `${(nivel - 1) * 20}px` }}>
+        <div className="font-medium break-words text-wrap" style={{ paddingLeft: `${(nivel - 1) * 20}px` }}>
           {row.getValue('nome')}
         </div>
       )
@@ -46,6 +48,7 @@ export const columns: ColumnDef<Categoria>[] = [
   {
     accessorKey: 'tipo',
     header: 'Tipo',
+    size: 110,
     cell: ({ row }) => {
       const tipo = row.getValue('tipo') as string
       return (
@@ -58,10 +61,11 @@ export const columns: ColumnDef<Categoria>[] = [
   {
     accessorKey: 'descricao',
     header: 'Descrição',
+    size: 220,
     cell: ({ row }) => {
       const descricao = row.getValue('descricao') as string
       return (
-        <div className="max-w-[300px] truncate">
+        <div className="break-words text-wrap">
           {descricao || '-'}
         </div>
       )
@@ -70,6 +74,7 @@ export const columns: ColumnDef<Categoria>[] = [
   {
     accessorKey: 'ativo',
     header: 'Status',
+    size: 100,
     cell: ({ row }) => {
       const ativo = row.getValue('ativo') as boolean
       return (
@@ -82,6 +87,7 @@ export const columns: ColumnDef<Categoria>[] = [
   {
     id: 'actions',
     header: 'Ações',
-    cell: ({ row }) => <div className='flex items-center'><CategoriaButton categoriaId={row.original.id} /></div>  
+    size: 80,
+    cell: ({ row }) => <div className='flex items-center'><CategoriaButton categoriaId={row.original.id} /></div>
   },
 ];

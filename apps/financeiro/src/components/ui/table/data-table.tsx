@@ -100,12 +100,15 @@ export function DataTable<TData, TValue>({
       {/* <div className='relative flex flex-1 min-h-[calc(30vh-50px)] md:min-h-[calc(100vh-300px)]'>
         <div className='absolute inset-0 h-full flex overflow-scroll rounded-md border md:overflow-auto'> */}
           {/* <ScrollArea className='flex-1'> */}
-            <Table className='relative'>
+            <Table className='relative w-full table-fixed'>
               <TableHeader>
                 {table.getHeaderGroups()?.map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        style={header.column.columnDef.size ? { width: header.column.columnDef.size } : undefined}
+                      >
                         {header.isPlaceholder
                           ? null
                           : flexRender(

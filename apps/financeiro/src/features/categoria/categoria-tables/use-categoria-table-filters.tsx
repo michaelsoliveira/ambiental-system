@@ -13,6 +13,11 @@ export const useCategoriaTableFilters = () => {
     parseAsInteger.withDefault(1)
   );
 
+  const [limit, setLimit] = useQueryState(
+    'limit',
+    parseAsInteger.withDefault(50)
+  );
+
   const [orderBy, setOrderBy] = useQueryState(
     'orderBy',
     parseAsString.withDefault('nome')
@@ -49,6 +54,8 @@ export const useCategoriaTableFilters = () => {
     setSearchQuery,
     page,
     setPage,
+    limit,
+    setLimit,
     resetFilters,
     isAnyFilterActive,
     orderBy,

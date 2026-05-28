@@ -12,15 +12,16 @@ import { useCategoriaTableFilters } from './categoria-tables/use-categoria-table
 export default function CategoriaListingPage() {
   try {
     const { slug } = useParams<{ slug: string }>()
-    const { 
+    const {
       searchQuery,
       page,
+      limit,
       orderBy,
       order,
       ativo,
       tipo
     } = useCategoriaTableFilters();
-    
+
     const { data: responseData, error, isLoading } = useCategorias(slug!, {
       search: searchQuery,
       page,
@@ -28,7 +29,7 @@ export default function CategoriaListingPage() {
       order: order as 'asc' | 'desc',
       ativo: ativo ? (ativo === 'true') : undefined,
       tipo: tipo as 'RECEITA' | 'DESPESA' | undefined,
-      limit: 10
+      limit
     });
 
     const { categorias = [], total = 0 } = responseData ?? { categorias: [], total: 0 };
@@ -48,7 +49,7 @@ export default function CategoriaListingPage() {
           data={categorias}
           totalItems={total}
           page={page}
-          pageSizeOptions={[10, 20, 30, 40, 50]}
+          pageSizeOptions={[50, 100, 200, 500]}
         />
       </div>
     );
