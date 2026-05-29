@@ -25,25 +25,26 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
   },
   {
     header: 'Parceiro',
+    size: 260,
     cell: ({ row }) => {
       const pessoa_nome = row.original.parceiro_nome || 'N/A'
       const descricao = row.original.descricao || '';
       const numero = row.original.numero || '';
-      
+
       return (
-        <div 
-          className="cursor-pointer"
+        <div
+          className="cursor-pointer min-w-0 overflow-hidden whitespace-nowrap"
           onClick={() => onRowClick?.(row.original)}
         >
-          <div className="flex flex-col gap-1">
-            <span className="font-medium text-foreground">
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <span className="font-medium text-foreground break-words text-wrap block">
               {pessoa_nome}
             </span>
-            <span className="font-medium text-muted-foreground">
+            <span className="text-sm text-muted-foreground break-words text-wrap block">
               {descricao}
             </span>
             {numero && (
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground truncate block">
                 #{numero}
               </span>
             )}
@@ -54,6 +55,7 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
   },
   {
     header: 'Tipo',
+    size: 110,
     cell: ({ row }) => {
       const tipo = row.original.tipo || 'N/A';
       const tipoColors = {
@@ -61,24 +63,27 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
         'DESPESA': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
         'TRANSFERENCIA': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
       };
-      
+
       return (
-        <Badge className={tipoColors[tipo as keyof typeof tipoColors] || ''}>
-          {tipo}
-        </Badge>
+        <div className="whitespace-nowrap">
+          <Badge className={tipoColors[tipo as keyof typeof tipoColors] || ''}>
+            {tipo}
+          </Badge>
+        </div>
       );
     }
   },
   {
     header: 'Valor',
+    size: 120,
     cell: ({ row }) => {
       const valor = row.original.valor || 0;
       const tipo = row.original.tipo;
       const isNegative = tipo === 'DESPESA';
-      
+
       return (
-        <div 
-          className={`cursor-pointer font-semibold ${
+        <div
+          className={`cursor-pointer font-semibold whitespace-nowrap ${
             isNegative ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
           }`}
           onClick={() => onRowClick?.(row.original)}
@@ -90,12 +95,13 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
   },
   {
     header: 'Data',
+    size: 90,
     cell: ({ row }) => {
       const data = row.original.data || null;
-      
+
       return (
-        <div 
-          className="text-muted-foreground cursor-pointer text-sm"
+        <div
+          className="text-muted-foreground cursor-pointer text-sm whitespace-nowrap"
           onClick={() => onRowClick?.(row.original)}
         >
           {data ? formatDateShort(data) : 'N/A'}
@@ -105,15 +111,16 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
   },
   {
     header: 'Vencimento',
+    size: 100,
     cell: ({ row }) => {
       const data_vencimento = row.original.data_vencimento || null;
       const pago = row.original.pago;
-      
+
       return (
-        <div 
-          className={`text-sm cursor-pointer ${
-            pago 
-              ? 'text-green-600 dark:text-green-400' 
+        <div
+          className={`text-sm cursor-pointer whitespace-nowrap ${
+            pago
+              ? 'text-green-600 dark:text-green-400'
               : 'text-muted-foreground'
           }`}
           onClick={() => onRowClick?.(row.original)}
@@ -125,6 +132,7 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
   },
   {
     header: 'Status',
+    size: 110,
     cell: ({ row }) => {
       const statusLancamento = row.original.status_lancamento || 'PENDENTE';
       const statusColors = {
@@ -134,44 +142,47 @@ export const getColumns = (onRowClick?: (row: any) => void): ColumnDef<any>[] =>
         'CANCELADO': 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200',
         'ATRASADO': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
       };
-      
+
       return (
-        <Badge className={statusColors[statusLancamento as keyof typeof statusColors] || ''}>
-          {statusLancamento}
-        </Badge>
+        <div className="whitespace-nowrap">
+          <Badge className={statusColors[statusLancamento as keyof typeof statusColors] || ''}>
+            {statusLancamento}
+          </Badge>
+        </div>
       );
     }
   },
   {
     header: 'Categoria',
     accessorKey: 'categoria',
+    size: 150,
     cell: ({ row }) => {
       const categoria = row.original.categoria?.nome || '-';
-      
+
       return (
-        <span className="truncate text-muted-foreground text-sm group-hover:opacity-0 transition-opacity">
-          {categoria}
-        </span>
+        <div className="min-w-0 overflow-hidden whitespace-nowrap">
+          <span className="text-muted-foreground text-sm break-words text-wrap" title={categoria}>
+            {categoria}
+          </span>
+        </div>
       );
     }
   },
   {
     header: 'Conta',
     id: 'conta',
+    size: 180,
     cell: ({ row }) => {
       const contaNome = row.original.conta_bancaria?.nome || 'N/A';
-      
+
       return (
-        <div className="relative w-full group/cell">
-          {/* Texto da conta - visível por padrão */}
-          <span className="truncate text-muted-foreground text-sm group-hover:opacity-0 transition-opacity">
+        <div className="relative w-full whitespace-nowrap">
+          <span className="break-words text-wrap text-muted-foreground text-sm group-hover:opacity-0 transition-opacity block" title={contaNome}>
             {contaNome}
           </span>
-          
-          {/* Overlay com ícones - sobrepõe ambas as colunas */}
-          <div className="absolute -left-[50px] top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto z-10">
-            <CellAction 
-              data={row.original} 
+          <div className="absolute top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto z-10">
+            <CellAction
+              data={row.original}
               onEdit={onRowClick}
             />
           </div>

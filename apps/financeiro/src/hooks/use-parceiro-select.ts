@@ -28,6 +28,11 @@ export function useParceiroSelect(org: string, selectedId?: string | null) {
         const prevIds = prev.map((p) => p.id).join(',')
         const nextIds = list.map((p) => p.id).join(',')
         if (prevIds === nextIds) return prev
+        // Preserve the selected parceiro if it was fetched individually but is not in the new page
+        const selectedParceiro = selectedId ? prev.find((p) => p.id === selectedId) : null
+        if (selectedParceiro && !list.some((p) => p.id === selectedId)) {
+          return [selectedParceiro, ...list]
+        }
         return list
       }
       const seen = new Set(prev.map((p) => p.id))
@@ -35,7 +40,7 @@ export function useParceiroSelect(org: string, selectedId?: string | null) {
       if (next.length === 0) return prev
       return [...prev, ...next]
     })
-  }, [data?.parceiros, page])
+  }, [data?.parceiros, page, selectedId])
 
   useEffect(() => {
     if (!selectedId || !org) return
