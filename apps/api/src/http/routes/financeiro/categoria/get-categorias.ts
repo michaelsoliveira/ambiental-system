@@ -24,7 +24,7 @@ export async function getCategorias(app: FastifyInstance) {
             ativo: z.string().transform((val) => val === 'true').optional(),
             search: z.string().optional(),
             page: z.coerce.number().int().min(1).default(1),
-            limit: z.coerce.number().int().min(1).max(100).default(10),
+            limit: z.coerce.number().int().min(1).max(500).default(10),
             orderBy: z.string().optional().default('nome'),
             order: z.enum(['asc', 'desc']).optional().default('asc'),
           }),

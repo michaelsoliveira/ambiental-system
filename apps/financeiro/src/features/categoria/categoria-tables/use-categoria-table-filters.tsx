@@ -20,7 +20,7 @@ export const useCategoriaTableFilters = () => {
 
   const [orderBy, setOrderBy] = useQueryState(
     'orderBy',
-    parseAsString.withDefault('nome')
+    parseAsString.withDefault('codigo')
   );
 
   const [order, setOrder] = useQueryState(
@@ -41,7 +41,7 @@ export const useCategoriaTableFilters = () => {
   const resetFilters = () => {
     setSearchQuery('');
     setPage(1);
-    setOrderBy('nome');
+    setOrderBy('codigo');
     setOrder('asc');
     setAtivo(null);
     setTipo(null);

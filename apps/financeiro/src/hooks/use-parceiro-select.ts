@@ -54,7 +54,8 @@ export function useParceiroSelect(org: string, selectedId?: string | null) {
           return [
             {
               id: parceiro.id,
-              tipo_parceiro: '',
+              tipo_parceiro: parceiro.tipo_parceiro ?? '',
+              pessoa_nome: parceiro.pessoa_nome,
               observacoes: parceiro.observacoes,
               ativo: parceiro.ativo,
               created_at: parceiro.created_at,

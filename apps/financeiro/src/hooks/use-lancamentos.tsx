@@ -203,7 +203,7 @@ export function useGetCategorias(org: string) {
   return useQuery({
     queryKey: ['categorias-financeiras'],
     queryFn: async () => {
-      const result = await api.get(`organizations/${org}/financeiro/categorias?orderBy=codigo&order=asc`).json<any>()
+      const result = await api.get(`organizations/${org}/financeiro/categorias?orderBy=codigo&order=asc&limit=100`).json<any>()
       return result
     },
   })

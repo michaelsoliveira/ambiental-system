@@ -3,7 +3,8 @@ import { api } from "../api-client"
 interface GetParceiroResponse {
     parceiro: {
       id: string
-      codigo: string
+      tipo_parceiro: string
+      pessoa_nome: string | null
       observacoes: string | null
       ativo: boolean
       created_at: string

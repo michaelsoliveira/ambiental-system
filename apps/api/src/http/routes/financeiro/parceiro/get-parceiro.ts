@@ -26,9 +26,12 @@ export async function getParceiro(app: FastifyInstance) {
                 id: z.string().uuid(),
                 tipo_parceiro: z.string(),
                 pessoa_id: z.string().uuid(),
+                pessoa_nome: z.string().nullable(),
                 observacoes: z.string().nullable(),
                 ativo: z.boolean(),
                 created_at: z.date(),
+                updated_at: z.date(),
+                pessoa: z.any(),
               }),
             }),
           },
@@ -53,13 +56,28 @@ export async function getParceiro(app: FastifyInstance) {
             id: parceiroId,
             organization_id: organization.id,
           },
+          include: {
+            pessoa: {
+              include: {
+                fisica: true,
+                juridica: true,
+              },
+            },
+          },
         })
 
         if (!parceiro) {
           throw new BadRequestError('Parceiro não encontrado.')
         }
 
-        return reply.send({ parceiro })
+        const pessoa_nome =
+          parceiro.pessoa.tipo === 'F'
+            ? parceiro.pessoa.fisica?.nome ?? null
+            : parceiro.pessoa.juridica?.nome_fantasia ||
+              parceiro.pessoa.juridica?.razao_social ||
+              null
+
+        return reply.send({ parceiro: { ...parceiro, pessoa_nome } })
       },
     )
 }

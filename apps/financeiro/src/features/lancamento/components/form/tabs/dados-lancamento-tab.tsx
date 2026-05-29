@@ -225,7 +225,8 @@ export function DadosLancamentoTab({
       </div>
 
       {/* Seção 2: Descrição */}
-      <div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
+      <div className="md:col-span-2">
         <FormField
           control={form.control}
           name="descricao"
@@ -243,11 +244,8 @@ export function DadosLancamentoTab({
           )}
         />
       </div>
-
-      {/* Seção 3: Valores */}
-      <div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-4">
-          <FormField
+      <div className="md:col-span-1">
+        <FormField
             control={form.control}
             name="valor"
             render={({ field }) => (
@@ -274,6 +272,12 @@ export function DadosLancamentoTab({
               </FormItem>
             )}
           />
+          </div>
+        </div>
+      
+      {/* Seção 3: Valores */}
+      <div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4">
 
           <FormField
             control={form.control}
@@ -293,7 +297,6 @@ export function DadosLancamentoTab({
               </FormItem>
             )}
           />
-
           <FormField
             control={form.control}
             name="conta_bancaria_id"
@@ -306,7 +309,10 @@ export function DadosLancamentoTab({
                   onValueChange={field.onChange}
                   placeholder="Selecione conta"
                   emptyText="Nenhuma conta encontrada"
+                  truncate={true}
+                  truncateWidth="100px"
                   searchPlaceholder="Buscar conta..."
+                  className="w-full"
                 />
                 <FormMessage />
               </FormItem>

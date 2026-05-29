@@ -1,7 +1,7 @@
 "use client"
 
 import { Check, ChevronsUpDown } from "lucide-react"
-import { useEffect,useRef, useState } from "react"
+import { useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -20,7 +20,6 @@ import {
 } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 
-import { ScrollArea } from "./ui/scroll-area"
 
 export interface OptionType {
     readonly label: string;
@@ -94,10 +93,8 @@ export function SelectSearchable({
     isLoadingMore
 } : SelectItemsProps) {
   const [open, setOpen] = useState(false)
-  const [width, setWidth] = useState(0);
-  const triggerRef = useRef<HTMLButtonElement>(null);
   const [searchValue, setSearchValue] = useState("");
-  
+
   // Achatar todas as opções para encontrar a selecionada
   const flatOptions = options ? flattenOptions(options) : [];
   const selectedOption = flatOptions.find((option) => option.value == value); // Usando == para comparação flexível
@@ -106,22 +103,6 @@ export function SelectSearchable({
     setSearchValue(newValue);
     onSearchChange?.(newValue);
   };
-
-  const updateWidth = () => {
-    if (triggerRef.current) {
-      setWidth(triggerRef.current.offsetWidth);
-      triggerRef.current.focus()
-    }
-  };
-
-  useEffect(() => {
-    updateWidth();
-    window.addEventListener("resize", updateWidth);
-    
-    return () => {
-      window.removeEventListener("resize", updateWidth);
-    };
-  }, []);
 
   // Componente padrão para label de grupo
   const DefaultGroupLabel = ({ group }: { group: GroupedOptionType }) => (
@@ -140,7 +121,6 @@ export function SelectSearchable({
       <Popover modal open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
-            ref={triggerRef}
             variant="outline"
             role="combobox"
             aria-expanded={open}
@@ -159,10 +139,12 @@ export function SelectSearchable({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent 
-          style={{ width: width }}
-          className="p-0"
-          align="start"
+        <PopoverContent
+          style={{ minWidth: 'var(--radix-popper-anchor-width)' }}
+          className="p-0 max-w-[min(200px,calc(100vw-16px))]"
+          align="end"
+          avoidCollisions
+          collisionPadding={8}
         >
           <Command className="w-full" shouldFilter={!onSearchChange}>
             <CommandInput 
