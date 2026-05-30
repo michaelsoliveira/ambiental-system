@@ -199,6 +199,18 @@ export function useDuplicateLancamento(org: string) {
   })
 }
 
+export function useGetContas(org: string) {
+  return useQuery({
+    queryKey: ['contas-bancarias'],
+    queryFn: async () => {
+      const result = await api
+        .get(`organizations/${org}/financeiro/contas`)
+        .json<GetContasResponse>()
+      return result
+    },
+  })
+}
+
 export function useGetCategorias(org: string, params?: { search?: string }) {
   return useQuery({
     queryKey: ['categorias-financeiras', org, params],
@@ -214,23 +226,15 @@ export function useGetCategorias(org: string, params?: { search?: string }) {
   })
 }
 
-export function useGetContas(org: string) {
+export function useGetCentrosCusto(org: string, params?: { search?: string }) {
   return useQuery({
-    queryKey: ['contas-bancarias'],
+    queryKey: ['centros-custo', org, params],
     queryFn: async () => {
+      const searchParams = new URLSearchParams({ orderBy: 'codigo', order: 'asc' })
+      if (params?.search) searchParams.append('search', params.search)
       const result = await api
-        .get(`organizations/${org}/financeiro/contas`)
-        .json<GetContasResponse>()
-      return result
-    },
-  })
-}
-
-export function useGetCentrosCusto(org: string) {
-  return useQuery({
-    queryKey: ['centros-custo'],
-    queryFn: async () => {
-      const result = await api.get(`organizations/${org}/financeiro/centros-custo`).json<any>()
+        .get(`organizations/${org}/financeiro/centros-custo?${searchParams.toString()}`)
+        .json<any>()
       return result
     },
   })
