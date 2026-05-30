@@ -215,7 +215,11 @@ export function useGetCategorias(org: string, params?: { search?: string }) {
   return useQuery({
     queryKey: ['categorias-financeiras', org, params],
     queryFn: async () => {
-      const searchParams = new URLSearchParams({ orderBy: 'codigo', order: 'asc' })
+      const searchParams = new URLSearchParams({
+        orderBy: 'codigo',
+        order: 'asc',
+        limit: '500',
+      })
       if (params?.search) searchParams.append('search', params.search)
       const result = await api
         .get(`organizations/${org}/financeiro/categorias?${searchParams.toString()}`)
@@ -230,13 +234,18 @@ export function useGetCentrosCusto(org: string, params?: { search?: string }) {
   return useQuery({
     queryKey: ['centros-custo', org, params],
     queryFn: async () => {
-      const searchParams = new URLSearchParams({ orderBy: 'codigo', order: 'asc' })
+      const searchParams = new URLSearchParams({
+        orderBy: 'codigo',
+        order: 'asc',
+        limit: '100',
+      })
       if (params?.search) searchParams.append('search', params.search)
       const result = await api
         .get(`organizations/${org}/financeiro/centros-custo?${searchParams.toString()}`)
         .json<any>()
       return result
     },
+    enabled: !!org,
   })
 }
 

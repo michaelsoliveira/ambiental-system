@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useParceiroSelect } from "@/hooks/use-parceiro-select"
 import { useCategoriaSelect } from "@/hooks/use-categoria-select"
+import { useCentroCustoSelect } from "@/hooks/use-centro-custo-select"
 
 interface DadosLancamentoTabProps {
   contas: any
@@ -37,6 +38,7 @@ export function DadosLancamentoTab({
   const { slug: org } = useParams<{ slug: string }>()
   const parceiroId = watch('parceiro_id')
   const categoriaId = watch('categoria_id')
+  const centroCustoId = watch('centro_custo_id')
 
   const {
     options: parceirosOptions,
@@ -52,6 +54,12 @@ export function DadosLancamentoTab({
     isLoading: loadingCategorias,
     onSearchChange: onCategoriaSearchChange,
   } = useCategoriaSelect(org ?? '', categoriaId)
+
+  const {
+    options: centrosCustoOptions,
+    isLoading: loadingCentrosCusto,
+    onSearchChange: onCentroCustoSearchChange,
+  } = useCentroCustoSelect(org ?? '', centroCustoId)
   
   const tipoLancamento = watch('tipo')
   const controleInterno = watch('controle_interno')
@@ -89,14 +97,6 @@ export function DadosLancamentoTab({
       value: conta.id
     }))
   }, [contas])
-
-  const centrosCustoOptions = useMemo(() => {
-    if (!centrosCusto || !Array.isArray(centrosCusto)) return []
-    return centrosCusto.map((cc: any) => ({
-      label: cc.nome,
-      value: cc.id
-    }))
-  }, [centrosCusto])
 
   // Gera parcelas só quando a quantidade muda (não sobrescreve edições manuais de data/valor)
   useEffect(() => {
@@ -340,6 +340,8 @@ export function DadosLancamentoTab({
                   placeholder="Selecione centro de custo"
                   emptyText="Nenhum centro de custo encontrado"
                   searchPlaceholder="Buscar centro de custo..."
+                  isLoading={loadingCentrosCusto}
+                  onSearchChange={onCentroCustoSearchChange}
                 />
                 <FormMessage />
               </FormItem>

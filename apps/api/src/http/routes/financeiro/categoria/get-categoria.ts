@@ -23,11 +23,13 @@ export async function getCategoriaFinanceira(app: FastifyInstance) {
           response: {
             200: z.object({
               categoria: z.object({
+                id: z.string().uuid(),
                 codigo: z.string().min(1),
                 nome: z.string().min(1),
                 descricao: z.string().nullable(),
                 tipo: z.enum(['RECEITA', 'DESPESA']),
                 parent_id: z.string().uuid().nullable(),
+                ativo: z.boolean(),
                 created_at: z.date(),
               }),
             }),

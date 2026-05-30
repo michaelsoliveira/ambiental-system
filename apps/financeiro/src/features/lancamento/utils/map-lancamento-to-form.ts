@@ -1,5 +1,18 @@
 import type { LancamentoFormValues } from './form-schema'
 
+function toFormId(value: unknown): string {
+  if (value == null || value === '') return ''
+  return String(value)
+}
+
+/** Resolve FK do formulário a partir do campo plano ou do relacionamento incluído na API. */
+function resolveRelationId(
+  flatId: unknown,
+  relation?: { id?: unknown } | null,
+): string {
+  return toFormId(flatId ?? relation?.id)
+}
+
 export function mapLancamentoToFormValues(initialData?: any): LancamentoFormValues {
   return {
     id: initialData?.id ?? undefined,
@@ -17,10 +30,16 @@ export function mapLancamentoToFormValues(initialData?: any): LancamentoFormValu
       : '',
     descricao: initialData?.descricao ?? '',
     valor: initialData?.valor?.toString() ?? '',
-    categoria_id: initialData?.categoria_id ?? '',
-    conta_bancaria_id: initialData?.conta_bancaria_id ?? '',
-    centro_custo_id: initialData?.centro_custo_id ?? '',
-    parceiro_id: initialData?.parceiro_id ?? '',
+    categoria_id: resolveRelationId(initialData?.categoria_id, initialData?.categoria),
+    conta_bancaria_id: resolveRelationId(
+      initialData?.conta_bancaria_id,
+      initialData?.conta_bancaria,
+    ),
+    centro_custo_id: resolveRelationId(
+      initialData?.centro_custo_id,
+      initialData?.centro_custo,
+    ),
+    parceiro_id: resolveRelationId(initialData?.parceiro_id, initialData?.parceiro),
     forma_parcelamento: initialData?.forma_parcelamento ?? 'UNICA',
     numero_parcelas: initialData?.numero_parcelas?.toString() ?? '1',
     pago: initialData?.pago ?? false,
