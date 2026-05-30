@@ -199,13 +199,18 @@ export function useDuplicateLancamento(org: string) {
   })
 }
 
-export function useGetCategorias(org: string) {
+export function useGetCategorias(org: string, params?: { search?: string }) {
   return useQuery({
-    queryKey: ['categorias-financeiras'],
+    queryKey: ['categorias-financeiras', org, params],
     queryFn: async () => {
-      const result = await api.get(`organizations/${org}/financeiro/categorias?orderBy=codigo&order=asc&limit=100`).json<any>()
+      const searchParams = new URLSearchParams({ orderBy: 'codigo', order: 'asc' })
+      if (params?.search) searchParams.append('search', params.search)
+      const result = await api
+        .get(`organizations/${org}/financeiro/categorias?${searchParams.toString()}`)
+        .json<any>()
       return result
     },
+    enabled: !!org,
   })
 }
 

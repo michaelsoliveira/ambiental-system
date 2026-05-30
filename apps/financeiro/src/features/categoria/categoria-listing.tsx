@@ -10,7 +10,6 @@ import { columns } from './categoria-tables/columns';
 import { useCategoriaTableFilters } from './categoria-tables/use-categoria-table-filters';
 
 export default function CategoriaListingPage() {
-  try {
     const { slug } = useParams<{ slug: string }>()
     const {
       searchQuery,
@@ -33,29 +32,25 @@ export default function CategoriaListingPage() {
     });
 
     const { categorias = [], total = 0 } = responseData ?? { categorias: [], total: 0 };
-    
-    if (isLoading) return <div>Carregando...</div>;
-    
-    if (error) {
-      console.error('Erro ao buscar categorias:', error);
-      return <div>Erro ao carregar categorias</div>;
-    }
       
     return (
-      <div className="space-y-4">
-        <CategoriaTableAction />
-        <DataTable
-          columns={columns}
-          data={categorias}
-          totalItems={total}
-          page={page}
-          pageSizeOptions={[50, 100, 200, 500]}
-        />
-      </div>
-    );
-    
-  } catch (error) {
-    console.error('Erro ao buscar categorias:', error);
-    return <div>Erro interno do servidor</div>;
-  }
+      <>
+        
+        <div className="space-y-4">
+          <CategoriaTableAction />
+          {isLoading ? <div>Carregando...</div> : (
+          error ? <div>Erro ao carregar categorias</div> : (
+            <div className="space-y-4">
+            <DataTable
+              columns={columns}
+              data={categorias}
+              totalItems={total}
+              page={page}
+              pageSizeOptions={[50, 100, 200, 500]}
+            />
+            </div>
+          ))}
+        </div>
+    </>
+  );
 }

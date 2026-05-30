@@ -17,24 +17,27 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { useParceiroSelect } from "@/hooks/use-parceiro-select"
+import { useCategoriaSelect } from "@/hooks/use-categoria-select"
 
 interface DadosLancamentoTabProps {
-  categorias: any
   contas: any
   centrosCusto: any
   parceiros: any
+  // categorias removido — agora gerenciado internamente pelo useCategoriaSelect
+  categorias?: any
 }
 
-export function DadosLancamentoTab({ 
-  categorias, 
+export function DadosLancamentoTab({
   contas,
   centrosCusto,
-  parceiros
+  parceiros,
 }: DadosLancamentoTabProps) {
   const form = useFormContext()
   const { watch, setValue } = form
   const { slug: org } = useParams<{ slug: string }>()
   const parceiroId = watch('parceiro_id')
+  const categoriaId = watch('categoria_id')
+
   const {
     options: parceirosOptions,
     isLoading: loadingParceiros,
@@ -43,6 +46,12 @@ export function DadosLancamentoTab({
     onSearchChange: onParceiroSearchChange,
     onLoadMore: onParceiroLoadMore,
   } = useParceiroSelect(org ?? '', parceiroId)
+
+  const {
+    options: categoriasOptions,
+    isLoading: loadingCategorias,
+    onSearchChange: onCategoriaSearchChange,
+  } = useCategoriaSelect(org ?? '', categoriaId)
   
   const tipoLancamento = watch('tipo')
   const controleInterno = watch('controle_interno')
@@ -72,14 +81,6 @@ export function DadosLancamentoTab({
     { label: 'Cancelado', value: 'CANCELADO' },
     { label: 'Atrasado', value: 'ATRASADO' }
   ]
-
-  const categoriasOptions = useMemo(() => {
-    if (!categorias || !Array.isArray(categorias)) return []
-    return categorias.map((cat: any) => ({
-      label: cat.nome,
-      value: cat.id
-    }))
-  }, [categorias])
 
   const contasOptions = useMemo(() => {
     if (!contas || !Array.isArray(contas)) return []
@@ -292,6 +293,8 @@ export function DadosLancamentoTab({
                   placeholder="Selecione categoria"
                   emptyText="Nenhuma categoria encontrada"
                   searchPlaceholder="Buscar categoria..."
+                  isLoading={loadingCategorias}
+                  onSearchChange={onCategoriaSearchChange}
                 />
                 <FormMessage />
               </FormItem>
