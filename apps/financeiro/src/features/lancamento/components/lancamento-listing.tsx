@@ -98,7 +98,6 @@ export function LancamentoListing({
         categorias={categorias}
         contasBancarias={contas}
         centrosCusto={centrosCusto}
-        parceiros={parceiros}
         veiculos={veiculos}
       />
       <DataTableLancamentos

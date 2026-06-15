@@ -14,7 +14,8 @@ import {
   Users,
   X, 
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
 
 import { SelectSearchable } from '@/components/select-searchable';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
+import { useParceiroSelect } from '@/hooks/use-parceiro-select';
+
 import { useLancamentoTableFilters } from './lancamento-tables/use-lancamento-table-filters';
 
 interface LancamentoFiltersProps {
@@ -38,7 +41,6 @@ interface LancamentoFiltersProps {
   categorias?: Array<{ id: string; nome: string; tipo: string }>;
   contasBancarias?: Array<{ id: string; nome: string }>;
   centrosCusto?: Array<{ id: string; nome: string }>;
-  parceiros?: Array<{ id: string; pessoa: any }>;
   veiculos?: Array<{ id: string; placa: string; modelo: string; marca: string }>;
 }
 
@@ -47,9 +49,9 @@ export function LancamentoFilters({
   categorias = [],
   contasBancarias = [],
   centrosCusto = [],
-  parceiros = [],
   veiculos = [],
 }: LancamentoFiltersProps) {
+  const { slug: org } = useParams<{ slug: string }>();
   const {
     search,
     setSearch,
@@ -130,12 +132,16 @@ export function LancamentoFilters({
     }));
   }, [centrosCusto]);
 
-  const parceirosOptions = useMemo(() => {
-    return parceiros.map((parceiro) => ({
-      label: parceiro.pessoa?.fisica?.nome || parceiro.pessoa?.juridica?.nome_fantasia || 'Sem nome',
-      value: parceiro.id
-    }));
-  }, [parceiros]);
+  const selectedParceiroId = tempFilters.parceiroId || parceiroId || undefined;
+
+  const {
+    options: parceirosOptions,
+    isLoading: loadingParceiros,
+    isLoadingMore: loadingMoreParceiros,
+    hasMore: hasMoreParceiros,
+    onSearchChange: onParceiroSearchChange,
+    onLoadMore: onParceiroLoadMore,
+  } = useParceiroSelect(org ?? '', selectedParceiroId);
 
   const veiculosOptions = useMemo(() => {
     return veiculos.map((v) => ({
@@ -453,6 +459,12 @@ export function LancamentoFilters({
                   onValueChange={(value) => setTempFilters({...tempFilters, parceiroId: value})}
                   placeholder="Todos os parceiros"
                   searchPlaceholder="Buscar parceiro..."
+                  emptyText="Nenhum parceiro encontrado"
+                  isLoading={loadingParceiros}
+                  onSearchChange={onParceiroSearchChange}
+                  hasMore={hasMoreParceiros}
+                  onLoadMore={onParceiroLoadMore}
+                  isLoadingMore={loadingMoreParceiros}
                 />
               </div>
 
