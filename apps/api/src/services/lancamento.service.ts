@@ -267,6 +267,24 @@ export class LancamentoService {
         { numero: { contains: filters.search, mode: 'insensitive' } },
         { descricao: { contains: filters.search, mode: 'insensitive' } },
         { observacoes: { contains: filters.search, mode: 'insensitive' } },
+        {
+          parceiro: {
+            pessoa: {
+              fisica: {
+                nome: { contains: filters.search, mode: 'insensitive' }
+              },
+            }
+          }
+        },
+        {
+          parceiro: {
+            pessoa: {
+              juridica: {
+                nome_fantasia: { contains: filters.search, mode: 'insensitive' }
+              },
+            }
+          }
+        },
       ]
     }
 
