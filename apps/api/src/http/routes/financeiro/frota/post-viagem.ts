@@ -8,6 +8,16 @@ import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { FrotaService } from '@/services/frota.service'
 
+function toDate(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestError('Data inválida.')
+  }
+
+  return date
+}
+
 const bodySchema = z.object({
   origem: z.string().min(1).max(500),
   destino: z.string().min(1).max(500),
@@ -61,20 +71,23 @@ export async function postViagem(app: FastifyInstance) {
         }
 
         const b = request.body
+        const dataInicio = toDate(b.dataInicio)
+        const dataFim = b.dataFim ? toDate(b.dataFim) : null
+
         if (b.tipoRegistro === 'RECORRENTE') {
-          const recorrenciaFim = b.recorrenciaFim ? new Date(b.recorrenciaFim) : null
+          const recorrenciaFim = b.recorrenciaFim ? toDate(b.recorrenciaFim) : null
           if (!recorrenciaFim) {
             throw new BadRequestError('Data final da recorrência é obrigatória.')
           }
-
+          
           const result = await FrotaService.registrarViagensRecorrentesComReceita(
             organization.id,
             {
               veiculoId,
               origem: b.origem,
               destino: b.destino,
-              dataInicio: new Date(b.dataInicio),
-              dataFim: b.dataFim ? new Date(b.dataFim) : null,
+              dataInicio,
+              dataFim,
               kmRodado: b.kmRodado ?? null,
               valorReceita: b.valorReceita ?? null,
               categoriaId: b.categoriaId ?? undefined,
@@ -93,8 +106,8 @@ export async function postViagem(app: FastifyInstance) {
           veiculoId,
           origem: b.origem,
           destino: b.destino,
-          dataInicio: new Date(b.dataInicio),
-          dataFim: b.dataFim ? new Date(b.dataFim) : null,
+          dataInicio,
+          dataFim,
           kmRodado: b.kmRodado ?? null,
           valorReceita: b.valorReceita ?? null,
           categoriaId: b.categoriaId ?? undefined,

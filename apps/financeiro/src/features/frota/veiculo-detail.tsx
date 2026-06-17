@@ -85,9 +85,9 @@ function valorFinanceiroFrota(op: {
 }
 
 function isoToDatetimeLocal(iso: string) {
-  const d = new Date(iso)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  const [datePart, timePart = '00:00:00'] = iso.split('T')
+  const time = timePart.split('+')[0].split('.')[0].replace('Z', '')
+  return `${datePart}T${time.substring(0, 5)}`
 }
 
 type Tab = 'abastecimentos' | 'manutencoes' | 'viagens' | 'agenda' | 'dados'
@@ -156,7 +156,7 @@ export function VeiculoDetail() {
 
   // form abastecimento
   const [absData, setAbsData] = useState({
-    data: new Date().toISOString().slice(0, 16),
+    data: isoToDatetimeLocal(new Date().toISOString()),
     litros: '',
     valor: '',
     km: '',
@@ -169,7 +169,7 @@ export function VeiculoDetail() {
   const [manData, setManData] = useState({
     tipo: '',
     descricao: '',
-    data: new Date().toISOString().slice(0, 16),
+    data: isoToDatetimeLocal(new Date().toISOString()),
     valor: '',
     categoriaId: '',
     contaBancariaId: '',
@@ -181,7 +181,7 @@ export function VeiculoDetail() {
     tipoRegistro: 'SIMPLES' as 'SIMPLES' | 'RECORRENTE',
     origem: '',
     destino: '',
-    dataInicio: new Date().toISOString().slice(0, 16),
+    dataInicio: isoToDatetimeLocal(new Date().toISOString()),
     dataFim: '',
     recorrenciaFim: '',
     diasSemana: [] as number[],
@@ -205,8 +205,8 @@ export function VeiculoDetail() {
 
   const [indData, setIndData] = useState({
     tipo: 'PRODUCAO' as 'PRODUCAO' | 'MANUTENCAO',
-    inicio: new Date().toISOString().slice(0, 16),
-    fim: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
+    inicio: isoToDatetimeLocal(new Date().toISOString()),
+    fim: isoToDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
     motivo: '',
   })
 
@@ -232,7 +232,7 @@ export function VeiculoDetail() {
   }
 
   const defaultAbsForm = () => ({
-    data: new Date().toISOString().slice(0, 16),
+    data: isoToDatetimeLocal(new Date().toISOString()),
     litros: '',
     valor: '',
     km: '',
@@ -270,7 +270,7 @@ export function VeiculoDetail() {
     setManData({
       tipo: '',
       descricao: '',
-      data: new Date().toISOString().slice(0, 16),
+      data: isoToDatetimeLocal(new Date().toISOString()),
       valor: '',
       categoriaId: '',
       contaBancariaId: '',
@@ -303,7 +303,7 @@ export function VeiculoDetail() {
       tipoRegistro: 'SIMPLES',
       origem: '',
       destino: '',
-      dataInicio: new Date().toISOString().slice(0, 16),
+      dataInicio: isoToDatetimeLocal(new Date().toISOString()),
       dataFim: '',
       recorrenciaFim: '',
       diasSemana: [],
@@ -343,8 +343,8 @@ export function VeiculoDetail() {
     setDispEditId(null)
     setIndData({
       tipo: 'PRODUCAO',
-      inicio: new Date().toISOString().slice(0, 16),
-      fim: new Date(Date.now() + 60 * 60 * 1000).toISOString().slice(0, 16),
+      inicio: isoToDatetimeLocal(new Date().toISOString()),
+      fim: isoToDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
       motivo: '',
     })
     setDlgInd(true)
@@ -363,7 +363,7 @@ export function VeiculoDetail() {
 
   const submitAbs = () => {
     const payload = {
-      data: new Date(absData.data).toISOString(),
+      data: absData.data + ':00',
       litros: parseFloat(absData.litros),
       valor: parseFloat(absData.valor),
       km: absData.km ? parseFloat(absData.km) : null,
@@ -391,7 +391,7 @@ export function VeiculoDetail() {
     const payload = {
       tipo: manData.tipo,
       descricao: manData.descricao || null,
-      data: new Date(manData.data).toISOString(),
+      data: manData.data + ':00',
       valor: parseFloat(manData.valor),
       categoriaId: manData.categoriaId,
       contaBancariaId: manData.contaBancariaId,
@@ -435,11 +435,12 @@ export function VeiculoDetail() {
       }
     }
 
+    const sentinel = (v: string) => (v.includes(':') ? v + ':00' : v + 'T00:00:00')
     const payload = {
       origem: viaData.origem,
       destino: viaData.destino,
-      dataInicio: new Date(viaData.dataInicio).toISOString(),
-      dataFim: viaData.dataFim ? new Date(viaData.dataFim).toISOString() : null,
+      dataInicio: sentinel(viaData.dataInicio),
+      dataFim: viaData.dataFim ? sentinel(viaData.dataFim) : null,
       kmRodado: viaData.kmRodado ? parseFloat(viaData.kmRodado) : null,
       valorReceita,
       categoriaId: viaData.categoriaId || null,
@@ -450,7 +451,7 @@ export function VeiculoDetail() {
       diasSemana: viaData.tipoRegistro === 'RECORRENTE' ? viaData.diasSemana : [],
       recorrenciaFim:
         viaData.tipoRegistro === 'RECORRENTE' && viaData.recorrenciaFim
-          ? new Date(viaData.recorrenciaFim).toISOString()
+          ? sentinel(viaData.recorrenciaFim)
           : null,
     }
     if (viaEditId) {
@@ -472,8 +473,8 @@ export function VeiculoDetail() {
     if (!indData.inicio || !indData.fim) return
     const payload = {
       tipo: indData.tipo,
-      inicio: new Date(indData.inicio).toISOString(),
-      fim: new Date(indData.fim).toISOString(),
+      inicio: indData.inicio + ':00',
+      fim: indData.fim + ':00',
       motivo: indData.motivo || null,
     }
 

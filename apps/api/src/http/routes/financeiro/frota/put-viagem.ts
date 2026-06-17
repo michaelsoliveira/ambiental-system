@@ -3,9 +3,20 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod'
 import { z } from 'zod'
 
 import { auth } from '@/http/middlewares/auth'
+import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { FrotaService } from '@/services/frota.service'
+
+function toDate(value: string) {
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestError('Data inválida.')
+  }
+
+  return date
+}
 
 const bodySchema = z.object({
   origem: z.string().min(1).max(500),
@@ -55,11 +66,14 @@ export async function putViagem(app: FastifyInstance) {
         }
 
         const b = request.body
+        const dataInicio = toDate(b.dataInicio)
+        const dataFim = b.dataFim ? toDate(b.dataFim) : null
+
         await FrotaService.atualizarViagem(organization.id, veiculoId, viagemId, {
           origem: b.origem,
           destino: b.destino,
-          dataInicio: new Date(b.dataInicio),
-          dataFim: b.dataFim ? new Date(b.dataFim) : null,
+          dataInicio,
+          dataFim,
           kmRodado: b.kmRodado ?? null,
           valorReceita: b.valorReceita ?? null,
           categoriaId: b.categoriaId ?? undefined,
