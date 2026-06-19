@@ -3,12 +3,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { Download, FileSpreadsheet,FileText, Printer } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
+import { SelectSearchable } from '@/components/select-searchable'
 import {
   Form,
   FormControl,
@@ -25,12 +26,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getCategorias } from '@/http/categoria/get-categorias'
-import { getCentrosCusto } from '@/http/centro-custo/get-centros-custo'
-import { getContas } from '@/http/conta/get-contas'
-import { getVeiculos } from '@/http/frota/get-veiculos'
+import { useCategoriaSelect } from '@/hooks/use-categoria-select'
+import { useCentroCustoSelect } from '@/hooks/use-centro-custo-select'
+import { useContaSelect } from '@/hooks/use-conta-select'
+import { useParceiroSelect } from '@/hooks/use-parceiro-select'
+import { useVeiculoSelect } from '@/hooks/use-veiculo-select'
 import { getLancamentosRelatorio } from '@/http/lancamento/get-lancamentos-relatorio'
-import { getParceiros } from '@/http/parceiro/get-parceiros'
 import { exportToCSV, exportToXLS, formatCurrency, formatDate } from '@/lib/export-utils'
 import { zodV4Resolver } from '@/lib/zod-v4-resolver'
 
@@ -64,40 +65,30 @@ const relatorioSchema = z.object({
 
 type RelatorioFormData = z.infer<typeof relatorioSchema>
 
+const MESES = [
+  { value: '1', label: 'Janeiro' },
+  { value: '2', label: 'Fevereiro' },
+  { value: '3', label: 'Março' },
+  { value: '4', label: 'Abril' },
+  { value: '5', label: 'Maio' },
+  { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' },
+  { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Setembro' },
+  { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' },
+  { value: '12', label: 'Dezembro' },
+] as const
+
+function resolveSelectedId(value?: string | null) {
+  if (!value || value.startsWith('all-')) return null
+  return value
+}
+
 export function LancamentoRelatorioExtrato() {
   const { slug } = useParams<{ slug: string }>()
   const [filters, setFilters] = useState<RelatorioFormData | null>(null)
   const [showPrint, setShowPrint] = useState(false)
-
-  const { data: contasData } = useQuery({
-    queryKey: ['contas', slug],
-    queryFn: () => getContas(slug!),
-    enabled: !!slug,
-  })
-
-  const { data: categoriasData } = useQuery({
-    queryKey: ['categorias', slug],
-    queryFn: () => getCategorias(slug!),
-    enabled: !!slug,
-  })
-
-  const { data: centrosCustoData } = useQuery({
-    queryKey: ['centros-custo', slug],
-    queryFn: () => getCentrosCusto(slug!),
-    enabled: !!slug,
-  })
-
-  const { data: parceirosData } = useQuery({
-    queryKey: ['parceiros', slug],
-    queryFn: () => getParceiros(slug!),
-    enabled: !!slug,
-  })
-
-  const { data: veiculosData } = useQuery({
-    queryKey: ['veiculos-relatorio', slug],
-    queryFn: () => getVeiculos(slug!, { limit: 100, ativo: true }),
-    enabled: !!slug,
-  })
 
   const { data: relatorioData, isLoading } = useQuery({
     queryKey: ['lancamentos-relatorio', slug, filters],
@@ -154,6 +145,47 @@ export function LancamentoRelatorioExtrato() {
   })
 
   const periodoTipo = form.watch('periodo_tipo')
+  const contaBancariaId = form.watch('conta_bancaria_id')
+  const categoriaId = form.watch('categoria_id')
+  const centroCustoId = form.watch('centro_custo_id')
+  const veiculoId = form.watch('veiculo_id')
+  const parceiroId = form.watch('parceiro_id')
+
+  const {
+    options: contasFromApi,
+    isLoading: loadingContas,
+    onSearchChange: onContaSearchChange,
+  } = useContaSelect(slug ?? '', resolveSelectedId(contaBancariaId))
+
+  const {
+    options: categoriasFromApi,
+    isLoading: loadingCategorias,
+    onSearchChange: onCategoriaSearchChange,
+  } = useCategoriaSelect(slug ?? '', resolveSelectedId(categoriaId))
+
+  const {
+    options: centrosFromApi,
+    isLoading: loadingCentros,
+    onSearchChange: onCentroSearchChange,
+  } = useCentroCustoSelect(slug ?? '', resolveSelectedId(centroCustoId))
+
+  const {
+    options: parceirosFromApi,
+    isLoading: loadingParceiros,
+    isLoadingMore: loadingMoreParceiros,
+    hasMore: hasMoreParceiros,
+    onSearchChange: onParceiroSearchChange,
+    onLoadMore: onParceiroLoadMore,
+  } = useParceiroSelect(slug ?? '', resolveSelectedId(parceiroId))
+
+  const {
+    options: veiculosFromApi,
+    isLoading: loadingVeiculos,
+    isLoadingMore: loadingMoreVeiculos,
+    hasMore: hasMoreVeiculos,
+    onSearchChange: onVeiculoSearchChange,
+    onLoadMore: onVeiculoLoadMore,
+  } = useVeiculoSelect(slug ?? '', resolveSelectedId(veiculoId))
   
   // Resetar campos quando mudar o tipo de período
   const handlePeriodoTipoChange = (value: 'datas' | 'mes_ano') => {
@@ -266,32 +298,55 @@ export function LancamentoRelatorioExtrato() {
     }, 100)
   }
 
-  const contas = contasData?.contas || []
-  const categorias = categoriasData?.categorias || []
-  const centrosCusto = centrosCustoData?.centros || []
-  const parceiros = parceirosData?.parceiros || []
-  const veiculos = veiculosData?.veiculos || []
+  const contasOptions = useMemo(
+    () => [{ label: 'Todas as contas', value: 'all-contas' }, ...contasFromApi],
+    [contasFromApi],
+  )
 
-  // Gerar lista de anos (últimos 10 anos até o próximo)
+  const categoriasOptions = useMemo(
+    () => [{ label: 'Todas as categorias', value: 'all-categorias' }, ...categoriasFromApi],
+    [categoriasFromApi],
+  )
+
+  const tipoOptions = useMemo(
+    () => [
+      { label: 'Todos os tipos', value: 'all-tipos' },
+      { label: 'Receita', value: 'RECEITA' },
+      { label: 'Despesa', value: 'DESPESA' },
+      { label: 'Transferência', value: 'TRANSFERENCIA' },
+    ],
+    [],
+  )
+
+  const centrosOptions = useMemo(
+    () => [{ label: 'Todos os centros de custo', value: 'all-centros' }, ...centrosFromApi],
+    [centrosFromApi],
+  )
+
+  const veiculosOptions = useMemo(
+    () => [{ label: 'Todos os veículos', value: 'all-veiculos' }, ...veiculosFromApi],
+    [veiculosFromApi],
+  )
+
+  const parceirosOptions = useMemo(
+    () => [{ label: 'Todos os parceiros', value: 'all-parceiros' }, ...parceirosFromApi],
+    [parceirosFromApi],
+  )
+
   const anos = Array.from({ length: 11 }, (_, i) => {
     const ano = new Date().getFullYear() - 5 + i
     return ano.toString()
   })
 
-  const meses = [
-    { value: '1', label: 'Janeiro' },
-    { value: '2', label: 'Fevereiro' },
-    { value: '3', label: 'Março' },
-    { value: '4', label: 'Abril' },
-    { value: '5', label: 'Maio' },
-    { value: '6', label: 'Junho' },
-    { value: '7', label: 'Julho' },
-    { value: '8', label: 'Agosto' },
-    { value: '9', label: 'Setembro' },
-    { value: '10', label: 'Outubro' },
-    { value: '11', label: 'Novembro' },
-    { value: '12', label: 'Dezembro' },
-  ]
+  const mesesOptions = useMemo(
+    () => MESES.map((mes) => ({ label: mes.label, value: mes.value })),
+    [],
+  )
+
+  const anosOptions = useMemo(
+    () => anos.map((ano) => ({ label: ano, value: ano })),
+    [anos],
+  )
 
   return (
     <div className="space-y-6">
@@ -362,20 +417,15 @@ export function LancamentoRelatorioExtrato() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Mês *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione o mês" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {meses.map((mes) => (
-                              <SelectItem key={mes.value} value={mes.value}>
-                                {mes.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SelectSearchable
+                            options={mesesOptions}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder="Selecione o mês"
+                            searchPlaceholder="Buscar mês..."
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -387,20 +437,15 @@ export function LancamentoRelatorioExtrato() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Ano *</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value || ''}>
-                          <FormControl>
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Selecione o ano" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {anos.map((ano) => (
-                              <SelectItem key={ano} value={ano}>
-                                {ano}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <SelectSearchable
+                            options={anosOptions}
+                            value={field.value || ''}
+                            onValueChange={field.onChange}
+                            placeholder="Selecione o ano"
+                            searchPlaceholder="Buscar ano..."
+                          />
+                        </FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -414,24 +459,17 @@ export function LancamentoRelatorioExtrato() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Conta Bancária</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value || undefined)} 
-                      value={field.value || ''}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todas as contas" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all-contas">Todas as contas</SelectItem>
-                        {contas.map((conta) => (
-                          <SelectItem key={conta.id} value={conta.id}>
-                            {conta.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <SelectSearchable
+                        options={contasOptions}
+                        value={field.value ?? 'all-contas'}
+                        onValueChange={field.onChange}
+                        sentinelValues={['all-contas']}
+                      placeholder="Todas as contas"
+                      searchPlaceholder="Buscar conta..."
+                      emptyText="Nenhuma conta encontrada"
+                      isLoading={loadingContas}
+                      onSearchChange={onContaSearchChange}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -443,24 +481,17 @@ export function LancamentoRelatorioExtrato() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Categoria</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value === 'all-categorias' ? undefined : value)} 
-                      value={field.value || 'all-categorias'}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todas as categorias" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all-categorias">Todas as categorias</SelectItem>
-                        {categorias.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
-                            {cat.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <SelectSearchable
+                        options={categoriasOptions}
+                        value={field.value ?? 'all-categorias'}
+                        onValueChange={field.onChange}
+                        sentinelValues={['all-categorias']}
+                      placeholder="Todas as categorias"
+                      searchPlaceholder="Buscar categoria..."
+                      emptyText="Nenhuma categoria encontrada"
+                      isLoading={loadingCategorias}
+                      onSearchChange={onCategoriaSearchChange}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -472,22 +503,13 @@ export function LancamentoRelatorioExtrato() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tipo</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value === 'all-tipos' ? undefined : value)} 
-                      value={field.value || 'all-tipos'}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todos os tipos" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all-tipos">Todos os tipos</SelectItem>
-                        <SelectItem value="RECEITA">Receita</SelectItem>
-                        <SelectItem value="DESPESA">Despesa</SelectItem>
-                        <SelectItem value="TRANSFERENCIA">Transferência</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <SelectSearchable
+                      options={tipoOptions}
+                      value={field.value ?? 'all-tipos'}
+                      onValueChange={field.onChange}
+                      placeholder="Todos os tipos"
+                      searchPlaceholder="Buscar tipo..."
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -499,24 +521,17 @@ export function LancamentoRelatorioExtrato() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Centro de Custo</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value === 'all-centros' ? undefined : value)} 
-                      value={field.value || 'all-centros'}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todos os centros de custo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all-centros">Todos os centros de custo</SelectItem>
-                        {centrosCusto.map((centro) => (
-                          <SelectItem key={centro.id} value={centro.id}>
-                            {centro.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <SelectSearchable
+                        options={centrosOptions}
+                        value={field.value ?? 'all-centros'}
+                        onValueChange={field.onChange}
+                        sentinelValues={['all-centros']}
+                      placeholder="Todos os centros de custo"
+                      searchPlaceholder="Buscar centro de custo..."
+                      emptyText="Nenhum centro de custo encontrado"
+                      isLoading={loadingCentros}
+                      onSearchChange={onCentroSearchChange}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -528,26 +543,20 @@ export function LancamentoRelatorioExtrato() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Veículo</FormLabel>
-                    <Select
-                      onValueChange={(value) =>
-                        field.onChange(value === 'all-veiculos' ? undefined : value)
-                      }
-                      value={field.value || 'all-veiculos'}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todos os veículos" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all-veiculos">Todos os veículos</SelectItem>
-                        {veiculos.map((veiculo) => (
-                          <SelectItem key={veiculo.id} value={veiculo.id}>
-                            {veiculo.placa} · {veiculo.marca} {veiculo.modelo}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <SelectSearchable
+                        options={veiculosOptions}
+                        value={field.value ?? 'all-veiculos'}
+                        onValueChange={field.onChange}
+                        sentinelValues={['all-veiculos']}
+                      placeholder="Todos os veículos"
+                      searchPlaceholder="Buscar por placa ou modelo..."
+                      emptyText="Nenhum veículo encontrado"
+                      isLoading={loadingVeiculos}
+                      onSearchChange={onVeiculoSearchChange}
+                      hasMore={hasMoreVeiculos}
+                      onLoadMore={onVeiculoLoadMore}
+                      isLoadingMore={loadingMoreVeiculos}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
@@ -559,29 +568,20 @@ export function LancamentoRelatorioExtrato() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Parceiro</FormLabel>
-                    <Select 
-                      onValueChange={(value) => field.onChange(value === 'all-parceiros' ? undefined : value)} 
-                      value={field.value || 'all-parceiros'}
-                    >
-                      <FormControl>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Todos os parceiros" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="all-parceiros">Todos os parceiros</SelectItem>
-                        {parceiros.map((parceiro) => {
-                          const nome = parceiro.pessoa.tipo === 'F'
-                            ? parceiro.pessoa.fisica?.nome
-                            : parceiro.pessoa.juridica?.nome_fantasia || parceiro.pessoa.juridica?.razao_social
-                          return (
-                            <SelectItem key={parceiro.id} value={parceiro.id}>
-                              {nome || 'Sem nome'}
-                            </SelectItem>
-                          )
-                        })}
-                      </SelectContent>
-                    </Select>
+                      <SelectSearchable
+                        options={parceirosOptions}
+                        value={field.value ?? 'all-parceiros'}
+                        onValueChange={field.onChange}
+                        sentinelValues={['all-parceiros']}
+                      placeholder="Todos os parceiros"
+                      searchPlaceholder="Buscar parceiro..."
+                      emptyText="Nenhum parceiro encontrado"
+                      isLoading={loadingParceiros}
+                      onSearchChange={onParceiroSearchChange}
+                      hasMore={hasMoreParceiros}
+                      onLoadMore={onParceiroLoadMore}
+                      isLoadingMore={loadingMoreParceiros}
+                    />
                     <FormMessage />
                   </FormItem>
                 )}
