@@ -39,6 +39,9 @@ interface RelatorioData {
 
 interface RelatorioExtratoPDFProps {
   data: RelatorioData
+  mostrarSaldoAnterior?: boolean
+  periodoLabel?: string
+  filtrosAplicados?: string[]
 }
 
 const styles = StyleSheet.create({
@@ -138,8 +141,16 @@ const styles = StyleSheet.create({
   },
 })
 
-function PDFDocument({ data }: RelatorioExtratoPDFProps) {
-  let saldoAtual = data.saldo_anterior
+function PDFDocument({
+  data,
+  mostrarSaldoAnterior = true,
+  periodoLabel,
+  filtrosAplicados,
+}: RelatorioExtratoPDFProps) {
+  let saldoAtual = mostrarSaldoAnterior ? data.saldo_anterior : 0
+  const saldoFinalExibido = mostrarSaldoAnterior
+    ? data.saldo_final
+    : data.saldo_final - data.saldo_anterior
 
   return (
     <Document>
@@ -150,16 +161,22 @@ function PDFDocument({ data }: RelatorioExtratoPDFProps) {
             Gerado em: {new Date().toLocaleDateString('pt-BR')} às{' '}
             {new Date().toLocaleTimeString('pt-BR')}
           </Text>
+          {periodoLabel && <Text style={styles.subtitle}>Período: {periodoLabel}</Text>}
+          {filtrosAplicados && filtrosAplicados.length > 0 && (
+            <Text style={styles.subtitle}>Filtros: {filtrosAplicados.join(' · ')}</Text>
+          )}
         </View>
 
         <View style={styles.summary}>
-          <View>
-            <Text style={styles.summaryLabel}>Saldo anterior:</Text>
-            <Text style={styles.summaryItem}>{formatCurrency(data.saldo_anterior)}</Text>
-          </View>
+          {mostrarSaldoAnterior && (
+            <View>
+              <Text style={styles.summaryLabel}>Saldo anterior:</Text>
+              <Text style={styles.summaryItem}>{formatCurrency(data.saldo_anterior)}</Text>
+            </View>
+          )}
           <View>
             <Text style={styles.summaryLabel}>Saldo final:</Text>
-            <Text style={styles.summaryItem}>{formatCurrency(data.saldo_final)}</Text>
+            <Text style={styles.summaryItem}>{formatCurrency(saldoFinalExibido)}</Text>
           </View>
         </View>
 
@@ -188,31 +205,33 @@ function PDFDocument({ data }: RelatorioExtratoPDFProps) {
             </View>
           </View>
 
-          <View style={[styles.tableRow, styles.saldoAnteriorRow]}>
-            <View style={styles.colData}>
-              <Text style={[styles.cellText, styles.textCenter]}>-</Text>
+          {mostrarSaldoAnterior && (
+            <View style={[styles.tableRow, styles.saldoAnteriorRow]}>
+              <View style={styles.colData}>
+                <Text style={[styles.cellText, styles.textCenter]}>-</Text>
+              </View>
+              <View style={styles.colCodigo}>
+                <Text style={[styles.cellText, styles.textCenter]}>-</Text>
+              </View>
+              <View style={styles.colClassif}>
+                <Text style={styles.cellText}>-</Text>
+              </View>
+              <View style={styles.colPessoa}>
+                <Text style={styles.cellText}>-</Text>
+              </View>
+              <View style={styles.colDesc}>
+                <Text style={styles.cellText}>Saldo anterior:</Text>
+              </View>
+              <View style={styles.colValor}>
+                <Text style={[styles.cellText, styles.textRight]}>-</Text>
+              </View>
+              <View style={styles.colSaldo}>
+                <Text style={[styles.cellText, styles.textRight]}>
+                  {formatCurrency(data.saldo_anterior)}
+                </Text>
+              </View>
             </View>
-            <View style={styles.colCodigo}>
-              <Text style={[styles.cellText, styles.textCenter]}>-</Text>
-            </View>
-            <View style={styles.colClassif}>
-              <Text style={styles.cellText}>-</Text>
-            </View>
-            <View style={styles.colPessoa}>
-              <Text style={styles.cellText}>-</Text>
-            </View>
-            <View style={styles.colDesc}>
-              <Text style={styles.cellText}>Saldo anterior:</Text>
-            </View>
-            <View style={styles.colValor}>
-              <Text style={[styles.cellText, styles.textRight]}>-</Text>
-            </View>
-            <View style={styles.colSaldo}>
-              <Text style={[styles.cellText, styles.textRight]}>
-                {formatCurrency(data.saldo_anterior)}
-              </Text>
-            </View>
-          </View>
+          )}
 
           {data.lancamentos.map((lanc) => {
             if (lanc.tipo === 'RECEITA') {
@@ -332,7 +351,12 @@ function PDFDownloadButton({
   )
 }
 
-export function RelatorioExtratoPDF({ data }: RelatorioExtratoPDFProps) {
+export function RelatorioExtratoPDF({
+  data,
+  mostrarSaldoAnterior = true,
+  periodoLabel,
+  filtrosAplicados,
+}: RelatorioExtratoPDFProps) {
   const [shouldGenerate, setShouldGenerate] = useState(false)
 
   const handleGeneratePDF = useCallback(() => {
@@ -357,7 +381,16 @@ export function RelatorioExtratoPDF({ data }: RelatorioExtratoPDFProps) {
   }
 
   return (
-    <BlobProvider document={<PDFDocument data={data} />}>
+    <BlobProvider
+      document={
+        <PDFDocument
+          data={data}
+          mostrarSaldoAnterior={mostrarSaldoAnterior}
+          periodoLabel={periodoLabel}
+          filtrosAplicados={filtrosAplicados}
+        />
+      }
+    >
       {({ blob, url, loading, error }) => (
         <PDFDownloadButton
           url={url}

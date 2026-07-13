@@ -44,3 +44,11 @@ export function formatDate(date: string | null): string {
   if (!date) return '---'
   return new Date(date).toLocaleDateString('pt-BR')
 }
+
+/** Formata uma data no formato "YYYY-MM-DD" sem conversão de fuso horário. */
+export function formatDateOnly(date?: string | null): string {
+  if (!date) return '---'
+  const [year, month, day] = date.split('-')
+  if (!year || !month || !day) return '---'
+  return `${day}/${month}/${year}`
+}

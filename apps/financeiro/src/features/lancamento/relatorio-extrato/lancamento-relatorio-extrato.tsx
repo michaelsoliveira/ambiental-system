@@ -3,12 +3,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { Download, FileSpreadsheet,FileText, Printer } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { SelectSearchable } from '@/components/select-searchable'
 import {
   Form,
@@ -32,7 +33,7 @@ import { useContaSelect } from '@/hooks/use-conta-select'
 import { useParceiroSelect } from '@/hooks/use-parceiro-select'
 import { useVeiculoSelect } from '@/hooks/use-veiculo-select'
 import { getLancamentosRelatorio } from '@/http/lancamento/get-lancamentos-relatorio'
-import { exportToCSV, exportToXLS, formatCurrency, formatDate } from '@/lib/export-utils'
+import { exportToCSV, exportToXLS, formatCurrency, formatDate, formatDateOnly } from '@/lib/export-utils'
 import { zodV4Resolver } from '@/lib/zod-v4-resolver'
 
 import { RelatorioExtratoPDF } from './relatorio-extrato-pdf'
@@ -85,10 +86,80 @@ function resolveSelectedId(value?: string | null) {
   return value
 }
 
+function getPeriodoLabel(filters: RelatorioFormData | null): string {
+  if (!filters) return ''
+
+  if (filters.periodo_tipo === 'mes_ano') {
+    const mesLabel = MESES.find(
+      (m) => String(m.value) === String(filters.mes ?? ''),
+    )?.label
+    if (mesLabel && filters.ano) return `${mesLabel}/${filters.ano}`
+    return ''
+  }
+
+  if (filters.data_inicio && filters.data_fim) {
+    return `${formatDateOnly(filters.data_inicio)} até ${formatDateOnly(filters.data_fim)}`
+  }
+
+  return ''
+}
+
+type FiltroOption = { label: string; value: string }
+
+function buildFiltrosAplicados(
+  filters: RelatorioFormData,
+  options: {
+    contas: FiltroOption[]
+    categorias: FiltroOption[]
+    tipos: FiltroOption[]
+    centros: FiltroOption[]
+    veiculos: FiltroOption[]
+    parceiros: FiltroOption[]
+  },
+): string[] {
+  const items: string[] = []
+  const isAll = (value?: string) => !value || value.startsWith('all-')
+
+  if (!isAll(filters.conta_bancaria_id)) {
+    const label = options.contas.find((o) => o.value === filters.conta_bancaria_id)?.label
+    if (label) items.push(`Conta: ${label}`)
+  }
+
+  if (!isAll(filters.categoria_id)) {
+    const label = options.categorias.find((o) => o.value === filters.categoria_id)?.label
+    if (label) items.push(`Categoria: ${label}`)
+  }
+
+  if (!isAll(filters.tipo)) {
+    const label = options.tipos.find((o) => o.value === filters.tipo)?.label
+    if (label) items.push(`Tipo: ${label}`)
+  }
+
+  if (!isAll(filters.centro_custo_id)) {
+    const label = options.centros.find((o) => o.value === filters.centro_custo_id)?.label
+    if (label) items.push(`Centro de Custo: ${label}`)
+  }
+
+  if (!isAll(filters.veiculo_id)) {
+    const label = options.veiculos.find((o) => o.value === filters.veiculo_id)?.label
+    if (label) items.push(`Veículo: ${label}`)
+  }
+
+  if (!isAll(filters.parceiro_id)) {
+    const label = options.parceiros.find((o) => o.value === filters.parceiro_id)?.label
+    if (label) items.push(`Parceiro: ${label}`)
+  }
+
+  return items
+}
+
 export function LancamentoRelatorioExtrato() {
   const { slug } = useParams<{ slug: string }>()
   const [filters, setFilters] = useState<RelatorioFormData | null>(null)
+  const [periodoLabel, setPeriodoLabel] = useState('')
+  const [filtrosAplicados, setFiltrosAplicados] = useState<string[]>([])
   const [showPrint, setShowPrint] = useState(false)
+  const [mostrarSaldoAnterior, setMostrarSaldoAnterior] = useState(true)
 
   const { data: relatorioData, isLoading } = useQuery({
     queryKey: ['lancamentos-relatorio', slug, filters],
@@ -205,8 +276,8 @@ export function LancamentoRelatorioExtrato() {
     let data_fim = data.data_fim
     
     if (data.periodo_tipo === 'mes_ano' && data.mes && data.ano) {
-      const mesNum = parseInt(data.mes)
-      const anoNum = parseInt(data.ano)
+      const mesNum = parseInt(data.mes, 10)
+      const anoNum = parseInt(data.ano, 10)
       // Primeiro dia do mês
       data_inicio = `${anoNum}-${String(mesNum).padStart(2, '0')}-01`
       // Último dia do mês
@@ -243,7 +314,7 @@ export function LancamentoRelatorioExtrato() {
   const handleExportCSV = () => {
     if (!relatorioData) return
     
-    let saldoAtual = relatorioData.saldo_anterior
+    let saldoAtual = mostrarSaldoAnterior ? relatorioData.saldo_anterior : 0
     const csvData = relatorioData.lancamentos.map(lanc => {
       if (lanc.tipo === 'RECEITA') {
         saldoAtual += lanc.valor
@@ -268,7 +339,7 @@ export function LancamentoRelatorioExtrato() {
   const handleExportXLS = () => {
     if (!relatorioData) return
     
-    let saldoAtual = relatorioData.saldo_anterior
+    let saldoAtual = mostrarSaldoAnterior ? relatorioData.saldo_anterior : 0
     const xlsData = relatorioData.lancamentos.map(lanc => {
       if (lanc.tipo === 'RECEITA') {
         saldoAtual += lanc.valor
@@ -347,6 +418,35 @@ export function LancamentoRelatorioExtrato() {
     () => anos.map((ano) => ({ label: ano, value: ano })),
     [anos],
   )
+
+  // Recalcula o cabeçalho quando o relatório é gerado e quando as opções
+  // assíncronas (ex.: veículo selecionado) terminam de carregar.
+  useEffect(() => {
+    if (!filters) {
+      setPeriodoLabel('')
+      setFiltrosAplicados([])
+      return
+    }
+    setPeriodoLabel(getPeriodoLabel(filters))
+    setFiltrosAplicados(
+      buildFiltrosAplicados(filters, {
+        contas: contasOptions,
+        categorias: categoriasOptions,
+        tipos: tipoOptions,
+        centros: centrosOptions,
+        veiculos: veiculosOptions,
+        parceiros: parceirosOptions,
+      }),
+    )
+  }, [
+    filters,
+    contasOptions,
+    categoriasOptions,
+    tipoOptions,
+    centrosOptions,
+    veiculosOptions,
+    parceirosOptions,
+  ])
 
   return (
     <div className="space-y-6">
@@ -588,7 +688,7 @@ export function LancamentoRelatorioExtrato() {
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Button type="submit">Gerar Relatório</Button>
               {relatorioData && (
                 <>
@@ -604,7 +704,19 @@ export function LancamentoRelatorioExtrato() {
                     <FileSpreadsheet className="h-4 w-4 mr-2" />
                     Exportar XLS
                   </Button>
-                  <RelatorioExtratoPDF data={relatorioData} />
+                  <RelatorioExtratoPDF
+                    data={relatorioData}
+                    mostrarSaldoAnterior={mostrarSaldoAnterior}
+                    periodoLabel={periodoLabel}
+                    filtrosAplicados={filtrosAplicados}
+                  />
+                  <label className="flex items-center gap-2 text-sm ml-2">
+                    <Checkbox
+                      checked={mostrarSaldoAnterior}
+                      onCheckedChange={(checked) => setMostrarSaldoAnterior(checked === true)}
+                    />
+                    Mostrar Saldo Anterior
+                  </label>
                 </>
               )}
             </div>
@@ -615,11 +727,21 @@ export function LancamentoRelatorioExtrato() {
       {isLoading && <div className="text-center py-8">Carregando...</div>}
 
       {relatorioData && !showPrint && (
-        <RelatorioExtratoTable data={relatorioData} />
+        <RelatorioExtratoTable
+          data={relatorioData}
+          mostrarSaldoAnterior={mostrarSaldoAnterior}
+          periodoLabel={periodoLabel}
+          filtrosAplicados={filtrosAplicados}
+        />
       )}
 
       {relatorioData && showPrint && (
-        <RelatorioExtratoPrint data={relatorioData} />
+        <RelatorioExtratoPrint
+          data={relatorioData}
+          mostrarSaldoAnterior={mostrarSaldoAnterior}
+          periodoLabel={periodoLabel}
+          filtrosAplicados={filtrosAplicados}
+        />
       )}
     </div>
   )

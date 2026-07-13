@@ -19,10 +19,21 @@ interface RelatorioData {
 
 interface RelatorioExtratoPrintProps {
   data: RelatorioData
+  mostrarSaldoAnterior?: boolean
+  periodoLabel?: string
+  filtrosAplicados?: string[]
 }
 
-export function RelatorioExtratoPrint({ data }: RelatorioExtratoPrintProps) {
-  let saldoAtual = data.saldo_anterior
+export function RelatorioExtratoPrint({
+  data,
+  mostrarSaldoAnterior = true,
+  periodoLabel,
+  filtrosAplicados,
+}: RelatorioExtratoPrintProps) {
+  let saldoAtual = mostrarSaldoAnterior ? data.saldo_anterior : 0
+  const saldoFinalExibido = mostrarSaldoAnterior
+    ? data.saldo_final
+    : data.saldo_final - data.saldo_anterior
 
   return (
     <div className="print-container hidden print:block">
@@ -76,17 +87,23 @@ export function RelatorioExtratoPrint({ data }: RelatorioExtratoPrintProps) {
           Gerado em: {new Date().toLocaleDateString('pt-BR')} às{' '}
           {new Date().toLocaleTimeString('pt-BR')}
         </p>
+        {periodoLabel && <p className="text-sm">Período: {periodoLabel}</p>}
+        {filtrosAplicados && filtrosAplicados.length > 0 && (
+          <p className="text-sm">Filtros: {filtrosAplicados.join(' · ')}</p>
+        )}
       </div>
 
       <div className="mb-4 text-sm">
         <div className="flex justify-between">
-          <div>
-            <p className="font-semibold">Saldo anterior:</p>
-            <p className="text-lg">{formatCurrency(data.saldo_anterior)}</p>
-          </div>
+          {mostrarSaldoAnterior && (
+            <div>
+              <p className="font-semibold">Saldo anterior:</p>
+              <p className="text-lg">{formatCurrency(data.saldo_anterior)}</p>
+            </div>
+          )}
           <div className="text-right">
             <p className="font-semibold">Saldo final:</p>
-            <p className="text-lg">{formatCurrency(data.saldo_final)}</p>
+            <p className="text-lg">{formatCurrency(saldoFinalExibido)}</p>
           </div>
         </div>
       </div>
@@ -104,14 +121,16 @@ export function RelatorioExtratoPrint({ data }: RelatorioExtratoPrintProps) {
           </tr>
         </thead>
         <tbody>
-          <tr style={{ backgroundColor: '#f9fafb' }}>
-            <td colSpan={6} style={{ fontWeight: 600 }}>
-              Saldo anterior:
-            </td>
-            <td className="text-right" style={{ fontWeight: 600 }}>
-              {formatCurrency(data.saldo_anterior)}
-            </td>
-          </tr>
+          {mostrarSaldoAnterior && (
+            <tr style={{ backgroundColor: '#f9fafb' }}>
+              <td colSpan={6} style={{ fontWeight: 600 }}>
+                Saldo anterior:
+              </td>
+              <td className="text-right" style={{ fontWeight: 600 }}>
+                {formatCurrency(data.saldo_anterior)}
+              </td>
+            </tr>
+          )}
           {data.lancamentos.map((lanc) => {
             if (lanc.tipo === 'RECEITA') {
               saldoAtual += lanc.valor
