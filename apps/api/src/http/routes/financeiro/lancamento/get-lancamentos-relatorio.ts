@@ -5,6 +5,7 @@ import { auth } from '@/http/middlewares/auth'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { LancamentoService } from '@/services/lancamento.service'
+import { addDaysToDateOnly } from '@/utils/date-only'
 
 export async function getLancamentosRelatorio(app: FastifyInstance) {
   app
@@ -22,6 +23,7 @@ export async function getLancamentosRelatorio(app: FastifyInstance) {
             // Filtros de data
             data_inicio: z.string().optional(),
             data_fim: z.string().optional(),
+            descricao: z.string().optional(),
             conta_bancaria_id: z.string().uuid().optional(),
             categoria_id: z.string().uuid().optional(),
             centro_custo_id: z.string().uuid().optional(),
@@ -58,6 +60,7 @@ export async function getLancamentosRelatorio(app: FastifyInstance) {
         // Filtros base usados no relatório
         const baseFilters: any = {
           filtrar_por: 'data',
+          descricao: filters.descricao?.trim() || undefined,
           conta_bancaria_id: filters.conta_bancaria_id,
           categoria_id: filters.categoria_id,
           centro_custo_id: filters.centro_custo_id,
@@ -99,12 +102,9 @@ export async function getLancamentosRelatorio(app: FastifyInstance) {
         // Calcular saldo anterior (lançamentos antes da data inicial)
         let saldoAnterior = 0
         if (filters.data_inicio) {
-          const diaAnterior = new Date(filters.data_inicio)
-          diaAnterior.setDate(diaAnterior.getDate() - 1)
-
           const saldoAnteriorLancamentos = await listAllLancamentos({
             ...baseFilters,
-            data_fim: diaAnterior.toISOString().split('T')[0],
+            data_fim: addDaysToDateOnly(filters.data_inicio, -1),
           })
 
           saldoAnterior = saldoAnteriorLancamentos.reduce((acc: number, lanc: any) => {

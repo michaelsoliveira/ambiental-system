@@ -130,9 +130,29 @@ describe('LancamentoService', () => {
         expect.objectContaining({
           where: expect.objectContaining({
             data: expect.objectContaining({
-              gte: expect.any(Date),
-              lte: expect.any(Date),
+              gte: new Date(2024, 0, 1, 0, 0, 0, 0),
+              lte: new Date(2024, 11, 31, 23, 59, 59, 999),
             }),
+          }),
+        })
+      )
+    })
+
+    it('deve aplicar filtro por descrição', async () => {
+      vi.mocked(prisma.lancamento.findMany).mockResolvedValue([])
+      vi.mocked(prisma.lancamento.count).mockResolvedValue(0)
+
+      await LancamentoService.list(organizationId, {
+        descricao: 'combustível',
+      })
+
+      expect(prisma.lancamento.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            descricao: {
+              contains: 'combustível',
+              mode: 'insensitive',
+            },
           }),
         })
       )

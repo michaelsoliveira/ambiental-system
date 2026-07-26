@@ -6,6 +6,7 @@ import { auth } from '@/http/middlewares/auth'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { FrotaService } from '@/services/frota.service'
+import { parseBrazilDateTime } from '@/utils/date-only'
 
 const bodySchema = z.object({
   tipo: z.string().min(1).max(100),
@@ -56,7 +57,7 @@ export async function putManutencao(app: FastifyInstance) {
         await FrotaService.atualizarManutencao(organization.id, veiculoId, manutencaoId, {
           tipo: b.tipo,
           descricao: b.descricao ?? null,
-          data: new Date(b.data),
+          data: parseBrazilDateTime(b.data),
           valor: b.valor,
           categoriaId: b.categoriaId,
           contaBancariaId: b.contaBancariaId,

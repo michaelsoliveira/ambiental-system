@@ -3,9 +3,16 @@ import { Decimal } from '@prisma/client/runtime/library'
 import { prisma } from '@/lib/prisma'
 import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
 import { AsaasService } from '@/services/asaas.service'
+import {
+  parseBrazilDateTime,
+  parseDateOnlyEnd,
+  parseDateOnlyStart,
+} from '@/utils/date-only'
 
 export interface LancamentoFilters {
   search?: string
+  /** Filtro dedicado por descrição (contains, case-insensitive). */
+  descricao?: string
   tipo?: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA' | 'todos'
   status?: 'PENDENTE' | 'CONFIRMADO' | 'PAGO' | 'CANCELADO' | 'ATRASADO' | 'todos'
   pago?: 'true' | 'false' | 'todos'
@@ -288,6 +295,14 @@ export class LancamentoService {
       ]
     }
 
+    // Filtro dedicado por descrição
+    if (filters.descricao?.trim()) {
+      where.descricao = {
+        contains: filters.descricao.trim(),
+        mode: 'insensitive',
+      }
+    }
+
     // Filtro de tipo
     if (filters.tipo && filters.tipo !== 'todos') {
       where.tipo = filters.tipo
@@ -303,18 +318,16 @@ export class LancamentoService {
       where.pago = filters.pago === 'true'
     }
 
-    // Filtros de data
+    // Filtros de data (parse civil local — evita off-by-one com UTC)
     if (filters.data_inicio || filters.data_fim) {
       const dateField = filters.filtrar_por || 'data'
       const dateFilter: any = {}
 
       if (filters.data_inicio) {
-        dateFilter.gte = new Date(filters.data_inicio)
+        dateFilter.gte = parseDateOnlyStart(filters.data_inicio)
       }
       if (filters.data_fim) {
-        const endDate = new Date(filters.data_fim)
-        endDate.setHours(23, 59, 59, 999)
-        dateFilter.lte = endDate
+        dateFilter.lte = parseDateOnlyEnd(filters.data_fim)
       }
 
       if (dateField === 'data') {
@@ -660,7 +673,9 @@ export class LancamentoService {
     organizationId: string,
     data: CreateLancamentoData
   ) {
-    const dataLancamento = data.data.split('T')[0]!
+    const dataLancamento = data.data.includes('T')
+      ? data.data.split('T')[0]!
+      : data.data
     const parcelas = this.resolveParcelas(data)
     this.validateParcelas(data, parcelas)
     const primeiraParcela = parcelas[0]
@@ -669,11 +684,11 @@ export class LancamentoService {
       data: {
         numero: data.numero,
         tipo: data.tipo,
-        data: new Date(dataLancamento),
+        data: parseDateOnlyStart(dataLancamento),
         data_vencimento: primeiraParcela
-          ? new Date(primeiraParcela.data_vencimento)
+          ? parseDateOnlyStart(primeiraParcela.data_vencimento)
           : data.data_vencimento
-            ? new Date(data.data_vencimento)
+            ? parseBrazilDateTime(data.data_vencimento)
             : null,
         data_competencia: data.data_competencia || null,
         descricao: data.descricao,
@@ -685,7 +700,7 @@ export class LancamentoService {
         status_lancamento: data.status_lancamento,
         pago: data.pago,
         data_pagamento: data.data_pagamento
-          ? new Date(data.data_pagamento)
+          ? parseBrazilDateTime(data.data_pagamento)
           : null,
         tipo_repeticao: 'NENHUMA',
         organization_id: organizationId,
@@ -983,12 +998,14 @@ export class LancamentoService {
     if (data.numero !== undefined) updateData.numero = data.numero
     if (data.tipo !== undefined) updateData.tipo = data.tipo
     if (data.data !== undefined) {
-      const dataLancamento = data.data.split('T')[0]!
-      updateData.data = new Date(dataLancamento)
+      const dataLancamento = data.data.includes('T')
+        ? data.data.split('T')[0]!
+        : data.data
+      updateData.data = parseDateOnlyStart(dataLancamento)
     }
     if (data.data_vencimento !== undefined) {
       updateData.data_vencimento = data.data_vencimento
-        ? new Date(data.data_vencimento)
+        ? parseBrazilDateTime(data.data_vencimento)
         : null
     }
     if (data.descricao !== undefined) updateData.descricao = data.descricao
@@ -1006,7 +1023,7 @@ export class LancamentoService {
     if (data.pago !== undefined) updateData.pago = data.pago
     if (data.data_pagamento !== undefined)
       updateData.data_pagamento = data.data_pagamento
-        ? new Date(data.data_pagamento)
+        ? parseBrazilDateTime(data.data_pagamento)
         : null
     if (data.categoria_id !== undefined)
       updateData.categoria_id = data.categoria_id

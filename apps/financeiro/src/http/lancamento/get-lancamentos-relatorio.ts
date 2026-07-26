@@ -38,6 +38,7 @@ export async function getLancamentosRelatorio(
   params?: {
     data_inicio?: string
     data_fim?: string
+    descricao?: string
     conta_bancaria_id?: string
     categoria_id?: string
     centro_custo_id?: string
@@ -50,6 +51,7 @@ export async function getLancamentosRelatorio(
   const searchParams = new URLSearchParams()
   if (params?.data_inicio) searchParams.append('data_inicio', params.data_inicio)
   if (params?.data_fim) searchParams.append('data_fim', params.data_fim)
+  if (params?.descricao?.trim()) searchParams.append('descricao', params.descricao.trim())
   if (params?.conta_bancaria_id) searchParams.append('conta_bancaria_id', params.conta_bancaria_id)
   if (params?.categoria_id) searchParams.append('categoria_id', params.categoria_id)
   if (params?.centro_custo_id) searchParams.append('centro_custo_id', params.centro_custo_id)

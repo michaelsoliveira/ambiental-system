@@ -67,7 +67,7 @@ import {
   useUpdateVeiculo,
   useVeiculo,
 } from '@/hooks/use-frota'
-import { formatCurrency, formatDateShort } from '@/lib/format'
+import { formatCurrency, formatDateShort, toDatetimeLocalValue } from '@/lib/format'
 
 function money(v: unknown) {
   if (v == null) return '—'
@@ -82,12 +82,6 @@ function valorFinanceiroFrota(op: {
   lancamento?: { valor: unknown } | null
 }) {
   return op.lancamento?.valor ?? op.valor
-}
-
-function isoToDatetimeLocal(iso: string) {
-  const [datePart, timePart = '00:00:00'] = iso.split('T')
-  const time = timePart.split('+')[0].split('.')[0].replace('Z', '')
-  return `${datePart}T${time.substring(0, 5)}`
 }
 
 type Tab = 'abastecimentos' | 'manutencoes' | 'viagens' | 'agenda' | 'dados'
@@ -156,7 +150,7 @@ export function VeiculoDetail() {
 
   // form abastecimento
   const [absData, setAbsData] = useState({
-    data: isoToDatetimeLocal(new Date().toISOString()),
+    data: toDatetimeLocalValue(new Date().toISOString()),
     litros: '',
     valor: '',
     km: '',
@@ -169,7 +163,7 @@ export function VeiculoDetail() {
   const [manData, setManData] = useState({
     tipo: '',
     descricao: '',
-    data: isoToDatetimeLocal(new Date().toISOString()),
+    data: toDatetimeLocalValue(new Date().toISOString()),
     valor: '',
     categoriaId: '',
     contaBancariaId: '',
@@ -181,7 +175,7 @@ export function VeiculoDetail() {
     tipoRegistro: 'SIMPLES' as 'SIMPLES' | 'RECORRENTE',
     origem: '',
     destino: '',
-    dataInicio: isoToDatetimeLocal(new Date().toISOString()),
+    dataInicio: toDatetimeLocalValue(new Date().toISOString()),
     dataFim: '',
     recorrenciaFim: '',
     diasSemana: [] as number[],
@@ -205,8 +199,8 @@ export function VeiculoDetail() {
 
   const [indData, setIndData] = useState({
     tipo: 'PRODUCAO' as 'PRODUCAO' | 'MANUTENCAO',
-    inicio: isoToDatetimeLocal(new Date().toISOString()),
-    fim: isoToDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
+    inicio: toDatetimeLocalValue(new Date().toISOString()),
+    fim: toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
     motivo: '',
   })
 
@@ -232,7 +226,7 @@ export function VeiculoDetail() {
   }
 
   const defaultAbsForm = () => ({
-    data: isoToDatetimeLocal(new Date().toISOString()),
+    data: toDatetimeLocalValue(new Date().toISOString()),
     litros: '',
     valor: '',
     km: '',
@@ -252,7 +246,7 @@ export function VeiculoDetail() {
     const val = valorFinanceiroFrota(a)
     const n = Number(val)
     setAbsData({
-      data: isoToDatetimeLocal(String(a.data)),
+      data: toDatetimeLocalValue(String(a.data)),
       litros: String(a.litros),
       valor: Number.isFinite(n) ? String(n) : '',
       km: a.km != null ? String(a.km) : '',
@@ -270,7 +264,7 @@ export function VeiculoDetail() {
     setManData({
       tipo: '',
       descricao: '',
-      data: isoToDatetimeLocal(new Date().toISOString()),
+      data: toDatetimeLocalValue(new Date().toISOString()),
       valor: '',
       categoriaId: '',
       contaBancariaId: '',
@@ -286,7 +280,7 @@ export function VeiculoDetail() {
     setManData({
       tipo: m.tipo,
       descricao: m.descricao ?? '',
-      data: isoToDatetimeLocal(String(m.data)),
+      data: toDatetimeLocalValue(String(m.data)),
       valor: Number.isFinite(n) ? String(n) : '',
       categoriaId: m.lancamento?.categoria_id ?? '',
       contaBancariaId: m.lancamento?.conta_bancaria_id ?? '',
@@ -303,7 +297,7 @@ export function VeiculoDetail() {
       tipoRegistro: 'SIMPLES',
       origem: '',
       destino: '',
-      dataInicio: isoToDatetimeLocal(new Date().toISOString()),
+      dataInicio: toDatetimeLocalValue(new Date().toISOString()),
       dataFim: '',
       recorrenciaFim: '',
       diasSemana: [],
@@ -324,8 +318,8 @@ export function VeiculoDetail() {
       tipoRegistro: 'SIMPLES',
       origem: x.origem,
       destino: x.destino,
-      dataInicio: isoToDatetimeLocal(x.data_inicio),
-      dataFim: x.data_fim ? isoToDatetimeLocal(x.data_fim) : '',
+      dataInicio: toDatetimeLocalValue(x.data_inicio),
+      dataFim: x.data_fim ? toDatetimeLocalValue(x.data_fim) : '',
       recorrenciaFim: '',
       diasSemana: [],
       kmRodado: x.km_rodado != null ? String(x.km_rodado) : '',
@@ -343,8 +337,8 @@ export function VeiculoDetail() {
     setDispEditId(null)
     setIndData({
       tipo: 'PRODUCAO',
-      inicio: isoToDatetimeLocal(new Date().toISOString()),
-      fim: isoToDatetimeLocal(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
+      inicio: toDatetimeLocalValue(new Date().toISOString()),
+      fim: toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
       motivo: '',
     })
     setDlgInd(true)
@@ -354,8 +348,8 @@ export function VeiculoDetail() {
     setDispEditId(x.id)
     setIndData({
       tipo: x.tipo,
-      inicio: isoToDatetimeLocal(x.inicio),
-      fim: isoToDatetimeLocal(x.fim),
+      inicio: toDatetimeLocalValue(x.inicio),
+      fim: toDatetimeLocalValue(x.fim),
       motivo: x.motivo ?? '',
     })
     setDlgInd(true)

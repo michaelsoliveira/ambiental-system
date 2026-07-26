@@ -6,6 +6,7 @@ import { auth } from '@/http/middlewares/auth'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { FrotaService } from '@/services/frota.service'
+import { parseBrazilDateTime } from '@/utils/date-only'
 
 const bodySchema = z.object({
   tipo: z.enum(['PRODUCAO', 'MANUTENCAO']),
@@ -50,8 +51,8 @@ export async function postDisponibilidade(app: FastifyInstance) {
         const row = await FrotaService.criarDisponibilidade(organization.id, {
           veiculoId,
           tipo: request.body.tipo,
-          inicio: new Date(request.body.inicio),
-          fim: new Date(request.body.fim),
+          inicio: parseBrazilDateTime(request.body.inicio),
+          fim: parseBrazilDateTime(request.body.fim),
           motivo: request.body.motivo ?? null,
           origem: 'MANUAL',
         })

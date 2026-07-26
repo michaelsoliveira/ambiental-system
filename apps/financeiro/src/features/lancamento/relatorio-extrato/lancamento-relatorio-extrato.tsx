@@ -46,6 +46,7 @@ const relatorioSchema = z.object({
   data_fim: z.string().optional(),
   mes: z.string().optional(),
   ano: z.string().optional(),
+  descricao: z.string().optional(),
   conta_bancaria_id: z.string().optional().or(z.literal('all-contas')),
   categoria_id: z.string().optional().or(z.literal('all-categorias')),
   centro_custo_id: z.string().optional().or(z.literal('all-centros')),
@@ -93,7 +94,12 @@ function getPeriodoLabel(filters: RelatorioFormData | null): string {
     const mesLabel = MESES.find(
       (m) => String(m.value) === String(filters.mes ?? ''),
     )?.label
-    if (mesLabel && filters.ano) return `${mesLabel}/${filters.ano}`
+    if (mesLabel && filters.ano) {
+      if (filters.data_inicio && filters.data_fim) {
+        return `${mesLabel}/${filters.ano} (${formatDateOnly(filters.data_inicio)} até ${formatDateOnly(filters.data_fim)})`
+      }
+      return `${mesLabel}/${filters.ano}`
+    }
     return ''
   }
 
@@ -119,6 +125,10 @@ function buildFiltrosAplicados(
 ): string[] {
   const items: string[] = []
   const isAll = (value?: string) => !value || value.startsWith('all-')
+
+  if (filters.descricao?.trim()) {
+    items.push(`Descrição: ${filters.descricao.trim()}`)
+  }
 
   if (!isAll(filters.conta_bancaria_id)) {
     const label = options.contas.find((o) => o.value === filters.conta_bancaria_id)?.label
@@ -184,6 +194,7 @@ export function LancamentoRelatorioExtrato() {
       const cleanFilters = {
         data_inicio,
         data_fim,
+        descricao: filters.descricao?.trim() || undefined,
         conta_bancaria_id: filters.conta_bancaria_id === 'all-contas' ? undefined : filters.conta_bancaria_id,
         categoria_id: filters.categoria_id === 'all-categorias' ? undefined : filters.categoria_id,
         centro_custo_id: filters.centro_custo_id === 'all-centros' ? undefined : filters.centro_custo_id,
@@ -205,6 +216,7 @@ export function LancamentoRelatorioExtrato() {
       data_fim: '',
       mes: undefined,
       ano: new Date().getFullYear().toString(),
+      descricao: '',
       conta_bancaria_id: 'all-contas',
       categoria_id: 'all-categorias',
       centro_custo_id: 'all-centros',
@@ -290,6 +302,7 @@ export function LancamentoRelatorioExtrato() {
       ...data,
       data_inicio,
       data_fim,
+      descricao: data.descricao?.trim() || undefined,
       conta_bancaria_id: data.conta_bancaria_id === 'all-contas' ? undefined : data.conta_bancaria_id,
       categoria_id: data.categoria_id === 'all-categorias' ? undefined : data.categoria_id,
       centro_custo_id: data.centro_custo_id === 'all-centros' ? undefined : data.centro_custo_id,
@@ -552,6 +565,24 @@ export function LancamentoRelatorioExtrato() {
                   />
                 </>
               )}
+
+              <FormField
+                control={form.control}
+                name="descricao"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descrição</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Filtrar por descrição..."
+                        {...field}
+                        value={field.value ?? ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

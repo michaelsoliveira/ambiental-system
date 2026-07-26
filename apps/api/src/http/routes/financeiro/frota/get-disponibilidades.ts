@@ -6,6 +6,7 @@ import { auth } from '@/http/middlewares/auth'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { FrotaService } from '@/services/frota.service'
+import { parseBrazilDateTime } from '@/utils/date-only'
 
 export async function getDisponibilidades(app: FastifyInstance) {
   app
@@ -41,8 +42,10 @@ export async function getDisponibilidades(app: FastifyInstance) {
           )
         }
 
-        const inicio = request.query.inicio ? new Date(request.query.inicio) : null
-        const fim = request.query.fim ? new Date(request.query.fim) : null
+        const inicio = request.query.inicio
+          ? parseBrazilDateTime(request.query.inicio)
+          : null
+        const fim = request.query.fim ? parseBrazilDateTime(request.query.fim) : null
 
         const rows = await FrotaService.listarDisponibilidades(
           organization.id,

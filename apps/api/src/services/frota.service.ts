@@ -5,6 +5,7 @@ import {
   CreateLancamentoData,
   LancamentoService,
 } from '@/services/lancamento.service'
+import { formatBrazilDateOnly } from '@/utils/date-only'
 
 function numeroOperacao(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -153,10 +154,11 @@ export class FrotaService {
     }
   ): CreateLancamentoData {
     const pago = input.pago ?? false
+    const dataCivil = formatBrazilDateOnly(input.data)
     const payload: CreateLancamentoData = {
       numero: numeroOperacao(input.tipo === 'DESPESA' ? 'FRT-D' : 'FRT-R'),
       tipo: input.tipo,
-      data: input.data.toISOString(),
+      data: dataCivil,
       descricao: input.descricao,
       valor: input.valor,
       forma_parcelamento: 'UNICA',
@@ -169,7 +171,7 @@ export class FrotaService {
       status_lancamento: pago ? 'PAGO' : 'PENDENTE',
     }
     if (pago) {
-      payload.data_pagamento = input.data.toISOString()
+      payload.data_pagamento = dataCivil
       payload.valor_pago = input.valor
     }
     return payload
@@ -452,8 +454,9 @@ export class FrotaService {
     },
   ) {
     const pago = input.pago ?? false
+    const dataCivil = formatBrazilDateOnly(input.data)
     return {
-      data: input.data.toISOString(),
+      data: dataCivil,
       valor: input.valor,
       descricao: input.descricao,
       categoria_id: input.categoriaId,
@@ -464,7 +467,7 @@ export class FrotaService {
       tipo: input.tipo,
       status_lancamento: pago ? ('PAGO' as const) : ('PENDENTE' as const),
       valor_pago: pago ? input.valor : 0,
-      data_pagamento: pago ? input.data.toISOString() : '',
+      data_pagamento: pago ? dataCivil : '',
     }
   }
 
@@ -674,7 +677,7 @@ export class FrotaService {
       if (hasReceita) {
         const pago = input.pago ?? false
         await LancamentoService.update(vi.lancamento_id, organizationId, {
-          data: input.dataInicio.toISOString(),
+          data: formatBrazilDateOnly(input.dataInicio),
           valor: input.valorReceita!,
           descricao: `Receita de viagem ${input.origem} → ${input.destino} — ${veiculo.placa}`,
           tipo: 'RECEITA',
@@ -685,7 +688,7 @@ export class FrotaService {
           pago,
           status_lancamento: pago ? 'PAGO' : 'PENDENTE',
           valor_pago: pago ? input.valorReceita! : 0,
-          data_pagamento: pago ? input.dataInicio.toISOString() : '',
+          data_pagamento: pago ? formatBrazilDateOnly(input.dataInicio) : '',
         })
         await prisma.viagem.update({
           where: { id: viagemId },

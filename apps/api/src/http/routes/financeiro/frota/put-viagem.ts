@@ -7,15 +7,14 @@ import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 import { FrotaService } from '@/services/frota.service'
+import { parseBrazilDateTime } from '@/utils/date-only'
 
 function toDate(value: string) {
-  const date = new Date(value)
-
-  if (Number.isNaN(date.getTime())) {
+  try {
+    return parseBrazilDateTime(value)
+  } catch {
     throw new BadRequestError('Data inválida.')
   }
-
-  return date
 }
 
 const bodySchema = z.object({
