@@ -107,6 +107,7 @@ export function DataTable<TData, TValue>({
                     {headerGroup.headers.map((header) => (
                       <TableHead
                         key={header.id}
+                        className="whitespace-normal"
                         style={header.column.columnDef.size ? { width: header.column.columnDef.size } : undefined}
                       >
                         {header.isPlaceholder
@@ -129,7 +130,7 @@ export function DataTable<TData, TValue>({
                       className="group hover:bg-muted/50 transition-colors"
                     >
                       {row.getVisibleCells()?.map((cell) => (
-                        <TableCell key={cell.id}>
+                        <TableCell key={cell.id} className="min-w-0 overflow-hidden align-top whitespace-normal">
                           {flexRender(
                             cell.column.columnDef.cell,
                             cell.getContext()

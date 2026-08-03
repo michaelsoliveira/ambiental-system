@@ -3,7 +3,7 @@
 import { ColumnDef } from '@tanstack/react-table'
 import { FilePlus2Icon, FilterIcon, MoreHorizontalIcon, PencilIcon, PlusIcon, Trash2Icon, XIcon } from 'lucide-react'
 import { useParams } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 
 import { SelectSearchable } from '@/components/select-searchable'
 import { DataTable } from '@/components/ui/table/data-table'
@@ -178,52 +178,83 @@ export function FuncionarioPage() {
   }
 
   const columns = useMemo<ColumnDef<any>[]>(
-    () => [
-      { accessorKey: 'matricula', header: 'Matrícula' },
+    () => {
+      const wrap = (value: ReactNode) => (
+        <div className="min-w-0 max-w-full whitespace-normal break-words leading-snug">
+          {value}
+        </div>
+      )
+
+      return [
+      {
+        accessorKey: 'matricula',
+        header: 'Matrícula',
+        size: 100,
+        cell: ({ row }) => wrap(row.original?.matricula ?? '-'),
+      },
       {
         id: 'nome',
         header: 'Nome',
+        size: 200,
         cell: ({ row }) =>
-          row.original?.pessoa?.fisica?.nome ??
-          row.original?.pessoa?.juridica?.nome_fantasia ??
-          '-',
+          wrap(
+            row.original?.pessoa?.fisica?.nome ??
+              row.original?.pessoa?.juridica?.nome_fantasia ??
+              '-',
+          ),
       },
       {
         id: 'cargo',
         header: 'Cargo',
-        cell: ({ row }) => row.original?.cargo_funcionario?.nome ?? '-',
+        size: 160,
+        cell: ({ row }) => wrap(row.original?.cargo_funcionario?.nome ?? '-'),
       },
       {
         id: 'empresa',
         header: 'Empresa',
+        size: 180,
         cell: ({ row }) =>
-          row.original?.empresa?.pessoa?.juridica?.nome_fantasia ??
-          row.original?.empresa?.pessoa?.juridica?.razao_social ??
-          row.original?.empresa?.pessoa?.fisica?.nome ??
-          '-',
+          wrap(
+            row.original?.empresa?.pessoa?.juridica?.nome_fantasia ??
+              row.original?.empresa?.pessoa?.juridica?.razao_social ??
+              row.original?.empresa?.pessoa?.fisica?.nome ??
+              '-',
+          ),
       },
-      { accessorKey: 'departamento', header: 'Departamento' },
+      {
+        accessorKey: 'departamento',
+        header: 'Departamento',
+        size: 130,
+        cell: ({ row }) => wrap(row.original?.departamento ?? '-'),
+      },
       {
         accessorKey: 'cargo_funcionario.salario_base',
         header: 'Salário Base',
+        size: 120,
         cell: ({ row }) =>
-          Number(row.original?.cargo_funcionario?.salario_base ?? 0).toLocaleString('pt-BR', {
-            style: 'currency',
-            currency: 'BRL',
-          }),
+          wrap(
+            Number(row.original?.cargo_funcionario?.salario_base ?? 0).toLocaleString('pt-BR', {
+              style: 'currency',
+              currency: 'BRL',
+            }),
+          ),
       },
       {
         accessorKey: 'ativo',
         header: 'Status',
-        cell: ({ row }) => (row.original.ativo ? 'Ativo' : 'Inativo'),
+        size: 80,
+        cell: ({ row }) => wrap(row.original.ativo ? 'Ativo' : 'Inativo'),
       },
       {
         accessorKey: 'tipo_contrato',
         header: 'Contrato',
+        size: 80,
+        cell: ({ row }) => wrap(row.original?.tipo_contrato ?? '-'),
       },
       {
         id: 'actions',
         header: '',
+        size: 48,
         cell: ({ row }) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -251,7 +282,8 @@ export function FuncionarioPage() {
           </DropdownMenu>
         ),
       },
-    ],
+    ]
+    },
     [deleteFuncionario, openEditModal, openFolhaItemModal],
   )
 
