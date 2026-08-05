@@ -83,9 +83,10 @@ export function SelectSearchable({
   searchPlaceholder = "Buscar...",
   isLoading,
   formatGroupLabel,
-  truncate = false,
-  truncateWidth = "14rem",
+  truncate = true,
+  truncateWidth,
   styleInputCustom,
+  className,
   disabled,
   name,
   hasMore,
@@ -191,7 +192,7 @@ export function SelectSearchable({
   const hasGroupedOptions = options?.some(isGroupedOption) ?? false
 
   return (
-    <div className="relative max-w-4xl">
+    <div className={cn("relative w-full min-w-0", className)}>
       <Popover modal open={open} onOpenChange={handleOpenChange}>
         <PopoverTrigger asChild>
           <Button
@@ -200,17 +201,16 @@ export function SelectSearchable({
             role="combobox"
             aria-expanded={open}
             className={cn(
-              "w-full justify-between font-normal",
+              "w-full min-w-0 justify-between overflow-hidden font-normal",
               !value && value !== 0 && "text-muted-foreground",
               styleInputCustom,
             )}
             disabled={disabled}
           >
             <span
-              className={cn(
-                truncate ? "truncate" : "",
-                truncateWidth && `max-w-[${truncateWidth}]`,
-              )}
+              className={cn("min-w-0 flex-1 text-left", truncate && "truncate")}
+              style={truncateWidth ? { maxWidth: truncateWidth } : undefined}
+              title={typeof displayLabel === "string" ? displayLabel : undefined}
             >
               {displayLabel}
             </span>
@@ -218,8 +218,7 @@ export function SelectSearchable({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          style={{ minWidth: "var(--radix-popper-anchor-width)" }}
-          className="p-0 max-w-[min(200px,calc(100vw-16px))]"
+          className="w-[var(--radix-popover-trigger-width)] max-w-[calc(100vw-16px)] p-0"
           align="start"
           avoidCollisions
           collisionPadding={8}

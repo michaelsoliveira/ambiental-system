@@ -562,7 +562,7 @@ export function FolhaPagamentoPage() {
           }
         }}
       >
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg overflow-hidden">
           <DialogHeader>
             <DialogTitle>Pagar folha</DialogTitle>
             <DialogDescription>
@@ -571,7 +571,7 @@ export function FolhaPagamentoPage() {
             </DialogDescription>
           </DialogHeader>
           {folhaParaPagar ? (
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
                 <p>
                   <span className="text-muted-foreground">Competência:</span>{' '}
@@ -609,7 +609,7 @@ export function FolhaPagamentoPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1">
+              <div className="min-w-0 space-y-1">
                 <Label>Categoria (despesa)</Label>
                 <SelectSearchable
                   options={categoriasDespesaOptions}
@@ -622,6 +622,7 @@ export function FolhaPagamentoPage() {
                   searchPlaceholder="Buscar por código ou nome..."
                   isLoading={loadingCategoriasDespesa}
                   onSearchChange={onCategoriaDespesaSearch}
+                  truncate
                   className="w-full"
                 />
               </div>
