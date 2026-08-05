@@ -39,7 +39,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useCategorias } from '@/hooks/use-categoria'
+import { useCategoriaSelect } from '@/hooks/use-categoria-select'
 import { useCentrosCusto } from '@/hooks/use-centro-custo'
 import { useContas } from '@/hooks/use-conta'
 import { useFuncionarios } from '@/hooks/use-funcionarios'
@@ -205,14 +205,21 @@ export function FolhaPagamentoPage() {
     slug,
     appliedRelatorioFilters,
   )
-  const { data: catDespData } = useCategorias(slug, { tipo: 'DESPESA', limit: 100, ativo: true })
   const { data: contasData } = useContas(slug, { limit: 100, ativo: true })
   const { data: centrosData } = useCentrosCusto(slug, { limit: 100, ativo: true })
   const createFolha = useCreateFolhaPagamento(slug)
   const createFolhaItem = useCreateFolhaItem(slug)
   const { closeFolha, reopenFolha, payFolha, unpayFolha } = useFolhaActions(slug)
 
-  const categoriasDespesa = catDespData?.categorias ?? []
+  const {
+    options: categoriasDespesaOptions,
+    isLoading: loadingCategoriasDespesa,
+    onSearchChange: onCategoriaDespesaSearch,
+  } = useCategoriaSelect(slug, payForm.categoria_id || null, {
+    tipo: 'DESPESA',
+    ativo: true,
+  })
+
   const contas = contasData?.contas ?? []
   const centrosCusto = centrosData?.centros ?? []
 
@@ -604,23 +611,19 @@ export function FolhaPagamentoPage() {
               </div>
               <div className="space-y-1">
                 <Label>Categoria (despesa)</Label>
-                <Select
+                <SelectSearchable
+                  options={categoriasDespesaOptions}
                   value={payForm.categoria_id}
                   onValueChange={(value) =>
                     setPayForm((prev) => ({ ...prev, categoria_id: value }))
                   }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {categoriasDespesa.map((categoria: any) => (
-                      <SelectItem key={categoria.id} value={categoria.id}>
-                        {categoria.codigo} — {categoria.nome}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder="Selecione a categoria"
+                  emptyText="Nenhuma categoria encontrada"
+                  searchPlaceholder="Buscar por código ou nome..."
+                  isLoading={loadingCategoriasDespesa}
+                  onSearchChange={onCategoriaDespesaSearch}
+                  className="w-full"
+                />
               </div>
               <div className="space-y-1">
                 <Label>Centro de custo (opcional)</Label>

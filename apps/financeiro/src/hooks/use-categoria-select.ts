@@ -19,7 +19,16 @@ type RawCategoria = {
   nivel: number
 }
 
-const PAGE_LIMIT = 50
+export type CategoriaSelectFilters = {
+  tipo?: 'RECEITA' | 'DESPESA'
+  ativo?: boolean
+}
+
+const PAGE_LIMIT = 100
+
+function labelCategoria(c: { codigo?: string | null; nome: string }) {
+  return c.codigo ? `${c.codigo} — ${c.nome}` : c.nome
+}
 
 /**
  * Select de categorias com busca server-side.
@@ -29,6 +38,7 @@ const PAGE_LIMIT = 50
 export function useCategoriaSelect(
   org: string,
   selectedId?: string | null,
+  filters?: CategoriaSelectFilters,
 ) {
   const [search, setSearch] = useState('')
   const [pinnedOption, setPinnedOption] = useState<CategoriaOption | null>(null)
@@ -39,6 +49,8 @@ export function useCategoriaSelect(
     orderBy: 'codigo',
     order: 'asc',
     limit: PAGE_LIMIT,
+    tipo: filters?.tipo,
+    ativo: filters?.ativo,
   })
 
   useEffect(() => {
@@ -64,7 +76,12 @@ export function useCategoriaSelect(
     void getCategoria(org, selectedId)
       .then(({ categoria }) => {
         if (cancelled) return
-        setPinnedOption({ label: categoria.nome, value: categoria.id })
+        if (filters?.tipo && categoria.tipo !== filters.tipo) return
+        if (filters?.ativo === true && !categoria.ativo) return
+        setPinnedOption({
+          label: labelCategoria(categoria),
+          value: categoria.id,
+        })
       })
       .catch(() => {
         if (!cancelled) fetchedSelectedRef.current = null
@@ -73,7 +90,7 @@ export function useCategoriaSelect(
     return () => {
       cancelled = true
     }
-  }, [selectedId, org, data?.categorias])
+  }, [selectedId, org, data?.categorias, filters?.tipo, filters?.ativo])
 
   useEffect(() => {
     if (!selectedId) {
@@ -84,7 +101,7 @@ export function useCategoriaSelect(
 
   const options = useMemo<CategoriaOption[]>(() => {
     const list: CategoriaOption[] = (data?.categorias ?? []).map((c: RawCategoria) => ({
-      label: c.nome,
+      label: labelCategoria(c),
       value: c.id,
     }))
 
