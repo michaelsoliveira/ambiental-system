@@ -4,6 +4,22 @@ import { toast } from 'sonner'
 import { api } from '@/http/api-client'
 import { queryClient } from '@/lib/react-query'
 
+export type FolhaPayPayload = {
+  conta_bancaria_id: string
+  categoria_id: string
+  centro_custo_id?: string | null
+  data_pagamento?: string
+}
+
+function invalidateFolhaQueries(org: string) {
+  queryClient.invalidateQueries({ queryKey: ['folhas-pagamento', org] })
+  queryClient.invalidateQueries({ queryKey: ['folha-pagamento', org] })
+  queryClient.invalidateQueries({ queryKey: ['folhas-pagamento-relatorio', org] })
+  queryClient.invalidateQueries({ queryKey: ['lancamentos'] })
+  queryClient.invalidateQueries({ queryKey: ['dashboard-financeiro-resumo'] })
+  queryClient.invalidateQueries({ queryKey: ['dashboard-financeiro-series'] })
+}
+
 export function useFolhasPagamento(org: string, params: Record<string, any> = {}) {
   return useQuery({
     queryKey: ['folhas-pagamento', org, params],
@@ -108,23 +124,65 @@ export function useDeleteFolhaItem(org: string) {
 }
 
 export function useFolhaActions(org: string) {
-  const call = (action: 'close' | 'reopen' | 'pay' | 'unpay', successText: string) =>
-    useMutation({
-      mutationFn: async (folhaId: string) =>
-        api
-          .patch(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/${action}`)
-          .json<any>(),
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['folhas-pagamento', org] })
-        queryClient.invalidateQueries({ queryKey: ['folha-pagamento', org] })
-        toast.success(successText)
-      },
-    })
+  const closeFolha = useMutation({
+    mutationFn: async (folhaId: string) =>
+      api.patch(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/close`).json<any>(),
+    onSuccess: () => {
+      invalidateFolhaQueries(org)
+      toast.success('Folha fechada com sucesso.')
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? 'Erro ao fechar folha.')
+    },
+  })
+
+  const reopenFolha = useMutation({
+    mutationFn: async (folhaId: string) =>
+      api.patch(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/reopen`).json<any>(),
+    onSuccess: () => {
+      invalidateFolhaQueries(org)
+      toast.success('Folha reaberta com sucesso.')
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? 'Erro ao reabrir folha.')
+    },
+  })
+
+  const payFolha = useMutation({
+    mutationFn: async ({
+      folhaId,
+      ...body
+    }: FolhaPayPayload & { folhaId: string }) =>
+      api
+        .patch(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/pay`, {
+          json: body,
+        })
+        .json<any>(),
+    onSuccess: () => {
+      invalidateFolhaQueries(org)
+      toast.success('Folha marcada como paga e lançamento gerado no extrato.')
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? 'Erro ao pagar folha.')
+    },
+  })
+
+  const unpayFolha = useMutation({
+    mutationFn: async (folhaId: string) =>
+      api.patch(`organizations/${org}/financeiro/folhas-pagamento/${folhaId}/unpay`).json<any>(),
+    onSuccess: () => {
+      invalidateFolhaQueries(org)
+      toast.success('Pagamento estornado. Lançamento removido do extrato.')
+    },
+    onError: (error: any) => {
+      toast.error(error?.message ?? 'Erro ao estornar pagamento.')
+    },
+  })
 
   return {
-    closeFolha: call('close', 'Folha fechada com sucesso.'),
-    reopenFolha: call('reopen', 'Folha reaberta com sucesso.'),
-    payFolha: call('pay', 'Folha marcada como paga.'),
-    unpayFolha: call('unpay', 'Pagamento estornado. A folha voltou para fechada.'),
+    closeFolha,
+    reopenFolha,
+    payFolha,
+    unpayFolha,
   }
 }

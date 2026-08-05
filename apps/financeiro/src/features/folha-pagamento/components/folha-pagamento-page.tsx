@@ -39,6 +39,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useCategorias } from '@/hooks/use-categoria'
+import { useCentrosCusto } from '@/hooks/use-centro-custo'
+import { useContas } from '@/hooks/use-conta'
 import { useFuncionarios } from '@/hooks/use-funcionarios'
 import {
   useCreateFolhaItem,
@@ -48,6 +51,7 @@ import {
   useFolhasPagamento,
   useRubricasFolha,
 } from '@/hooks/use-folha-pagamento'
+import { Badge } from '@/components/ui/badge'
 
 import {
   competenciaAtual,
@@ -106,6 +110,21 @@ function tipoFolhaLabel(value?: string) {
   return tiposFolha.find((tipo) => tipo.value === value)?.label ?? value ?? '—'
 }
 
+function todayISODate() {
+  const d = new Date()
+  const yyyy = d.getFullYear()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
+}
+
+const defaultPayForm = () => ({
+  conta_bancaria_id: '',
+  categoria_id: '',
+  centro_custo_id: '',
+  data_pagamento: todayISODate(),
+})
+
 function ActionIconButton({
   label,
   className,
@@ -158,6 +177,13 @@ export function FolhaPagamentoPage() {
   } | null>(null)
   const [folhaParaItem, setFolhaParaItem] = useState<{ id: string; competencia: string; tipo: string } | null>(null)
   const [itemForm, setItemForm] = useState<any>(defaultItemForm())
+  const [folhaParaPagar, setFolhaParaPagar] = useState<{
+    id: string
+    competencia: string
+    tipo: string
+    total_liquido: number
+  } | null>(null)
+  const [payForm, setPayForm] = useState(defaultPayForm)
 
   const { data } = useFolhasPagamento(slug, {})
   const { data: rubricasData, isLoading: isLoadingRubricas } = useRubricasFolha(slug, {
@@ -179,9 +205,16 @@ export function FolhaPagamentoPage() {
     slug,
     appliedRelatorioFilters,
   )
+  const { data: catDespData } = useCategorias(slug, { tipo: 'DESPESA', limit: 100, ativo: true })
+  const { data: contasData } = useContas(slug, { limit: 100, ativo: true })
+  const { data: centrosData } = useCentrosCusto(slug, { limit: 100, ativo: true })
   const createFolha = useCreateFolhaPagamento(slug)
   const createFolhaItem = useCreateFolhaItem(slug)
   const { closeFolha, reopenFolha, payFolha, unpayFolha } = useFolhaActions(slug)
+
+  const categoriasDespesa = catDespData?.categorias ?? []
+  const contas = contasData?.contas ?? []
+  const centrosCusto = centrosData?.centros ?? []
 
   const folhas = data?.folhas ?? []
   const rubricas = rubricasData?.rubricas ?? []
@@ -215,6 +248,47 @@ export function FolhaPagamentoPage() {
     setNovoLancamentoOpen(true)
   }, [])
 
+  const openPayModal = useCallback(
+    (folha: { id: string; competencia: string; tipo: string; total_liquido: number }) => {
+      setFolhaParaPagar({
+        id: folha.id,
+        competencia: folha.competencia,
+        tipo: folha.tipo,
+        total_liquido: Number(folha.total_liquido),
+      })
+      setPayForm(defaultPayForm())
+    },
+    [],
+  )
+
+  function handlePayFolha() {
+    if (!folhaParaPagar) return
+    if (!payForm.conta_bancaria_id || !payForm.categoria_id) {
+      toast.error('Selecione conta bancária e categoria de despesa.')
+      return
+    }
+    if (!(folhaParaPagar.total_liquido > 0)) {
+      toast.error('Folha sem líquido a pagar.')
+      return
+    }
+
+    payFolha.mutate(
+      {
+        folhaId: folhaParaPagar.id,
+        conta_bancaria_id: payForm.conta_bancaria_id,
+        categoria_id: payForm.categoria_id,
+        centro_custo_id: payForm.centro_custo_id || undefined,
+        data_pagamento: payForm.data_pagamento || undefined,
+      },
+      {
+        onSuccess: () => {
+          setFolhaParaPagar(null)
+          setPayForm(defaultPayForm())
+        },
+      },
+    )
+  }
+
   const columns = useMemo<ColumnDef<any>[]>(
     () => [
       { accessorKey: 'competencia', header: 'Competência' },
@@ -223,7 +297,20 @@ export function FolhaPagamentoPage() {
         header: 'Tipo',
         cell: ({ row }) => tipoFolhaLabel(row.original.tipo),
       },
-      { accessorKey: 'status', header: 'Status' },
+      {
+        accessorKey: 'status',
+        header: 'Status',
+        cell: ({ row }) => (
+          <div className="flex flex-wrap items-center gap-2">
+            <span>{row.original.status}</span>
+            {row.original.lancamento_id ? (
+              <Badge variant="secondary" className="font-normal">
+                No extrato
+              </Badge>
+            ) : null}
+          </div>
+        ),
+      },
       {
         accessorKey: 'total_proventos',
         header: 'Proventos',
@@ -304,7 +391,14 @@ export function FolhaPagamentoPage() {
                   <ActionIconButton
                     label="Marcar folha de pagamento como paga"
                     className="bg-emerald-600 text-white hover:bg-emerald-700"
-                    onClick={() => payFolha.mutate(row.original.id)}
+                    onClick={() =>
+                      openPayModal({
+                        id: row.original.id,
+                        competencia: row.original.competencia,
+                        tipo: row.original.tipo,
+                        total_liquido: row.original.total_liquido,
+                      })
+                    }
                   >
                     <CheckCircle2Icon className="h-4 w-4" />
                   </ActionIconButton>
@@ -325,7 +419,7 @@ export function FolhaPagamentoPage() {
         },
       },
     ],
-    [closeFolha, reopenFolha, payFolha, unpayFolha, openNovoLancamentoModal],
+    [closeFolha, reopenFolha, unpayFolha, openNovoLancamentoModal, openPayModal],
   )
 
   function exportCSV() {
@@ -451,6 +545,146 @@ export function FolhaPagamentoPage() {
           if (!open) setFolhaParaVisualizar(null)
         }}
       />
+
+      <Dialog
+        open={!!folhaParaPagar}
+        onOpenChange={(open) => {
+          if (!open) {
+            setFolhaParaPagar(null)
+            setPayForm(defaultPayForm())
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Pagar folha</DialogTitle>
+            <DialogDescription>
+              Gera um lançamento de despesa com o líquido a pagar e inclui a folha no
+              Relatório de Extrato.
+            </DialogDescription>
+          </DialogHeader>
+          {folhaParaPagar ? (
+            <div className="space-y-4">
+              <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                <p>
+                  <span className="text-muted-foreground">Competência:</span>{' '}
+                  {folhaParaPagar.competencia}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Tipo:</span>{' '}
+                  {tipoFolhaLabel(folhaParaPagar.tipo)}
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Líquido:</span>{' '}
+                  {folhaParaPagar.total_liquido.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL',
+                  })}
+                </p>
+              </div>
+              <div className="space-y-1">
+                <Label>Conta bancária</Label>
+                <Select
+                  value={payForm.conta_bancaria_id}
+                  onValueChange={(value) =>
+                    setPayForm((prev) => ({ ...prev, conta_bancaria_id: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a conta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {contas.map((conta: any) => (
+                      <SelectItem key={conta.id} value={conta.id}>
+                        {conta.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Categoria (despesa)</Label>
+                <Select
+                  value={payForm.categoria_id}
+                  onValueChange={(value) =>
+                    setPayForm((prev) => ({ ...prev, categoria_id: value }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categoriasDespesa.map((categoria: any) => (
+                      <SelectItem key={categoria.id} value={categoria.id}>
+                        {categoria.codigo} — {categoria.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Centro de custo (opcional)</Label>
+                <Select
+                  value={payForm.centro_custo_id || '_none'}
+                  onValueChange={(value) =>
+                    setPayForm((prev) => ({
+                      ...prev,
+                      centro_custo_id: value === '_none' ? '' : value,
+                    }))
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Opcional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="_none">Nenhum</SelectItem>
+                    {centrosCusto.map((centro: any) => (
+                      <SelectItem key={centro.id} value={centro.id}>
+                        {centro.codigo} — {centro.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label>Data de pagamento</Label>
+                <Input
+                  type="date"
+                  value={payForm.data_pagamento}
+                  onChange={(e) =>
+                    setPayForm((prev) => ({ ...prev, data_pagamento: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setFolhaParaPagar(null)
+                setPayForm(defaultPayForm())
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handlePayFolha}
+              disabled={
+                payFolha.isPending ||
+                !payForm.conta_bancaria_id ||
+                !payForm.categoria_id ||
+                !folhaParaPagar ||
+                !(folhaParaPagar.total_liquido > 0)
+              }
+            >
+              {payFolha.isPending ? 'Pagando...' : 'Confirmar pagamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={novoLancamentoOpen}

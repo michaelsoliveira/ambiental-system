@@ -8,6 +8,31 @@ import { z } from 'zod'
 
 import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
 import { prisma } from '@/lib/prisma'
+import { LancamentoService } from '@/services/lancamento.service'
+import { formatBrazilDateOnly } from '@/utils/date-only'
+
+function numeroFolhaLancamento() {
+  return `FOL-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+const TIPO_FOLHA_LABEL: Record<TipoFolhaPagamento, string> = {
+  FOLHA_MENSAL: 'Folha mensal',
+  FERIAS: 'Férias',
+  DECIMO_TERCEIRO: '13º salário',
+  RESCISAO: 'Rescisão',
+}
+
+export const folhaPaySchema = z.object({
+  conta_bancaria_id: z.string().uuid(),
+  categoria_id: z.string().uuid(),
+  centro_custo_id: z.string().uuid().optional().nullable(),
+  data_pagamento: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Data deve estar no formato YYYY-MM-DD')
+    .optional(),
+})
+
+export type FolhaPayInput = z.infer<typeof folhaPaySchema>
 
 export const folhaCreateSchema = z.object({
   competencia: z.string().regex(/^\d{2}\/\d{4}$/),
@@ -467,7 +492,7 @@ export class FolhaPagamentoService {
     })
   }
 
-  async markAsPaid(folhaId: string, organizationId: string) {
+  async markAsPaid(folhaId: string, organizationId: string, input: FolhaPayInput) {
     const folha = await prisma.folhaPagamento.findFirst({
       where: { id: folhaId, organization_id: organizationId },
     })
@@ -475,11 +500,48 @@ export class FolhaPagamentoService {
     if (folha.status !== StatusFolhaPagamento.FECHADA) {
       throw new BadRequestError('Somente folhas fechadas podem ser marcadas como pagas.')
     }
+    if (folha.lancamento_id) {
+      throw new BadRequestError('Folha já possui lançamento financeiro vinculado.')
+    }
+
+    const totalLiquido = Number(folha.total_liquido)
+    if (!(totalLiquido > 0)) {
+      throw new BadRequestError('Folha sem líquido a pagar. Inclua itens antes de pagar.')
+    }
+
+    const dataPagamento =
+      input.data_pagamento ?? formatBrazilDateOnly(new Date())
+    const tipoLabel = TIPO_FOLHA_LABEL[folha.tipo] ?? folha.tipo
+
+    const lancamento = await LancamentoService.create(organizationId, {
+      numero: numeroFolhaLancamento(),
+      tipo: 'DESPESA',
+      data: dataPagamento,
+      data_competencia: folha.competencia,
+      descricao: `${tipoLabel} — competência ${folha.competencia}`,
+      valor: totalLiquido,
+      valor_pago: totalLiquido,
+      forma_parcelamento: 'UNICA',
+      numero_parcelas: 1,
+      categoria_id: input.categoria_id,
+      conta_bancaria_id: input.conta_bancaria_id,
+      centro_custo_id: input.centro_custo_id ?? undefined,
+      pago: true,
+      status_lancamento: 'PAGO',
+      data_pagamento: dataPagamento,
+      controle_interno: true,
+    })
 
     await prisma.folhaPagamento.update({
       where: { id: folhaId },
-      data: { status: StatusFolhaPagamento.PAGA, data_pagamento: new Date() },
+      data: {
+        status: StatusFolhaPagamento.PAGA,
+        data_pagamento: new Date(`${dataPagamento}T12:00:00.000Z`),
+        lancamento_id: lancamento.id,
+      },
     })
+
+    return { lancamentoId: lancamento.id }
   }
 
   async unpay(folhaId: string, organizationId: string) {
@@ -491,10 +553,21 @@ export class FolhaPagamentoService {
       throw new BadRequestError('Somente folhas pagas podem ter o pagamento estornado.')
     }
 
+    const lancamentoId = folha.lancamento_id
+
+    // Desvincula antes de excluir o lançamento (FK onDelete SetNull também cobriria).
     await prisma.folhaPagamento.update({
       where: { id: folhaId },
-      data: { status: StatusFolhaPagamento.FECHADA, data_pagamento: null },
+      data: {
+        status: StatusFolhaPagamento.FECHADA,
+        data_pagamento: null,
+        lancamento_id: null,
+      },
     })
+
+    if (lancamentoId) {
+      await LancamentoService.delete(lancamentoId, organizationId)
+    }
   }
 
   async recalculateTotals(folhaId: string, organizationId: string) {

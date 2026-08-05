@@ -42,9 +42,7 @@ export default function CategoriasPage() {
             <DialogTitle>Nova Categoria</DialogTitle>
           </DialogHeader>
           <DialogDescription>
-            <p>
-              Crie uma nova categoria para organizar suas receitas e despesas.
-            </p>
+            Crie uma nova categoria para organizar suas receitas e despesas.
           </DialogDescription>
           <CategoriaForm onSuccess={() => setIsDialogOpen(false)} />
         </DialogContent>

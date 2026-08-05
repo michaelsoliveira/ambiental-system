@@ -486,6 +486,7 @@ model Lancamento {
   abastecimento            Abastecimento?
   manutencao               Manutencao?
   viagem                   Viagem?
+  folha_pagamento          FolhaPagamento?
 
   parcelas         Parcela[]
   documentos       DocumentoFinanceiro[]
@@ -800,13 +801,18 @@ model FolhaPagamento {
   total_encargos  Decimal @default(0) @db.Decimal(15, 2)
   total_liquido   Decimal @default(0) @db.Decimal(15, 2)
 
+  /// Lançamento DESPESA gerado ao marcar a folha como paga (entra no extrato).
+  lancamento_id String? @unique @db.Uuid
+
   organization Organization         @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  lancamento   Lancamento?          @relation(fields: [lancamento_id], references: [id], onDelete: SetNull)
   itens        FolhaPagamentoItem[]
 
   @@unique([organization_id, competencia, tipo])
   @@index([organization_id, referencia_ano, referencia_mes])
   @@index([tipo])
   @@index([status])
+  @@index([lancamento_id])
   @@map("folhas_pagamento")
   @@schema("financeiro")
 }
