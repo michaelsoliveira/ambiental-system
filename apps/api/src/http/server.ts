@@ -127,6 +127,10 @@ import { updateEmpresa } from "./routes/financeiro/empresa/update-empresa";
 import { deleteEmpresa } from "./routes/financeiro/empresa/delete-empresa";
 import { patrimonioRoutes } from "./routes/financeiro/patrimonio/patrimonio-routes";
 import { PatrimonioService } from "@/services/patrimonio.service";
+import { getLandingCms } from "./routes/landing/get-landing";
+import { getPublicLanding } from "./routes/landing/get-public-landing";
+import { publishLanding } from "./routes/landing/publish-landing";
+import { updateLandingDraft } from "./routes/landing/update-landing-draft";
 
 const app = fastify().withTypeProvider<ZodTypeProvider>();
 
@@ -186,7 +190,7 @@ app.register(fastifyJwt, {
 })
 app.register(fastifyCors, {
   // origin: true,
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'https://ambiental.bomanejo.com.br', 'https://financeiro.bomanejo.com.br'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://localhost:3003', 'http://localhost:3004', 'https://ambiental.bomanejo.com.br', 'https://financeiro.bomanejo.com.br', 'https://www.ambientalconsultoria.com.br', 'https://ambientalconsultoria.com.br'],
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
@@ -300,6 +304,11 @@ app.register(getCategorias)
 app.register(updateCategoriaFinanceira)
 
 app.register(patrimonioRoutes)
+
+app.register(getLandingCms)
+app.register(updateLandingDraft)
+app.register(publishLanding)
+app.register(getPublicLanding)
 
 app.register(getMembers)
 app.register(updateMember)

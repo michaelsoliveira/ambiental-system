@@ -16,6 +16,7 @@ import { CentroCustoSubject } from "./subjects/centro-custo";
 import { CategoriaFinanceiraSubject } from "./subjects/categoria-financeira";
 import { LancamentoSubject } from "./subjects/lancamento";
 import { PatrimonioSubject } from "./subjects/patrimonio";
+import { LandingContentSubject } from "./subjects/landing-content";
 
 // Combine todos os subjects em um único union sem z.union()
 type AppSubjects = 
@@ -30,6 +31,7 @@ type AppSubjects =
   | PessoaSubject
   | LancamentoSubject
   | PatrimonioSubject
+  | LandingContentSubject
   | ['manage', 'all'];
 
 export type AppAbility = MongoAbility<AppSubjects>;
@@ -43,6 +45,7 @@ export * from './models/conta-bancaria'
 export * from './models/parceiro'
 export * from './models/lancamento'
 export * from './models/patrimonio'
+export * from './models/landing-content'
 export * from './roles'
 export * from './models/pessoa'
 export * from './models/lancamento'
@@ -64,7 +67,8 @@ export function defineAbilitiesFor(user: User): AppAbility {
         rules.push(
           { action: "manage", subject: "User", conditions: { organization_id: user.organization_id } },
           { action: "manage", subject: "Organization", conditions: { organization_id: user.organization_id } },
-          { action: "manage", subject: "Invite", conditions: { organization_id: user.organization_id } }
+          { action: "manage", subject: "Invite", conditions: { organization_id: user.organization_id } },
+          { action: "manage", subject: "LandingContent" }
         );
         break;
         
@@ -98,6 +102,9 @@ export function defineAbilitiesFor(user: User): AppAbility {
           { action: "get", subject: "Patrimonio" },
           { action: "update", subject: "Patrimonio" },
           { action: "delete", subject: "Patrimonio" },
+          { action: "get", subject: "LandingContent" },
+          { action: "update", subject: "LandingContent" },
+          { action: "publish", subject: "LandingContent" },
           { action: "get", subject: "User" },
           { action: "update", subject: "Organization", conditions: { owner_id: user.id } }
         );

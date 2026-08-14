@@ -121,6 +121,12 @@ const baseNavItems: Array<NavItem> = [
         icon: 'type',
       },
       {
+        title: 'CMS Landing',
+        org: true,
+        url: '/landing-cms',
+        icon: 'folder',
+      },
+      {
         title: 'Usuários',
         org: false,
         url: '/users',
