@@ -1,0 +1,122 @@
+/* Omnichannel — chat shell inspirado no WhatsApp Web, alinhado ao design system */
+
+.oc-chat-shell {
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  --oc-chat-bg: #efeae2;
+  --oc-chat-incoming: #ffffff;
+  --oc-chat-outgoing: #e9ffdb;
+  --oc-chat-outgoing-ia: #e4fce0;
+  --oc-chat-header: #f0f2f5;
+  --oc-chat-composer: #f0f2f5;
+  --oc-chat-list-hover: rgb(0 0 0 / 0.04);
+  --oc-chat-list-active: #f0f2f5;
+  --oc-chat-unread: #25d366;
+  --oc-chat-bubble-shadow: 0 1px 0.5px rgb(11 20 26 / 0.13);
+}
+
+.dark .oc-chat-shell {
+  --oc-chat-bg: oklch(0.2 0.008 285);
+  --oc-chat-incoming: oklch(0.26 0.01 285);
+  --oc-chat-outgoing: oklch(0.34 0.055 155);
+  --oc-chat-outgoing-ia: oklch(0.32 0.05 155);
+  --oc-chat-header: oklch(0.24 0.01 285);
+  --oc-chat-composer: oklch(0.24 0.01 285);
+  --oc-chat-list-hover: rgb(255 255 255 / 0.04);
+  --oc-chat-list-active: oklch(0.26 0.01 285);
+  --oc-chat-unread: oklch(0.72 0.19 155);
+  --oc-chat-bubble-shadow: 0 1px 0.5px rgb(0 0 0 / 0.35);
+}
+
+.oc-chat-messages-bg {
+  background-color: var(--oc-chat-bg);
+  background-image: url('/images/oc-chat-wallpaper.svg');
+  background-size: 450px 450px;
+  background-repeat: repeat;
+}
+
+.dark .oc-chat-messages-bg {
+  background-image: url('/images/oc-chat-wallpaper.svg');
+  filter: brightness(0.55) contrast(1.05);
+}
+
+.oc-chat-header-bar {
+  background-color: var(--oc-chat-header);
+}
+
+.oc-chat-composer-bar {
+  background-color: var(--oc-chat-composer);
+}
+
+.oc-chat-list-panel {
+  background-color: var(--background);
+}
+
+.oc-chat-bubble-in {
+  background-color: var(--oc-chat-incoming);
+  box-shadow: var(--oc-chat-bubble-shadow);
+}
+
+.oc-chat-bubble-out {
+  background-color: var(--oc-chat-outgoing);
+  box-shadow: var(--oc-chat-bubble-shadow);
+}
+
+.oc-chat-bubble-out-ia {
+  background-color: var(--oc-chat-outgoing-ia);
+  box-shadow: var(--oc-chat-bubble-shadow);
+}
+
+.oc-chat-attach-menu {
+  background-color: #ffffff;
+  border-radius: 10px;
+  padding: 3px 0;
+  box-shadow:
+    0 1px 3px rgb(11 20 26 / 0.1),
+    0 6px 16px rgb(11 20 26 / 0.12);
+}
+
+.dark .oc-chat-attach-menu {
+  background-color: oklch(0.28 0.01 285);
+}
+
+.oc-chat-attach-menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 16px 4px 14px;
+  text-align: left;
+  font-size: 14px;
+  line-height: 1.25;
+  color: rgb(17 27 33);
+  transition: background-color 0.15s ease;
+}
+
+.dark .oc-chat-attach-menu-item {
+  color: oklch(0.95 0.01 285);
+}
+
+.oc-chat-attach-menu-item:hover:not(:disabled) {
+  background-color: rgb(0 0 0 / 0.04);
+}
+
+.dark .oc-chat-attach-menu-item:hover:not(:disabled) {
+  background-color: rgb(255 255 255 / 0.06);
+}
+
+.oc-chat-attach-menu-icon {
+  display: flex;
+  height: 24px;
+  width: 24px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+}
+
+.oc-chat-attach-menu-icon svg {
+  height: 16px;
+  width: 16px;
+}

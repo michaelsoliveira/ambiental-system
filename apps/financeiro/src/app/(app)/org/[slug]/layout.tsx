@@ -14,14 +14,14 @@ export default async function OrgLayout({
   const cookieStore = await cookies();
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
-      <div className='flex w-full'>
-        <div className='print:hidden'>
+    <SidebarProvider defaultOpen={defaultOpen} className="h-svh max-h-svh overflow-hidden">
+      <div className="flex h-full min-h-0 w-full min-w-0 overflow-hidden">
+        <div className="print:hidden">
           <AppSidebar />
         </div>
-        <SidebarInset className="flex flex-col h-full">
+        <SidebarInset className="flex h-full min-h-0 min-w-0 w-auto max-w-full flex-1 flex-col overflow-hidden">
           <Header />
-          <div className="flex-1 overflow-hidden">            
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
             {children}
           </div>
         </SidebarInset>

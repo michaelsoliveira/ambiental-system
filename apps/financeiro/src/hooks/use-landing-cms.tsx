@@ -4,8 +4,10 @@ import { toast } from "sonner";
 import type { LandingContent } from "@/features/landing-cms/types";
 import {
   getLandingCms,
+  listLandingMedia,
   publishLandingCms,
   updateLandingDraft,
+  uploadLandingMedia,
 } from "@/http/landing-cms";
 
 async function revalidateLandingSite() {
@@ -58,6 +60,33 @@ export function usePublishLanding(org: string) {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Erro ao publicar");
+    },
+  });
+}
+
+export function useLandingMediaLibrary(
+  org: string,
+  kind?: "image" | "video",
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["landing-media", org, kind ?? "all"],
+    queryFn: () => listLandingMedia(org, kind),
+    enabled: !!org && enabled,
+  });
+}
+
+export function useUploadLandingMedia(org: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (file: File) => uploadLandingMedia(org, file),
+    onSuccess: () => {
+      toast.success("Mídia enviada ao MinIO");
+      queryClient.invalidateQueries({ queryKey: ["landing-media", org] });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Erro ao enviar mídia");
     },
   });
 }

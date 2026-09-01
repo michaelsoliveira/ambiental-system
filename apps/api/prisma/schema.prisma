@@ -7,7 +7,7 @@ datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
   extensions = [postgis, uuid_ossp(map: "uuid-ossp")]
-  schemas    = ["common", "monitoramento", "seguranca", "financeiro", "frota"]
+  schemas    = ["common", "monitoramento", "seguranca", "financeiro", "frota", "omnichannel"]
 }
 
 model User {
@@ -129,6 +129,24 @@ model Organization {
   patrimonioDocumentos    PatrimonioDocumento[]
   patrimonioPassivos      PatrimonioPassivo[]
   landingSite             LandingSite?
+
+  // Omnichannel
+  ocCanais           OcCanal[]
+  ocContatos         OcContato[]
+  ocAgentes          OcAgente[]
+  ocTools            OcTool[]
+  ocSkills           OcSkill[]
+  ocConversas        OcConversa[]
+  ocMensagens        OcMensagem[]
+  ocExecucoes        OcExecucao[]
+  ocPipelines        OcPipeline[]
+  ocPipelineCards    OcPipelineCard[]
+  ocAutomacoes       OcAutomacao[]
+  ocWatchdogConfig   OcWatchdogConfig?
+  ocConfigIA         OcConfigIA?
+  ocInboxes          OcInbox[]
+  ocTags             OcTag[]
+  ocApiKeys          OcApiKey[]
 
   @@map("organizations")
   @@schema("common")
@@ -1915,4 +1933,379 @@ enum TipoContratoFuncionario {
   APRENDIZ
 
   @@schema("common")
+}
+
+
+// ─── Omnichannel (schema omnichannel) ─────────────────────────────────────────
+// Espelha inexahub-sst oc_* com organization_id no lugar de tenant_id.
+// Enums como String alinhados ao frontend (valores lowercase).
+
+model OcCanal {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  updated_at      DateTime @updatedAt @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  nome            String   @db.VarChar(100)
+  tipo            String   @db.VarChar(40)
+  ativo           Boolean  @default(true)
+  ia_habilitada   Boolean  @default(true)
+  config          Json     @default("{}")
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  conversas    OcConversa[]
+
+  @@index([organization_id])
+  @@map("oc_canal")
+  @@schema("omnichannel")
+}
+
+model OcContato {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  nome            String?  @db.VarChar(200)
+  telefone        String?  @db.VarChar(30)
+  email           String?  @db.VarChar(200)
+  avatar_url      String?  @db.VarChar(500)
+  tags            String[] @default([])
+  extra_data      Json     @default("{}")
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  conversas    OcConversa[]
+
+  @@unique([organization_id, telefone])
+  @@index([organization_id])
+  @@index([telefone])
+  @@map("oc_contato")
+  @@schema("omnichannel")
+}
+
+model OcAgente {
+  id                   String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at           DateTime @default(now()) @db.Timestamp(6)
+  updated_at           DateTime @updatedAt @db.Timestamp(6)
+  organization_id      String   @db.Uuid
+  nome                 String   @db.VarChar(100)
+  descricao            String?
+  tipo                 String   @default("worker") @db.VarChar(40)
+  categoria            String?  @db.VarChar(100)
+  modelo               String   @default("gpt-4o-mini") @db.VarChar(100)
+  system_prompt        String   @default("")
+  contexto_operacional String?
+  temperatura          Float    @default(0.7)
+  ativo                Boolean  @default(true)
+  parent_id            String?  @db.Uuid
+  departamento         String?  @db.VarChar(100)
+  squad                String?  @db.VarChar(100)
+  max_tokens           Int      @default(1024)
+  timeout_ms           Int      @default(30000)
+
+  organization Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  parent       OcAgente?       @relation("OcAgenteTree", fields: [parent_id], references: [id])
+  filhos       OcAgente[]      @relation("OcAgenteTree")
+  skills       OcAgenteSkill[]
+  conversas    OcConversa[]    @relation("OcConversaAgente")
+  execucoes    OcExecucao[]
+
+  @@index([organization_id])
+  @@map("oc_agente")
+  @@schema("omnichannel")
+}
+
+model OcTool {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  nome            String   @db.VarChar(100)
+  descricao       String?
+  tipo            String   @db.VarChar(40)
+  config          Json     @default("{}")
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  skills       OcSkill[]
+
+  @@index([organization_id])
+  @@map("oc_tool")
+  @@schema("omnichannel")
+}
+
+model OcSkill {
+  id                 String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at         DateTime @default(now()) @db.Timestamp(6)
+  organization_id    String   @db.Uuid
+  nome               String   @db.VarChar(100)
+  categoria          String?  @db.VarChar(100)
+  descricao_llm      String
+  tool_id            String?  @db.Uuid
+  parameters_schema  Json     @default("{}")
+  invocation_config  Json     @default("{}")
+  instrucoes_extras  String?
+  timeout_ms         Int      @default(15000)
+  versao             Int      @default(1)
+  ativo              Boolean  @default(true)
+
+  organization Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  tool         OcTool?         @relation(fields: [tool_id], references: [id])
+  agentes      OcAgenteSkill[]
+  execucoes    OcExecucao[]
+
+  @@index([organization_id])
+  @@map("oc_skill")
+  @@schema("omnichannel")
+}
+
+model OcAgenteSkill {
+  agente_id String @db.Uuid
+  skill_id  String @db.Uuid
+
+  agente OcAgente @relation(fields: [agente_id], references: [id], onDelete: Cascade)
+  skill  OcSkill  @relation(fields: [skill_id], references: [id], onDelete: Cascade)
+
+  @@id([agente_id, skill_id])
+  @@map("oc_agente_skill")
+  @@schema("omnichannel")
+}
+
+model OcConversa {
+  id                String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at        DateTime  @default(now()) @db.Timestamp(6)
+  organization_id   String    @db.Uuid
+  canal_id          String    @db.Uuid
+  contato_id        String    @db.Uuid
+  status            String    @default("bot") @db.VarChar(20)
+  agente_ia_id      String?   @db.Uuid
+  atendente_id      String?   @db.Uuid
+  is_stuck          Boolean   @default(false)
+  stuck_attempts    Int       @default(0)
+  last_message_at   DateTime? @db.Timestamp(6)
+  last_bot_at       DateTime? @db.Timestamp(6)
+  first_response_at DateTime? @db.Timestamp(6)
+  snoozed_until     DateTime? @db.Timestamp(6)
+  tags              String[]  @default([])
+  canal_ext_id      String?   @db.VarChar(200)
+  extra_data        Json      @default("{}")
+  closed_at         DateTime? @db.Timestamp(6)
+
+  organization Organization     @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  canal        OcCanal          @relation(fields: [canal_id], references: [id])
+  contato      OcContato        @relation(fields: [contato_id], references: [id])
+  agente_ia    OcAgente?        @relation("OcConversaAgente", fields: [agente_ia_id], references: [id])
+  mensagens    OcMensagem[]
+  cards        OcPipelineCard[]
+  execucoes    OcExecucao[]
+
+  @@index([organization_id])
+  @@index([organization_id, status])
+  @@index([organization_id, canal_id])
+  @@index([organization_id, last_message_at])
+  @@map("oc_conversa")
+  @@schema("omnichannel")
+}
+
+model OcMensagem {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  conversa_id     String   @db.Uuid
+  autor_tipo      String   @db.VarChar(20)
+  autor_id        String?  @db.Uuid
+  tipo            String   @default("text") @db.VarChar(20)
+  conteudo        String
+  canal_msg_id    String?  @unique @db.VarChar(200)
+  is_read         Boolean  @default(false)
+  extra_data      Json     @default("{}")
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  conversa     OcConversa   @relation(fields: [conversa_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@index([conversa_id])
+  @@map("oc_mensagem")
+  @@schema("omnichannel")
+}
+
+model OcExecucao {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String    @db.Uuid
+  conversa_id     String?   @db.Uuid
+  agente_id       String?   @db.Uuid
+  skill_id        String?   @db.Uuid
+  status          String    @default("running") @db.VarChar(20)
+  input_data      Json?
+  output_data     Json?
+  error_msg       String?
+  tokens_input    Int?
+  tokens_output   Int?
+  duration_ms     Int?
+  started_at      DateTime  @default(now()) @db.Timestamp(6)
+  finished_at     DateTime? @db.Timestamp(6)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  conversa     OcConversa?  @relation(fields: [conversa_id], references: [id])
+  agente       OcAgente?    @relation(fields: [agente_id], references: [id])
+  skill        OcSkill?     @relation(fields: [skill_id], references: [id])
+
+  @@index([organization_id, started_at])
+  @@map("oc_execucao")
+  @@schema("omnichannel")
+}
+
+model OcPipeline {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  nome            String   @db.VarChar(100)
+
+  organization Organization      @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  stages       OcPipelineStage[]
+  cards        OcPipelineCard[]
+
+  @@index([organization_id])
+  @@map("oc_pipeline")
+  @@schema("omnichannel")
+}
+
+model OcPipelineStage {
+  id          String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  pipeline_id String @db.Uuid
+  nome        String @db.VarChar(100)
+  tipo        String @default("normal") @db.VarChar(20)
+  cor         String @default("gray") @db.VarChar(20)
+  ordem       Int
+
+  pipeline OcPipeline       @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+  cards    OcPipelineCard[]
+
+  @@index([pipeline_id])
+  @@map("oc_pipeline_stage")
+  @@schema("omnichannel")
+}
+
+model OcPipelineCard {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  organization_id String    @db.Uuid
+  pipeline_id     String    @db.Uuid
+  stage_id        String    @db.Uuid
+  conversa_id     String?   @db.Uuid
+  titulo          String?   @db.VarChar(200)
+  valor_estimado  Decimal?  @db.Decimal(12, 2)
+  won             Boolean   @default(false)
+  lost            Boolean   @default(false)
+  closed_at       DateTime? @db.Timestamp(6)
+
+  organization Organization    @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+  pipeline     OcPipeline      @relation(fields: [pipeline_id], references: [id], onDelete: Cascade)
+  stage        OcPipelineStage @relation(fields: [stage_id], references: [id])
+  conversa     OcConversa?     @relation(fields: [conversa_id], references: [id])
+
+  @@index([organization_id])
+  @@index([pipeline_id])
+  @@map("oc_pipeline_card")
+  @@schema("omnichannel")
+}
+
+model OcAutomacao {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  nome            String   @db.VarChar(200)
+  descricao       String?
+  trigger_tipo    String   @db.VarChar(40)
+  condicoes       Json     @default("[]")
+  acoes           Json     @default("[]")
+  ativa           Boolean  @default(true)
+  limite_rpm      Int      @default(10)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@map("oc_automacao")
+  @@schema("omnichannel")
+}
+
+model OcWatchdogConfig {
+  organization_id       String   @id @db.Uuid
+  habilitado            Boolean  @default(true)
+  threshold_bot_min     Int      @default(15)
+  threshold_pending_min Int      @default(15)
+  threshold_open_min    Int      @default(60)
+  max_tentativas        Int      @default(3)
+  horario_24h           Boolean  @default(true)
+  horario_config        Json     @default("{}")
+  updated_at            DateTime @updatedAt @db.Timestamp(6)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("oc_watchdog_config")
+  @@schema("omnichannel")
+}
+
+model OcConfigIA {
+  organization_id           String   @id @db.Uuid
+  ia_habilitada             Boolean  @default(true)
+  pausar_ia_humano_responde Boolean  @default(true)
+  atendimento_24h           Boolean  @default(true)
+  horario_config            Json     @default("{}")
+  mensagem_fora_horario     String?
+  contexto_negocio          String?
+  limite_tokens_mes         Int?
+  dominios_permitidos       String[] @default([])
+  handoff_keywords          Json     @default("[]")
+  resumo_modelo             String   @default("gpt-4o-mini") @db.VarChar(100)
+  timezone                  String   @default("America/Sao_Paulo") @db.VarChar(50)
+  updated_at                DateTime @updatedAt @db.Timestamp(6)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@map("oc_config_ia")
+  @@schema("omnichannel")
+}
+
+model OcInbox {
+  id              String   @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime @default(now()) @db.Timestamp(6)
+  organization_id String   @db.Uuid
+  nome            String   @db.VarChar(100)
+  icone           String   @default("inbox") @db.VarChar(50)
+  cor             String   @default("gray") @db.VarChar(20)
+  filtros         Json     @default("{}")
+  ordem           Int      @default(0)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@map("oc_inbox")
+  @@schema("omnichannel")
+}
+
+model OcTag {
+  id              String @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  organization_id String @db.Uuid
+  nome            String @db.VarChar(50)
+  cor             String @default("blue") @db.VarChar(20)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@unique([organization_id, nome])
+  @@index([organization_id])
+  @@map("oc_tag")
+  @@schema("omnichannel")
+}
+
+model OcApiKey {
+  id              String    @id @default(dbgenerated("uuid_generate_v4()")) @db.Uuid
+  created_at      DateTime  @default(now()) @db.Timestamp(6)
+  organization_id String    @db.Uuid
+  nome            String    @db.VarChar(100)
+  key_hash        String    @db.VarChar(200)
+  key_prefix      String    @db.VarChar(20)
+  criado_por      String?   @db.Uuid
+  ultima_vez      DateTime? @db.Timestamp(6)
+
+  organization Organization @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@index([organization_id])
+  @@map("oc_api_key")
+  @@schema("omnichannel")
 }

@@ -5,6 +5,25 @@ function toFormId(value: unknown): string {
   return String(value)
 }
 
+/**
+ * Extrai yyyy-MM-dd no fuso de São Paulo (evita shift de dia ao usar toISOString que é UTC).
+ */
+function toLocalDateString(value: unknown): string {
+  if (!value) return ''
+  const d = typeof value === 'string' ? new Date(value) : (value as Date)
+  if (Number.isNaN(d.getTime())) return ''
+
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Sao_Paulo',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d)
+
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '01'
+  return `${get('year')}-${get('month')}-${get('day')}`
+}
+
 /** Resolve FK do formulário a partir do campo plano ou do relacionamento incluído na API. */
 function resolveRelationId(
   flatId: unknown,
@@ -23,10 +42,10 @@ export function mapLancamentoToFormValues(initialData?: any): LancamentoFormValu
     gerar_boleto: initialData?.gerar_boleto ?? false,
     permitir_pix: initialData?.permitir_pix ?? false,
     data: initialData?.data
-      ? new Date(initialData.data).toISOString().split('T')[0]!
-      : new Date().toISOString().split('T')[0]!,
+      ? toLocalDateString(initialData.data)
+      : toLocalDateString(new Date()),
     data_vencimento: initialData?.data_vencimento
-      ? new Date(initialData.data_vencimento).toISOString().split('T')[0]!
+      ? toLocalDateString(initialData.data_vencimento)
       : '',
     descricao: initialData?.descricao ?? '',
     valor: initialData?.valor?.toString() ?? '',
@@ -49,7 +68,7 @@ export function mapLancamentoToFormValues(initialData?: any): LancamentoFormValu
       id: p.id,
       numero_parcela: p.numero_parcela,
       data_vencimento: p.data_vencimento
-        ? new Date(p.data_vencimento).toISOString().split('T')[0]!
+        ? toLocalDateString(p.data_vencimento)
         : '',
       valor:
         typeof p.valor === 'number' ? p.valor.toFixed(2) : String(p.valor ?? '0'),

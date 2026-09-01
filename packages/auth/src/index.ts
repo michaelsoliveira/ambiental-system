@@ -17,6 +17,7 @@ import { CategoriaFinanceiraSubject } from "./subjects/categoria-financeira";
 import { LancamentoSubject } from "./subjects/lancamento";
 import { PatrimonioSubject } from "./subjects/patrimonio";
 import { LandingContentSubject } from "./subjects/landing-content";
+import { OmnichannelSubject } from "./subjects/omnichannel";
 
 // Combine todos os subjects em um único union sem z.union()
 type AppSubjects = 
@@ -32,6 +33,7 @@ type AppSubjects =
   | LancamentoSubject
   | PatrimonioSubject
   | LandingContentSubject
+  | OmnichannelSubject
   | ['manage', 'all'];
 
 export type AppAbility = MongoAbility<AppSubjects>;
@@ -46,6 +48,7 @@ export * from './models/parceiro'
 export * from './models/lancamento'
 export * from './models/patrimonio'
 export * from './models/landing-content'
+export * from './models/omnichannel'
 export * from './roles'
 export * from './models/pessoa'
 export * from './models/lancamento'
@@ -68,7 +71,8 @@ export function defineAbilitiesFor(user: User): AppAbility {
           { action: "manage", subject: "User", conditions: { organization_id: user.organization_id } },
           { action: "manage", subject: "Organization", conditions: { organization_id: user.organization_id } },
           { action: "manage", subject: "Invite", conditions: { organization_id: user.organization_id } },
-          { action: "manage", subject: "LandingContent" }
+          { action: "manage", subject: "LandingContent" },
+          { action: "manage", subject: "Omnichannel" }
         );
         break;
         
@@ -105,6 +109,10 @@ export function defineAbilitiesFor(user: User): AppAbility {
           { action: "get", subject: "LandingContent" },
           { action: "update", subject: "LandingContent" },
           { action: "publish", subject: "LandingContent" },
+          { action: "get", subject: "Omnichannel" },
+          { action: "create", subject: "Omnichannel" },
+          { action: "update", subject: "Omnichannel" },
+          { action: "delete", subject: "Omnichannel" },
           { action: "get", subject: "User" },
           { action: "update", subject: "Organization", conditions: { owner_id: user.id } }
         );
@@ -130,6 +138,10 @@ export function defineAbilitiesFor(user: User): AppAbility {
           { action: "create", subject: "Patrimonio" },
           { action: "get", subject: "Patrimonio" },
           { action: "update", subject: "Patrimonio" },
+          { action: "get", subject: "Omnichannel" },
+          { action: "create", subject: "Omnichannel" },
+          { action: "update", subject: "Omnichannel" },
+          { action: "delete", subject: "Omnichannel" },
           { action: "get", subject: "User" }
         );
         break;

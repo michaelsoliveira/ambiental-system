@@ -25,6 +25,8 @@
     "prettier": "@saas/prettier",
     "scripts": {
         "dev": "pnpm env:load tsx watch src/http/server.ts",
+        "oc:worker": "pnpm env:load tsx src/omnichannel/oc-worker.ts",
+        "oc:beat": "pnpm env:load tsx src/omnichannel/oc-beat.ts",
         "db:seed": "pnpm env:load prisma db seed",
         "db:seed:prod": "prisma db seed",
         "db:migrate": "pnpm env:load prisma migrate dev",
@@ -34,6 +36,8 @@
         "build": "tsup",
         "check-types": "tsc --noEmit",
         "start": "node dist/server.js",
+        "start:oc-worker": "node dist/oc-worker.js",
+        "start:oc-beat": "node dist/oc-beat.js",
         "convert:csv": "tsx src/scripts/convert-csv-to-sql.ts src/scripts/data/municipios.csv src/scripts/data/municipios.sql"
     },
     "dependencies": {
@@ -46,11 +50,13 @@
         "@prisma/client": "6.16.1",
         "@saas/auth": "workspace:*",
         "bcrypt": "^6.0.0",
+        "bullmq": "^6.2.1",
         "dotenv": "^17.2.3",
         "dotenv-cli": "^10.0.0",
         "fastify": "^5.6.1",
         "fastify-plugin": "^5.1.0",
         "fastify-type-provider-zod": "^6.0.0",
+        "ioredis": "^6.0.0",
         "jsonwebtoken": "^9.0.2",
         "pg": "^8.12.0",
         "tsup": "^8.5.0",

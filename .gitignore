@@ -5,6 +5,9 @@ node_modules
 .pnp
 .pnp.js
 
+# Vendor install local do MinIO (mantém só o .tgz no git)
+apps/api/vendor/minio-bundle/
+
 # Local env files
 .env
 .env.local

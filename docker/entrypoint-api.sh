@@ -2,8 +2,20 @@
 set -e
 cd /app/apps/api
 
-if [ "${SKIP_MIGRATE:-0}" != "1" ]; then
+ROLE="${OC_PROCESS:-api}"
+
+if [ "$ROLE" = "api" ] && [ "${SKIP_MIGRATE:-0}" != "1" ]; then
   prisma migrate deploy --schema=./prisma/schema.prisma
 fi
 
-exec node dist/server.js
+case "$ROLE" in
+  worker)
+    exec node dist/oc-worker.js
+    ;;
+  beat)
+    exec node dist/oc-beat.js
+    ;;
+  *)
+    exec node dist/server.js
+    ;;
+esac

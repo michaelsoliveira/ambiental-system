@@ -2,6 +2,14 @@
 import { env } from '@saas/env/next'
 import ky from 'ky'
 
+function isMediaFetch(url: string): boolean {
+  try {
+    return new URL(url).pathname.endsWith('/media')
+  } catch {
+    return url.includes('/media')
+  }
+}
+
 export const api = ky.create({
   prefixUrl: env.NEXT_PUBLIC_API_URL,
   hooks: {
@@ -26,48 +34,50 @@ export const api = ky.create({
       },
     ],
     afterResponse: [
-      async (request, options, response) => {
-        if (!response.ok) {
-          // Tentar obter mensagem de erro mais detalhada
-          let errorMessage = `API Error: ${response.status} ${response.statusText}`
-          let errorData: any = null
-          let errorBodyText: string | null = null
-          const responseClone = response.clone()
-          
+      async (request, _options, response) => {
+        if (response.ok) return
+
+        let errorMessage = `API Error: ${response.status} ${response.statusText}`
+        let errorData: unknown = null
+        let errorBodyText: string | null = null
+        const responseClone = response.clone()
+
+        try {
+          errorData = await responseClone.json()
+          const data = errorData as { message?: string; error?: string } | null
+          errorMessage = data?.message || data?.error || errorMessage
+        } catch {
           try {
-            errorData = await responseClone.json()
-            errorMessage = errorData?.message || errorData?.error || errorMessage
+            errorBodyText = await responseClone.text()
           } catch {
-            try {
-              errorBodyText = await responseClone.text()
-            } catch {
-              errorBodyText = null
-            }
-            // Se não conseguir parsear JSON, usar statusText/body
-            errorMessage = response.statusText || errorBodyText || errorMessage
+            errorBodyText = null
           }
-          
-          const error: any = new Error(errorMessage)
-          error.response = errorData || {
-            error: response.statusText || 'Unknown error',
-            body: errorBodyText,
-          }
-          error.status = response.status
-          error.url = request.url
-          
-          // Log do erro para debug
-          console.error('[ApiClient] ❌ Erro na requisição:', {
-            url: request.url,
-            method: request.method,
-            status: response.status,
-            statusText: response.statusText,
-            error: errorData,
-            bodyText: errorBodyText,
-          })
-          
-          throw error
+          errorMessage = response.statusText || errorBodyText || errorMessage
         }
-      }
-    ]
+
+        const error = new Error(errorMessage) as Error & {
+          response: unknown
+          status: number
+          url: string
+        }
+        error.response = errorData || {
+          error: response.statusText || 'Unknown error',
+          body: errorBodyText,
+        }
+        error.status = response.status
+        error.url = request.url
+
+        // 404 em /media é esperado (stub antigo, mídia Evolution indisponível).
+        // console.error vira overlay vermelho no Next e o objeto costuma aparecer como {}.
+        const quietMediaMiss = response.status === 404 && isMediaFetch(request.url)
+        if (!quietMediaMiss) {
+          console.error(
+            `[ApiClient] ${request.method} ${response.status} ${request.url} — ${errorMessage}`,
+          )
+        }
+
+        throw error
+      },
+    ],
   },
 })

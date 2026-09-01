@@ -1,4 +1,4 @@
-# Stack da aplicação: Postgres + API + Next (financeiro)
+# Stack da aplicação: Postgres + Redis + API + oc-worker/oc-beat + Next (financeiro)
 #
 # Uso:
 #   cp docker/env.example .env
@@ -7,8 +7,37 @@
 # HTTPS (nginx + certbot): use também docker-compose.gateway.yml (ver docker/README-GATEWAY.txt).
 #
 # Migrações: rodam no entrypoint da API. SKIP_MIGRATE=1 para pular.
+# Omnichannel: Redis + oc-worker (filas) + oc-beat (watchdog). Sem eles, envio/IA
+# caem no fallback in-process da API (menos confiável).
 
 name: ambiental
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ambiental}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  SERVER_PORT: "3333"
+  JWT_SECRET: ${JWT_SECRET}
+  GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
+  GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
+  GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
+  NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+  ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+  ASAAS_ENV: ${ASAAS_ENV:-sandbox}
+  ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+  MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.ambiental.com.br}
+  MINIO_PORT: ${MINIO_PORT:-443}
+  MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-}
+  MINIO_BUCKET: ${MINIO_BUCKET:-landing-media}
+  MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://minio.ambiental.com.br/landing-media}
+  EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-}
+  EVOLUTION_API_GLOBAL_KEY: ${EVOLUTION_API_GLOBAL_KEY:-}
+  EVOLUTION_WEBHOOK_PUBLIC_URL: ${EVOLUTION_WEBHOOK_PUBLIC_URL:-}
+  EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OC_WORKER_CONCURRENCY: ${OC_WORKER_CONCURRENCY:-2}
 
 services:
   postgres:
@@ -28,29 +57,75 @@ services:
     networks:
       - ambiental
 
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      - ambiental
+
   api:
     build:
       context: .
       dockerfile: docker/Dockerfile.api
     restart: unless-stopped
     environment:
-      NODE_ENV: production
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ambiental}
-      SERVER_PORT: "3333"
-      JWT_SECRET: ${JWT_SECRET}
-      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
-      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
-      GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
-      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
-      ASAAS_ENV: ${ASAAS_ENV:-sandbox}
-      ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+      <<: *api-env
       SKIP_MIGRATE: ${SKIP_MIGRATE:-0}
+      OC_PROCESS: api
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     expose:
       - "3333"
+    networks:
+      - ambiental
+
+  # Consome filas BullMQ (agente IA, outbound WhatsApp, watchdog, automações).
+  # Escala horizontalmente; mantenha oc-beat com 1 réplica.
+  oc-worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      SKIP_MIGRATE: "1"
+      OC_PROCESS: worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+    networks:
+      - ambiental
+
+  # Agenda watchdog (timer 15s / cron 15min) — uma única instância.
+  oc-beat:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      SKIP_MIGRATE: "1"
+      OC_PROCESS: beat
+    depends_on:
+      redis:
+        condition: service_healthy
+      oc-worker:
+        condition: service_started
     networks:
       - ambiental
 
@@ -84,6 +159,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   ambiental:

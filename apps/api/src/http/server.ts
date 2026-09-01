@@ -129,10 +129,19 @@ import { patrimonioRoutes } from "./routes/financeiro/patrimonio/patrimonio-rout
 import { PatrimonioService } from "@/services/patrimonio.service";
 import { getLandingCms } from "./routes/landing/get-landing";
 import { getPublicLanding } from "./routes/landing/get-public-landing";
+import { postPublicLandingContato } from "./routes/landing/post-public-landing-contato";
+import { listLandingMedia } from "./routes/landing/list-landing-media";
 import { publishLanding } from "./routes/landing/publish-landing";
 import { updateLandingDraft } from "./routes/landing/update-landing-draft";
+import { uploadLandingMedia } from "./routes/landing/upload-landing-media";
+import { omnichannelRoutes } from "./routes/omnichannel/omnichannel-routes";
+import { evolutionWebhookRoutes } from "./routes/omnichannel/evolution-webhook";
 
-const app = fastify().withTypeProvider<ZodTypeProvider>();
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024; // 100MB — vídeos do CMS landing
+
+const app = fastify({
+  bodyLimit: MAX_UPLOAD_BYTES,
+}).withTypeProvider<ZodTypeProvider>();
 
 app.setSerializerCompiler(serializerCompiler);
 app.setValidatorCompiler(validatorCompiler);
@@ -151,7 +160,7 @@ app.decorate('patrimonioService', new PatrimonioService());
 
 app.register(multipart, {
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: MAX_UPLOAD_BYTES,
   },
 });
 
@@ -308,7 +317,13 @@ app.register(patrimonioRoutes)
 app.register(getLandingCms)
 app.register(updateLandingDraft)
 app.register(publishLanding)
+app.register(uploadLandingMedia)
+app.register(listLandingMedia)
 app.register(getPublicLanding)
+app.register(postPublicLandingContato)
+
+app.register(omnichannelRoutes)
+app.register(evolutionWebhookRoutes)
 
 app.register(getMembers)
 app.register(updateMember)

@@ -72,6 +72,14 @@ const baseNavItems: Array<NavItem> = [
     ]
   },
   {
+    title: 'Atendimento',
+    url: '/omnichannel',
+    icon: 'message',
+    org: true,
+    isActive: false,
+    items: [],
+  },
+  {
     title: 'Configurações',
     // org: true,
     url: '#',

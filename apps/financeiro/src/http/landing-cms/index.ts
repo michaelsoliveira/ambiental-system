@@ -1,6 +1,10 @@
 import { api } from "@/http/api-client";
 
-import type { LandingCmsResponse, LandingContent } from "@/features/landing-cms/types";
+import type {
+  LandingCmsResponse,
+  LandingContent,
+  LandingMediaLibraryItem,
+} from "@/features/landing-cms/types";
 
 export async function getLandingCms(org: string) {
   return api
@@ -26,4 +30,22 @@ export async function publishLandingCms(org: string) {
         published: LandingContent;
       };
     }>();
+}
+
+export async function listLandingMedia(
+  org: string,
+  kind?: "image" | "video",
+) {
+  const searchParams = kind ? { kind } : undefined;
+  return api
+    .get(`organizations/${org}/landing/media`, { searchParams })
+    .json<{ media: LandingMediaLibraryItem[] }>();
+}
+
+export async function uploadLandingMedia(org: string, file: File) {
+  const body = new FormData();
+  body.append("file", file);
+  return api
+    .post(`organizations/${org}/landing/media`, { body })
+    .json<{ media: LandingMediaLibraryItem }>();
 }

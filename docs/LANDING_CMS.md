@@ -41,3 +41,31 @@ NEXT_PUBLIC_LANDING_PREVIEW_SECRET=<mesmo-PREVIEW_SECRET-da-landing>
 ```
 
 **Importante:** “Salvar rascunho” não altera o site público. Só **Publicar** atualiza o que a landing exibe.
+
+## Mídia (MinIO)
+
+No Hero (e futuramente outras seções), o CMS permite:
+
+- escolher **tipo** (`none` | `image` | `video`)
+- escolher **motion** (`none` | `kenburns` | `parallax`)
+- **upload** para o MinIO ou **biblioteca** (find) de arquivos já enviados
+- ajustes: `alt`, `poster` (vídeo)
+
+| Método | Path | Uso |
+|--------|------|-----|
+| POST | `/organizations/:slug/landing/media` | multipart `file` → MinIO |
+| GET | `/organizations/:slug/landing/media?kind=` | listar biblioteca |
+
+Env da API (ver `docker/env.example`):
+
+```env
+MINIO_ENDPOINT=minio.ambiental.com.br
+MINIO_PORT=443
+MINIO_USE_SSL=true
+MINIO_ACCESS_KEY=...
+MINIO_SECRET_KEY=...
+MINIO_BUCKET=landing-media
+MINIO_PUBLIC_URL=https://minio.ambiental.com.br/landing-media
+```
+
+O bucket precisa permitir leitura pública do prefixo `landing/` (ou política equivalente), pois a landing consome a URL pública direta.

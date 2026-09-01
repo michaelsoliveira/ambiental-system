@@ -23,8 +23,9 @@ export function getDefaultLandingContent() {
   ] as const;
 
   const navItems = [
-    { label: "Soluções", href: "#solucoes" },
-    { label: "Portal", href: "#portal-cliente" },
+    { label: "Início", href: "#top" },
+    { label: "Soluções", href: "/servicos" },
+    { label: "Projetos", href: "/projetos" },
     { label: "Segmentos", href: "#segmentos" },
     { label: "Depoimentos", href: "#depoimentos" },
     { label: "FAQ", href: "#faq" },
@@ -47,7 +48,7 @@ export function getDefaultLandingContent() {
       brandName: "Ambiental Consultoria",
       navItems,
       primaryCta: {
-        label: "Falar com um consultor",
+        label: "Solicitar Orçamento",
         href: "#contato",
         variant: "primary" as const,
       },
@@ -57,37 +58,126 @@ export function getDefaultLandingContent() {
         variant: "tech" as const,
       },
       portalUrl,
+      topBar: {
+        phone: "(96) 98113-9394",
+        email: "ambiental.servicosap@hotmail.com",
+        location: "Macapá — AP",
+      },
+      whatsapp: {
+        label: "WhatsApp",
+        href: "https://wa.me/5596990453300",
+        variant: "outline" as const,
+      },
     },
     footer: {
       brandName: "Ambiental Consultoria",
       tagline:
-        "Ambiental Consultoria e Serviços Ambientais e Segurança do Trabalho",
-      legalLine: "CNPJ: 00.000.000/0001-00 (a confirmar) · Endereço a confirmar",
+        "Desde 2012 solucionando desafios ambientais, de segurança do trabalho e engenharia para empresas no Amapá e no Brasil.",
+      legalLine:
+        "Rod. Juscelino Kubitscheck, 4550 — Chefe Clodoaldo, Macapá — AP, 68903-197",
       navItems,
       socialLinks: [
         {
-          label: "LinkedIn",
-          href: "#",
-          ariaLabel: "LinkedIn da Ambiental Consultoria",
+          label: "Facebook",
+          href: "https://www.facebook.com/profile.php?id=100091911303940",
+          ariaLabel: "Facebook da Ambiental Consultoria",
         },
         {
           label: "Instagram",
-          href: "#",
+          href: "https://www.instagram.com/ambiental_consultoriaap/",
           ariaLabel: "Instagram da Ambiental Consultoria",
+        },
+        {
+          label: "LinkedIn",
+          href: "https://www.linkedin.com/company/ambiental-consultoria-e-servi%C3%A7os-eireli/",
+          ariaLabel: "LinkedIn da Ambiental Consultoria",
         },
       ],
       privacyHref: "/politica-de-privacidade",
       privacyLabel: "Política de privacidade (LGPD)",
+      contact: {
+        address:
+          "Rod. Juscelino Kubitscheck, 4550 — Chefe Clodoaldo, Macapá — AP, 68903-197",
+        phone: "(96) 98113-9394 / (96) 98116-1192",
+        whatsapp: "https://wa.me/5596990453300",
+        email: "ambiental.servicosap@hotmail.com",
+      },
     },
     hero: {
-      eyebrow: "Consultoria Ambiental & Segurança do Trabalho",
+      layout: "immersive" as const,
+      carousel: {
+        enabled: true,
+        autoplay: true,
+        intervalMs: 6500,
+        loop: true,
+      },
+      wave: { enabled: true },
+      slides: [
+        {
+          id: "conformidade",
+          eyebrow: "Desde 2012 no Amapá e no Brasil",
+          headline: "Conformidade ocupacional com",
+          highlight: "dados em tempo real",
+          accentText: "SST",
+          subheadline:
+            "PCMSO, PGR, ASO e laudos técnicos conduzidos por equipe especializada — com portal próprio para acompanhar indicadores.",
+          ctas: [
+            {
+              label: "Solicitar Orçamento",
+              href: "#contato",
+              variant: "primary" as const,
+            },
+            {
+              label: "Ver o portal",
+              href: "#portal-cliente",
+              variant: "outline" as const,
+            },
+          ],
+          media: { kind: "none" as const, motion: "kenburns" as const },
+        },
+        {
+          id: "ambiental",
+          eyebrow: "Consultoria Ambiental",
+          headline: "Licenciamento e gestão",
+          highlight: "ambiental",
+          accentText: "ESG",
+          subheadline:
+            "Regularização, condicionantes e monitoramento conduzidos com equipe multidisciplinar e tecnologia própria.",
+          ctas: [
+            {
+              label: "Conhecer serviços",
+              href: "/servicos",
+              variant: "primary" as const,
+            },
+          ],
+          media: { kind: "none" as const, motion: "none" as const },
+        },
+        {
+          id: "monitoramento",
+          eyebrow: "Portal do Cliente",
+          headline: "Monitoramento e indicadores",
+          highlight: "ao vivo",
+          accentText: "24/7",
+          subheadline:
+            "Acompanhe licenciamento, laudos e alertas sem depender de planilha ou visita surpresa do fiscal.",
+          ctas: [
+            {
+              label: "Acessar portal",
+              href: "#portal-cliente",
+              variant: "tech" as const,
+            },
+          ],
+          media: { kind: "none" as const, motion: "none" as const },
+        },
+      ],
+      eyebrow: "Desde 2012 no Amapá e no Brasil",
       headline:
-        "Sua empresa em conformidade — com dados em tempo real, não em PDF anual.",
+        "Cuidando da sua empresa, do seu time e do meio ambiente — com dados em tempo real, não em PDF anual.",
       subheadline:
         "Consultoria técnica em meio ambiente e segurança do trabalho, com portal próprio para acompanhar licenciamento, laudos e indicadores sem depender de planilha ou visita surpresa do fiscal.",
       ctas: [
         {
-          label: "Falar com um consultor",
+          label: "Solicitar Orçamento",
           href: "#contato",
           variant: "primary" as const,
         },
@@ -99,18 +189,16 @@ export function getDefaultLandingContent() {
       ],
       trustMetrics: [
         {
-          id: "empresas-atendidas",
-          valor: 120,
+          id: "anos-atuacao",
+          valor: 13,
           sufixo: "+",
-          label: "empresas atendidas",
-          isPlaceholder: true,
+          label: "anos de mercado desde 2012",
         },
         {
-          id: "anos-atuacao",
-          valor: 12,
+          id: "projetos-entregues",
+          valor: 300,
           sufixo: "+",
-          label: "anos de atuação",
-          isPlaceholder: true,
+          label: "projetos entregues",
         },
       ],
       media: { kind: "none" as const, motion: "none" as const },
@@ -118,32 +206,21 @@ export function getDefaultLandingContent() {
     provaSocial: {
       metrics: [
         {
-          id: "empresas-atendidas",
-          valor: 120,
-          sufixo: "+",
-          label: "empresas atendidas",
-          isPlaceholder: true,
-        },
-        {
-          id: "laudos-emitidos",
-          valor: 800,
-          sufixo: "+",
-          label: "laudos e documentos técnicos emitidos",
-          isPlaceholder: true,
-        },
-        {
           id: "anos-atuacao",
-          valor: 12,
+          valor: 13,
           sufixo: "+",
-          label: "anos de atuação",
-          isPlaceholder: true,
+          label: "anos de mercado desde 2012",
         },
         {
-          id: "indicadores-monitorados",
-          valor: 50,
+          id: "projetos-entregues",
+          valor: 300,
           sufixo: "+",
-          label: "indicadores monitorados em tempo real",
-          isPlaceholder: true,
+          label: "projetos entregues",
+        },
+        {
+          id: "especialidades",
+          valor: 9,
+          label: "áreas de especialidade",
         },
       ],
       logosEyebrow: "Confiado por empresas de diferentes setores",
@@ -152,6 +229,12 @@ export function getDefaultLandingContent() {
         nome: "Logo do cliente",
         isPlaceholder: true,
       })),
+      logosCarousel: {
+        enabled: true,
+        autoplay: true,
+        intervalMs: 5000,
+        loop: true,
+      },
     },
     pilares: {
       eyebrow: "Como atuamos",
@@ -194,58 +277,107 @@ export function getDefaultLandingContent() {
       title: "Consultoria completa, do licenciamento à segurança do trabalho",
       items: [
         {
-          id: "licenciamento",
-          iconKey: "FileCheck2",
-          titulo: "Licenciamento Ambiental",
-          descricao:
-            "Regularização junto a órgãos ambientais municipais, estaduais e federais, do diagnóstico à emissão da licença.",
-          colSpan: "lg:col-span-7",
-          servicoParam: "licenciamento",
-        },
-        {
-          id: "laudos-tecnicos",
-          iconKey: "ClipboardCheck",
-          titulo: "Laudos Técnicos",
-          descricao:
-            "Laudos de insalubridade, periculosidade, ruído e ergonomia com validade técnica e jurídica.",
-          colSpan: "lg:col-span-5",
-          servicoParam: "laudos-tecnicos",
-        },
-        {
-          id: "pgr-pcmso",
+          id: "seguranca",
           iconKey: "ShieldCheck",
-          titulo: "PGR / PCMSO",
+          titulo: "Segurança do Trabalho",
           descricao:
-            "Programa de Gerenciamento de Riscos e Programa de Controle Médico de Saúde Ocupacional.",
-          colSpan: "lg:col-span-4",
-          servicoParam: "pgr-pcmso",
+            "Programas, laudos e documentação para prevenir acidentes e adequar sua empresa às normas regulamentadoras.",
+          descricaoLonga:
+            "Elaboramos programas de prevenção, mapas de risco, rotas de fuga e laudos técnicos, cuidando da conformidade e da segurança de todos os colaboradores.",
+          colSpan: "lg:col-span-6",
+          servicoParam: "seguranca",
         },
         {
-          id: "gestao-residuos",
-          iconKey: "Recycle",
-          titulo: "Gestão de Resíduos",
+          id: "meio-ambiente",
+          iconKey: "Leaf",
+          titulo: "Meio Ambiente",
           descricao:
-            "Plano de Gerenciamento de Resíduos Sólidos (PGRS) da geração à destinação final.",
-          colSpan: "lg:col-span-4",
-          servicoParam: "gestao-residuos",
+            "Licenciamento, cadastros e laudos técnicos para empresas que precisam atender às exigências ambientais.",
+          descricaoLonga:
+            "Da regularização junto aos órgãos competentes à elaboração de laudos técnicos, apoiamos sua empresa em todo o processo de adequação ambiental.",
+          colSpan: "lg:col-span-6",
+          servicoParam: "meio-ambiente",
         },
         {
-          id: "treinamentos-nr",
-          iconKey: "HardHat",
-          titulo: "Treinamentos NR",
+          id: "aerolevantamento",
+          iconKey: "Plane",
+          titulo: "Aerolevantamento",
           descricao:
-            "Treinamentos normativos aplicados à realidade operacional de cada cliente.",
+            "Levantamento aerogeofísico e aerofotogrametria para mapear terrenos e territórios com precisão.",
+          descricaoLonga:
+            "Serviço aéreo de medição de terrenos e espaços marítimos, usado na construção de mapas e plantas e no controle de fronteiras.",
           colSpan: "lg:col-span-4",
-          servicoParam: "treinamentos-nr",
+          servicoParam: "aerolevantamento",
         },
         {
-          id: "brigada-incendio",
-          iconKey: "Siren",
-          titulo: "Brigada de Incêndio",
+          id: "sismografia",
+          iconKey: "Activity",
+          titulo: "Sismografia",
           descricao:
-            "Formação, treinamento e gestão contínua de brigada de incêndio conforme NR-23.",
+            "Monitoramento de vibrações e ruído para garantir a segurança estrutural de edificações.",
+          descricaoLonga:
+            "Captamos e interpretamos ondas sísmicas e acústicas com sismógrafos de precisão, avaliando vibração e pressão acústica em diferentes ambientes.",
+          colSpan: "lg:col-span-4",
+          servicoParam: "sismografia",
+        },
+        {
+          id: "hidrossemeadura",
+          iconKey: "Sprout",
+          titulo: "Hidrossemeadura",
+          descricao:
+            "Recuperação de áreas degradadas por jateamento de sementes, fertilizantes e fibra de madeira.",
+          descricaoLonga:
+            "Solução de alta viscosidade aplicada por hidrojateamento, que dispensa preparo do solo e acelera a germinação em qualquer tipo de terreno.",
+          colSpan: "lg:col-span-4",
+          servicoParam: "hidrossemeadura",
+        },
+        {
+          id: "logistica",
+          iconKey: "Truck",
+          titulo: "Logística",
+          descricao:
+            "Frota moderna e equipe experiente para transporte especializado da sua cadeia de suprimentos.",
+          descricaoLonga:
+            "Soluções logísticas personalizadas, com agilidade e segurança, para otimizar operações de transporte e frete.",
+          colSpan: "lg:col-span-4",
+          servicoParam: "logistica",
+          imagem: {
+            url: "/images/Frete%20e%20Logistica%20-%20Ambiental%20Consultoria.png",
+            alt: "Frete e Logística — Ambiental Consultoria",
+          },
+        },
+        {
+          id: "monitoramento",
+          iconKey: "Gauge",
+          titulo: "Instrumentação para Monitoramento",
+          descricao:
+            "Monitoramento de barragens e consultoria para uma gestão sustentável de estruturas críticas.",
+          descricaoLonga:
+            "Oferecemos consultoria e treinamento para melhorar práticas de gestão de barragens, protegendo comunidades e ecossistemas aquáticos.",
+          colSpan: "lg:col-span-4",
+          servicoParam: "monitoramento",
+        },
+        {
+          id: "incendio",
+          iconKey: "Flame",
+          titulo: "Combate a Incêndio e Pânico",
+          descricao:
+            "Projetos técnicos para detecção, controle e contenção de incêndios em edificações.",
+          descricaoLonga:
+            "Especificações técnicas completas para prevenção e combate a incêndio e pânico, atendendo às exigências do corpo de bombeiros.",
+          colSpan: "lg:col-span-4",
+          servicoParam: "incendio",
+        },
+        {
+          id: "mineracao",
+          iconKey: "Mountain",
+          titulo: "Mineração e Geotécnica",
+          descricao:
+            "Engenharia geotécnica e suporte técnico para operações de mineração com segurança.",
+          descricaoLonga:
+            "Suporte técnico especializado em engenharia geotécnica e mineração, do estudo do solo à operação segura.",
           colSpan: "lg:col-span-12",
-          servicoParam: "brigada-incendio",
+          servicoParam: "mineracao",
         },
       ],
     },
@@ -391,14 +523,10 @@ export function getDefaultLandingContent() {
     abrangencia: {
       eyebrow: "Abrangência",
       title: "Onde atuamos",
-      footnote:
-        "* Regiões de atuação ilustrativas — consulte disponibilidade para sua localidade.",
+      footnote: "Sede em Macapá — AP, com atuação em todo o território nacional.",
       items: [
-        { regiao: "Sudeste", estados: ["SP", "RJ", "MG", "ES"] },
-        { regiao: "Sul", estados: ["PR", "SC", "RS"] },
-        { regiao: "Centro-Oeste", estados: ["GO", "MT", "MS", "DF"] },
-        { regiao: "Nordeste", estados: ["BA", "PE", "CE"] },
-        { regiao: "Norte", estados: ["PA", "AM"] },
+        { regiao: "Amapá", estados: ["Macapá", "Santana", "Região Metropolitana"] },
+        { regiao: "Brasil", estados: ["Atendimento em todo o território nacional"] },
       ],
     },
     comoFunciona: {
@@ -479,6 +607,81 @@ export function getDefaultLandingContent() {
       title: "Pronto para colocar sua conformidade em dia?",
       description:
         "Preencha o formulário e um consultor entra em contato para entender o cenário da sua empresa.",
+    },
+    projetos: {
+      eyebrow: "Nosso trabalho",
+      title: "Projetos",
+      description:
+        "Uma amostra dos trabalhos técnicos que já entregamos para clientes no Amapá e no Brasil.",
+      items: [
+        {
+          id: "licenciamento-terminal-logistico",
+          categoria: "meio-ambiente",
+          titulo: "Licenciamento de terminal logístico",
+          descricao: "Regularização ambiental completa junto ao órgão estadual.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "programa-seguranca-industria",
+          categoria: "seguranca",
+          titulo: "Programa de segurança para indústria",
+          descricao: "Mapeamento de risco e treinamento de equipe operacional.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "mapeamento-aerofotogrametrico",
+          categoria: "aerolevantamento",
+          titulo: "Mapeamento aerofotogramétrico rural",
+          descricao:
+            "Levantamento de área de 1.200 hectares para planejamento fundiário.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "monitoramento-vibracao-obra",
+          categoria: "sismografia",
+          titulo: "Monitoramento de vibração em obra urbana",
+          descricao: "Controle de vibração e ruído durante fundação de edifício.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "recuperacao-talude-rodoviario",
+          categoria: "hidrossemeadura",
+          titulo: "Recuperação de talude rodoviário",
+          descricao:
+            "Revegetação por hidrossemeadura em trecho de rodovia estadual.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "transporte-equipamentos-mineracao",
+          categoria: "logistica",
+          titulo: "Transporte especializado de equipamentos",
+          descricao: "Logística de cargas técnicas para operação de mineração.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "monitoramento-barragem-rejeito",
+          categoria: "monitoramento",
+          titulo: "Monitoramento de barragem de rejeito",
+          descricao:
+            "Instalação de instrumentação geotécnica e leitura periódica.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "ppci-galpao-industrial",
+          categoria: "incendio",
+          titulo: "Projeto de PPCI para galpão industrial",
+          descricao:
+            "Projeto técnico completo aprovado junto ao corpo de bombeiros.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+        {
+          id: "suporte-geotecnico-cava-mineracao",
+          categoria: "mineracao",
+          titulo: "Suporte geotécnico em cava de mineração",
+          descricao: "Consultoria em estabilidade de taludes para operação segura.",
+          imagens: [] as Array<{ url: string; alt?: string }>,
+        },
+      ],
     },
   };
 }
