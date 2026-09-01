@@ -46,6 +46,9 @@ export async function uploadLandingMedia(org: string, file: File) {
   const body = new FormData();
   body.append("file", file);
   return api
-    .post(`organizations/${org}/landing/media`, { body })
+    .post(`organizations/${org}/landing/media`, {
+      body,
+      timeout: 300_000,
+    })
     .json<{ media: LandingMediaLibraryItem }>();
 }

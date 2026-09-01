@@ -25,13 +25,15 @@ x-api-env: &api-env
   ASAAS_API_KEY: ${ASAAS_API_KEY:-}
   ASAAS_ENV: ${ASAAS_ENV:-sandbox}
   ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
-  MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio.ambiental.com.br}
-  MINIO_PORT: ${MINIO_PORT:-443}
-  MINIO_USE_SSL: ${MINIO_USE_SSL:-true}
+  # S3 interno (container `minio` na app_network). NÃO use s3/minio.bomanejo.com.br aqui —
+  # hairpin NAT na mesma VPS faz o putObject travar e o CMS estoura timeout.
+  MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+  MINIO_PORT: ${MINIO_PORT:-9000}
+  MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
   MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-}
   MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-}
   MINIO_BUCKET: ${MINIO_BUCKET:-landing-media}
-  MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://minio.ambiental.com.br/landing-media}
+  MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://s3.bomanejo.com.br/landing-media}
   EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-http://evolution:8080}
   EVOLUTION_API_GLOBAL_KEY: ${EVOLUTION_API_GLOBAL_KEY:-}
   EVOLUTION_WEBHOOK_PUBLIC_URL: ${EVOLUTION_WEBHOOK_PUBLIC_URL:-http://api:3333}
@@ -89,6 +91,8 @@ services:
       - "3333"
     networks:
       - ambiental
+      # MinIO do licencas (mesma VPS): putObject interno, sem hairpin HTTPS
+      - minio_ext
 
   # Consome filas BullMQ (agente IA, outbound WhatsApp, watchdog, automações).
   # Escala horizontalmente; mantenha oc-beat com 1 réplica.
@@ -261,3 +265,6 @@ networks:
   ambiental:
     name: bomanejo_ambiental
     driver: bridge
+  minio_ext:
+    external: true
+    name: ${MINIO_DOCKER_NETWORK:-app_network}
