@@ -13,8 +13,6 @@ COPY packages ./packages
 COPY config ./config
 
 RUN pnpm install --frozen-lockfile
-# MinIO client (file: tarball — evita dependência do registry no lockfile frágil)
-RUN cd apps/api && npm install ./vendor/minio-8.0.7.tgz --omit=dev --no-package-lock
 
 # Prisma CLI está em apps/api (devDependency); `pnpm exec` na raiz não encontra o binário.
 ENV DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"
