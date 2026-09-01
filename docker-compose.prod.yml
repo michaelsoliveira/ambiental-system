@@ -14,7 +14,7 @@ name: ambiental
 
 x-api-env: &api-env
   NODE_ENV: production
-  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-ambiental}
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@ambiental-postgres-1:5432/${POSTGRES_DB:-ambiental}
   REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
   SERVER_PORT: "3333"
   JWT_SECRET: ${JWT_SECRET}

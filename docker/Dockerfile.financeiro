@@ -19,7 +19,7 @@ COPY apps ./apps
 COPY packages ./packages
 COPY config ./config
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter=@saas/financeiro... --filter=ambiental-system
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -34,11 +34,10 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 
-COPY --from=builder /app/apps/financeiro/.next/standalone ./
-COPY --from=builder /app/apps/financeiro/.next/static ./apps/financeiro/.next/static
-COPY --from=builder /app/apps/financeiro/public ./apps/financeiro/public
+COPY --from=builder --chown=nextjs:nodejs /app/apps/financeiro/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/apps/financeiro/.next/static ./apps/financeiro/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/apps/financeiro/public ./apps/financeiro/public
 
-RUN chown -R nextjs:nodejs /app
 USER nextjs
 EXPOSE 3000
 

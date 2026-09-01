@@ -23,3 +23,6 @@
 **/__tests__
 **/*.spec.ts
 **/*.test.ts
+
+# Não entra nas imagens api/financeiro
+apps/monitoramento

@@ -12,7 +12,7 @@ COPY apps ./apps
 COPY packages ./packages
 COPY config ./config
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter=@saas/api... --filter=ambiental-system
 
 # Prisma CLI está em apps/api (devDependency); `pnpm exec` na raiz não encontra o binário.
 ENV DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/postgres"
@@ -30,15 +30,15 @@ RUN apk add --no-cache libc6-compat openssl && \
 
 WORKDIR /app
 
-# Raiz + app: pnpm liga deps em apps/api/node_modules; o bundle tsup deixa require() externos (ex.: @fastify/*).
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/apps/api/package.json ./apps/api/package.json
-COPY docker/entrypoint-api.sh /entrypoint-api.sh
-COPY docker/seed-api.sh /seed-api.sh
-RUN chmod +x /entrypoint-api.sh /seed-api.sh && chown -R nodejs:nodejs /app
+# --chown no COPY evita `chown -R` (que duplica o node_modules inteiro numa camada nova e enche o disco).
+COPY --from=builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/node_modules ./apps/api/node_modules
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/dist ./apps/api/dist
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/prisma ./apps/api/prisma
+COPY --from=builder --chown=nodejs:nodejs /app/apps/api/package.json ./apps/api/package.json
+COPY --chown=nodejs:nodejs docker/entrypoint-api.sh /entrypoint-api.sh
+COPY --chown=nodejs:nodejs docker/seed-api.sh /seed-api.sh
+RUN chmod +x /entrypoint-api.sh /seed-api.sh
 
 USER nodejs
 EXPOSE 3333
