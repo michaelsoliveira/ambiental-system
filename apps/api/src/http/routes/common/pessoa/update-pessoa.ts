@@ -43,6 +43,8 @@ export async function updatePessoa(app: FastifyInstance) {
             200: responseSchema,
             400: z.object({
               error: z.string(),
+              message: z.string().optional(),
+              details: z.unknown().optional(),
             }),
             401: z.object({
               error: z.string(),
@@ -159,6 +161,10 @@ export async function updatePessoa(app: FastifyInstance) {
           if (error instanceof z.ZodError) {
             return reply.code(400).send({
               error: 'Dados inválidos',
+              details: error.issues.map((e) => ({
+                field: e.path.join('.'),
+                message: e.message,
+              })),
             });
           }
 

@@ -30,6 +30,25 @@ Variáveis (.env)
   GITHUB_OAUTH_CLIENT_REDIRECT_URI=<exatamente como no GitHub OAuth App>
   INTERNAL_API_URL=http://api:3333 fica no compose (rede interna; não altere para URL pública)
 
+Omnichannel (Evolution + oc-worker / oc-beat)
+---------------------------------------------
+  O docker-compose.prod.yml sobe `evolution` (WhatsApp) na rede `bomanejo_ambiental`.
+  A API e o oc-worker usam:
+
+    EVOLUTION_API_BASE_URL=http://evolution:8080
+    EVOLUTION_API_GLOBAL_KEY=<mesmo valor de AUTHENTICATION_API_KEY da Evolution>
+    EVOLUTION_WEBHOOK_PUBLIC_URL=http://api:3333
+
+  O webhook inbound é interno (Evolution → http://api:3333/webhooks/evolution).
+  Não é necessário domínio público nem porta 8080 no host.
+
+  Defina EVOLUTION_API_GLOBAL_KEY no .env antes do primeiro up (chave da Evolution).
+  Na VPS existente, o serviço `evolution-db-init` cria o database `evolution` no Postgres.
+
+  Suba os processos do omnichannel juntos:
+
+    docker compose -f docker-compose.prod.yml --env-file .env up -d evolution oc-worker oc-beat api
+
 Cenário 1 — VPS só com ambiental (nginx deste repositório nas portas 80/443)
 ----------------------------------------------------------------------------
   1. cp docker/env.example .env  e ajuste segredos/URLs.

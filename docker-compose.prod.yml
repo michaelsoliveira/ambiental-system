@@ -1,4 +1,4 @@
-# Stack da aplicação: Postgres + Redis + API + oc-worker/oc-beat + Next (financeiro)
+# Stack da aplicação: Postgres + Redis + API + Evolution + oc-worker/oc-beat + Next (financeiro)
 #
 # Uso:
 #   cp docker/env.example .env
@@ -7,8 +7,8 @@
 # HTTPS (nginx + certbot): use também docker-compose.gateway.yml (ver docker/README-GATEWAY.txt).
 #
 # Migrações: rodam no entrypoint da API. SKIP_MIGRATE=1 para pular.
-# Omnichannel: Redis + oc-worker (filas) + oc-beat (watchdog). Sem eles, envio/IA
-# caem no fallback in-process da API (menos confiável).
+# Omnichannel: Redis + Evolution API (WhatsApp) + oc-worker (filas) + oc-beat (watchdog).
+# Sem oc-worker/oc-beat, envio/IA caem no fallback in-process da API (menos confiável).
 
 name: ambiental
 
@@ -32,9 +32,9 @@ x-api-env: &api-env
   MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-}
   MINIO_BUCKET: ${MINIO_BUCKET:-landing-media}
   MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://minio.ambiental.com.br/landing-media}
-  EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-}
+  EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-http://evolution:8080}
   EVOLUTION_API_GLOBAL_KEY: ${EVOLUTION_API_GLOBAL_KEY:-}
-  EVOLUTION_WEBHOOK_PUBLIC_URL: ${EVOLUTION_WEBHOOK_PUBLIC_URL:-}
+  EVOLUTION_WEBHOOK_PUBLIC_URL: ${EVOLUTION_WEBHOOK_PUBLIC_URL:-http://api:3333}
   EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
   OPENAI_API_KEY: ${OPENAI_API_KEY:-}
   OC_WORKER_CONCURRENCY: ${OC_WORKER_CONCURRENCY:-2}
@@ -108,6 +108,8 @@ services:
         condition: service_healthy
       api:
         condition: service_started
+      evolution:
+        condition: service_started
     networks:
       - ambiental
 
@@ -126,6 +128,92 @@ services:
         condition: service_healthy
       oc-worker:
         condition: service_started
+    networks:
+      - ambiental
+
+  # Cria o database `evolution` no Postgres já existente (idempotente).
+  evolution-db-init:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      PGUSER: ${POSTGRES_USER:-postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ambiental
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      psql -h postgres -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = 'evolution'" | grep -q 1
+      || psql -h postgres -d postgres -c "CREATE DATABASE evolution"
+
+  # Evolution API v2 — WhatsApp (Baileys) para o omnichannel.
+  # Sem porta no host: API e oc-worker falam em http://evolution:8080 na rede Docker.
+  # Redis usa DB 1 (BullMQ da API fica no DB 0). Postgres: database `evolution`.
+  evolution:
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.7}
+    restart: unless-stopped
+    volumes:
+      - evolution_instances:/evolution/instances
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://evolution:8080}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_GLOBAL_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+      DEL_INSTANCE: "false"
+      LANGUAGE: pt-BR
+      CONFIG_SESSION_PHONE_CLIENT: Ambiental
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_LABELS: "true"
+      DATABASE_SAVE_DATA_HISTORIC: "true"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      RABBITMQ_ENABLED: "false"
+      S3_ENABLED: "false"
+      WEBSOCKET_ENABLED: "false"
+      SQS_ENABLED: "false"
+      PROVIDER_ENABLED: "false"
+      TELEMETRY: "false"
+      N8N_ENABLED: "false"
+      EVOAI_ENABLED: "false"
+      OPENAI_ENABLED: "false"
+      DIFY_ENABLED: "false"
+      TYPEBOT_ENABLED: "false"
+      CHATWOOT_ENABLED: "false"
+      WEBHOOK_GLOBAL_ENABLED: "false"
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      evolution-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:8080/',r=>process.exit(r.statusCode>=200&&r.statusCode<300?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
     networks:
       - ambiental
 
@@ -160,6 +248,7 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  evolution_instances:
 
 networks:
   ambiental:

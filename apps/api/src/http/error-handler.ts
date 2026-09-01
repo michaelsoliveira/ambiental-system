@@ -14,6 +14,15 @@ export const errorHandler: FastifyErrorHandler = (error, request, reply) => {
     })
   }
 
+  const validation = (error as { validation?: unknown }).validation
+  if (error && (error as { statusCode?: number }).statusCode === 400 && validation) {
+    return reply.status(400).send({
+      error: 'Dados inválidos',
+      message: error.message,
+      details: validation,
+    })
+  }
+
   if (error instanceof BadRequestError) {
     return reply.status(400).send({
       message: error.message,

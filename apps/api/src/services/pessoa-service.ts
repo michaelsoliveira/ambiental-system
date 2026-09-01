@@ -10,6 +10,14 @@ type optionFieldMinType = {
 
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+/** Formulário envia `""` em opcionais; Zod trata isso como valor, não como ausente. */
+const emptyToNull = <T extends z.ZodType>(schema: T) =>
+  z.preprocess((v) => (v === '' ? null : v), schema);
+
+const optionalEmail = emptyToNull(
+  z.union([z.literal(''), z.string().email('Email inválido')]).nullable().optional(),
+);
+
 const optionalFieldMin = ({ field, min, type = "string" }: optionFieldMinType) => {
   switch(type) {
     case "string": 
@@ -67,8 +75,8 @@ const enderecoUpdateSchema = enderecoCreateSchema.partial();
 const pessoaFisicaSchema = z.object({
   nome: z.string().min(1, 'Nome é obrigatório'),
   cpf: z.string().min(11, 'CPF inválido'),
-  rg: z.string().nullable().optional(),
-  data_nascimento: z.string().nullable().optional()
+  rg: emptyToNull(z.string().nullable().optional()),
+  data_nascimento: emptyToNull(z.string().nullable().optional()),
 });
 
 const pessoaFisicaCreateSchema = pessoaFisicaSchema;
@@ -79,9 +87,9 @@ const pessoaJuridicaSchema = z.object({
   nome_fantasia: z.string().min(1, 'Nome fantasia é obrigatório'),
   razao_social: optionalFieldMin({ field: 'razao_social', min: 5 }),
   cnpj: z.string().min(14, 'CNPJ inválido'),
-  data_abertura: z.string().nullable().optional(),
-  inscricao_estadual: z.string().nullable().optional(),
-  inscricao_municipal: z.string().nullable().optional()
+  data_abertura: emptyToNull(z.string().nullable().optional()),
+  inscricao_estadual: emptyToNull(z.string().nullable().optional()),
+  inscricao_municipal: emptyToNull(z.string().nullable().optional()),
 });
 
 const pessoaJuridicaCreateSchema = pessoaJuridicaSchema;
@@ -117,8 +125,8 @@ const pessoaCreateSchema = z.discriminatedUnion('tipo', [
 // Schema de atualização de Pessoa
 const pessoaUpdateSchema = z.object({
   tipo: z.enum(['F', 'J']).optional(),
-  email: z.string().email('Email inválido').nullable().optional(),
-  telefone: z.string().nullable().optional(),
+  email: optionalEmail,
+  telefone: emptyToNull(z.string().nullable().optional()),
   endereco: enderecoUpdateSchema.optional(),
   fisica: pessoaFisicaUpdateSchema.optional(),
   juridica: pessoaJuridicaUpdateSchema.optional(),
