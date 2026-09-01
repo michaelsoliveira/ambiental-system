@@ -14,8 +14,10 @@ name: ambiental
 
 x-api-env: &api-env
   NODE_ENV: production
-  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@ambiental-postgres-1:5432/${POSTGRES_DB:-ambiental}
-  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  # Host único (container_name). Não use o service name `postgres`: a API também está em
+  # app_network (MinIO) e o DNS `postgres` pode resolver outro Postgres da VPS.
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@ambiental-postgres:5432/${POSTGRES_DB:-ambiental}
+  REDIS_URL: redis://ambiental-redis:6379/0
   SERVER_PORT: "3333"
   JWT_SECRET: ${JWT_SECRET}
   GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
@@ -44,6 +46,7 @@ x-api-env: &api-env
 services:
   postgres:
     image: postgis/postgis:16-3.4
+    container_name: ambiental-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
@@ -57,10 +60,13 @@ services:
       timeout: 5s
       retries: 12
     networks:
-      - ambiental
+      ambiental:
+        aliases:
+          - ambiental-postgres
 
   redis:
     image: redis:7-alpine
+    container_name: ambiental-redis
     restart: unless-stopped
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
@@ -71,7 +77,9 @@ services:
       timeout: 3s
       retries: 12
     networks:
-      - ambiental
+      ambiental:
+        aliases:
+          - ambiental-redis
 
   api:
     build:
@@ -142,7 +150,7 @@ services:
     environment:
       PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
       PGUSER: ${POSTGRES_USER:-postgres}
-      PGHOST: postgres
+      PGHOST: ambiental-postgres
     depends_on:
       postgres:
         condition: service_healthy
@@ -153,7 +161,7 @@ services:
       - -c
       - |
         set -e
-        until pg_isready -h postgres; do sleep 1; done
+        until pg_isready -h ambiental-postgres; do sleep 1; done
         exists=$$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='evolution'")
         if [ "$$exists" != "1" ]; then
           psql -d postgres -c "CREATE DATABASE evolution"
@@ -177,7 +185,7 @@ services:
       CONFIG_SESSION_PHONE_NAME: Chrome
       DATABASE_ENABLED: "true"
       DATABASE_PROVIDER: postgresql
-      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/evolution
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@ambiental-postgres:5432/evolution
       DATABASE_CONNECTION_CLIENT_NAME: evolution
       DATABASE_SAVE_DATA_INSTANCE: "true"
       DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
@@ -187,7 +195,7 @@ services:
       DATABASE_SAVE_DATA_LABELS: "true"
       DATABASE_SAVE_DATA_HISTORIC: "true"
       CACHE_REDIS_ENABLED: "true"
-      CACHE_REDIS_URI: redis://redis:6379/1
+      CACHE_REDIS_URI: redis://ambiental-redis:6379/1
       CACHE_REDIS_PREFIX_KEY: evolution
       CACHE_REDIS_SAVE_INSTANCES: "false"
       CACHE_LOCAL_ENABLED: "false"
