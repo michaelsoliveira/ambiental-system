@@ -372,7 +372,7 @@ export function OcThread({ conversaId }: { conversaId: string }) {
         </div>
       ) : (
         <div
-          className="oc-chat-composer-bar min-w-0 shrink-0 overflow-hidden border-t p-3"
+          className="oc-chat-composer-bar min-w-0 shrink-0 overflow-visible border-t p-3"
           style={composerInset}
         >
           <div className="mb-2 inline-flex max-w-full flex-wrap gap-0.5 rounded-lg bg-background/80 p-0.5 shadow-sm">

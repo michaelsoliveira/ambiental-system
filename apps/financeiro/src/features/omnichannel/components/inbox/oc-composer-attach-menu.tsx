@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   BarChart3,
   Calendar,
@@ -14,6 +14,11 @@ import {
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 type AttachKind = 'document' | 'media';
 
@@ -41,20 +46,8 @@ export function OcComposerAttachMenu({
   onFileSelect: (file: File) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onPointerDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onPointerDown);
-    return () => document.removeEventListener('mousedown', onPointerDown);
-  }, [open]);
 
   const handlePick = (kind: AttachKind) => {
     if (disabled) return;
@@ -72,7 +65,7 @@ export function OcComposerAttachMenu({
   };
 
   return (
-    <div ref={rootRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <input
         ref={docInputRef}
         type="file"
@@ -88,10 +81,34 @@ export function OcComposerAttachMenu({
         onChange={handleChange}
       />
 
-      {open ? (
-        <div
-          className="oc-chat-attach-menu absolute bottom-[calc(100%+6px)] left-0 z-20 w-[180px]"
-          role="menu"
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            disabled={disabled}
+            className={cn(
+              'h-10 w-10 rounded-full hover:bg-background',
+              open && 'rotate-45 bg-background',
+            )}
+            aria-label={open ? 'Fechar anexos' : 'Anexar arquivo'}
+            aria-expanded={open}
+          >
+            {open ? (
+              <X className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <Plus className="h-5 w-5 text-muted-foreground" />
+            )}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent
+          side="top"
+          align="start"
+          sideOffset={6}
+          collisionPadding={12}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+          className="oc-chat-attach-menu w-[180px] rounded-[10px] border-0 bg-white p-[3px_0] shadow-[0_1px_3px_rgb(11_20_26_/_0.1),0_6px_16px_rgb(11_20_26_/_0.12)] dark:bg-[oklch(0.28_0.01_285)]"
         >
           {MENU_ITEMS.map((item) => {
             const Icon = item.icon;
@@ -120,28 +137,8 @@ export function OcComposerAttachMenu({
               </button>
             );
           })}
-        </div>
-      ) : null}
-
-      <Button
-        type="button"
-        variant="ghost"
-        size="icon"
-        disabled={disabled}
-        onClick={() => setOpen((v) => !v)}
-        className={cn(
-          'h-10 w-10 rounded-full hover:bg-background',
-          open && 'rotate-45 bg-background',
-        )}
-        aria-label={open ? 'Fechar anexos' : 'Anexar arquivo'}
-        aria-expanded={open}
-      >
-        {open ? (
-          <X className="h-5 w-5 text-muted-foreground" />
-        ) : (
-          <Plus className="h-5 w-5 text-muted-foreground" />
-        )}
-      </Button>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
