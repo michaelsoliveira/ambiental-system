@@ -13,7 +13,7 @@ import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { useFormState } from '@/hooks/use-form-state'
 
-import { signInWithGithub } from '../auth-actions'
+import { signInWithGithub, signInWithOidc } from '../auth-actions'
 import { signInWithEmailAndPassword } from './sig-inin-actions'
 
 export function SignInForm() {
@@ -94,6 +94,14 @@ export function SignInForm() {
       </form>
 
       <Separator />
+
+      {process.env.NEXT_PUBLIC_AUTH_MODE === 'oidc' && (
+        <form action={signInWithOidc}>
+          <Button type="submit" className="w-full" variant="default">
+            Entrar com SSO
+          </Button>
+        </form>
+      )}
 
       <form action={signInWithGithub}>
         <Button type="submit" className="w-full" variant="outline">

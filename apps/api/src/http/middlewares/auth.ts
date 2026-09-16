@@ -2,11 +2,36 @@ import type { FastifyInstance } from 'fastify'
 import { fastifyPlugin } from 'fastify-plugin'
 
 import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
+import {
+  localFallbackEnabled,
+  oidcEnabled,
+  resolveOidcLocalUserId,
+  verifyOidcToken,
+} from '@/lib/oidc'
 import { prisma } from '@/lib/prisma'
+
+function bearerToken(request: { headers: { authorization?: string } }): string | null {
+  const header = request.headers.authorization
+  if (!header?.toLowerCase().startsWith('bearer ')) return null
+  return header.slice(7).trim() || null
+}
 
 export const auth = fastifyPlugin(async (app: FastifyInstance) => {
   app.addHook('preHandler', async (request) => {
     request.getCurrentUserId = async () => {
+      const token = bearerToken(request)
+
+      if (token && oidcEnabled()) {
+        try {
+          const payload = await verifyOidcToken(token)
+          return await resolveOidcLocalUserId(payload)
+        } catch {
+          if (!localFallbackEnabled()) {
+            throw new UnauthorizedError('Invalid token')
+          }
+        }
+      }
+
       try {
         const { sub } = await request.jwtVerify<{ sub: string }>()
 

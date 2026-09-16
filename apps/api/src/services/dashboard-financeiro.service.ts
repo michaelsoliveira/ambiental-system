@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 /** Filtro opcional de status da folha no relatório (TODAS = sem filtro por status). */
 export type FolhaStatusRelatorio = 'TODAS' | 'PAGA' | 'FECHADA' | 'ABERTA' | 'CANCELADA'
 
+/** Dashboard financeiro: apenas lançamentos quitados entram nos KPIs/séries/categorias. */
+const STATUS_LANCAMENTO_DASHBOARD = 'PAGO' as const
+
 function parseCompetencia(competencia: string): { mes: number; ano: number } | null {
   const m = /^(\d{1,2})\/(\d{4})$/.exec(competencia.trim())
   if (!m) return null
@@ -16,6 +19,31 @@ function formatCompetencia(mes: number, ano: number) {
   return `${String(mes).padStart(2, '0')}/${ano}`
 }
 
+function resolveCompetenciaRange(competencia?: string): {
+  monthStart: Date
+  monthEnd: Date
+  refMes: number
+  refAno: number
+} {
+  const today = new Date()
+  let refMes = today.getMonth() + 1
+  let refAno = today.getFullYear()
+  const competenciaInput = competencia?.trim()
+  if (competenciaInput) {
+    const parsed = parseCompetencia(competenciaInput)
+    if (parsed) {
+      refMes = parsed.mes
+      refAno = parsed.ano
+    }
+  }
+  return {
+    refMes,
+    refAno,
+    monthStart: new Date(refAno, refMes - 1, 1),
+    monthEnd: new Date(refAno, refMes, 0, 23, 59, 59, 999),
+  }
+}
+
 export type DashboardResumoOptions = {
   /** MM/AAAA — quando omitido, usa o mês calendário atual. */
   competencia?: string
@@ -23,30 +51,14 @@ export type DashboardResumoOptions = {
   folha_status?: FolhaStatusRelatorio
 }
 
+export type DashboardSeriesOptions = {
+  /** MM/AAAA — filtra o card Top categorias (default: mês calendário atual). */
+  competencia?: string
+}
+
 export class DashboardFinanceiroService {
   async getResumo(organizationId: string, options?: DashboardResumoOptions) {
-    const today = new Date()
-    let monthStart: Date
-    let monthEnd: Date
-    let refMes = today.getMonth() + 1
-    let refAno = today.getFullYear()
-
-    const competenciaInput = options?.competencia?.trim()
-    if (competenciaInput) {
-      const parsed = parseCompetencia(competenciaInput)
-      if (parsed) {
-        refMes = parsed.mes
-        refAno = parsed.ano
-        monthStart = new Date(refAno, refMes - 1, 1)
-        monthEnd = new Date(refAno, refMes, 0, 23, 59, 59, 999)
-      } else {
-        monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-        monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999)
-      }
-    } else {
-      monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-      monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999)
-    }
+    const { monthStart, monthEnd, refMes, refAno } = resolveCompetenciaRange(options?.competencia)
 
     const folhaStatus = options?.folha_status ?? 'TODAS'
     const folhaWhere: Record<string, unknown> = {
@@ -59,11 +71,15 @@ export class DashboardFinanceiroService {
 
     const lancamentosWhereBase = {
       organization_id: organizationId,
+      status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
       data: { gte: monthStart, lte: monthEnd },
     }
 
-    /** Lista rápida: sempre os últimos 8 da organização (sem recorte por competência), para não esvaziar o bloco quando o mês filtrado não tem lançamentos. */
-    const latestLancamentosWhere = { organization_id: organizationId }
+    /** Lista rápida: últimos 8 pagos da organização (sem recorte por competência). */
+    const latestLancamentosWhere = {
+      organization_id: organizationId,
+      status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+    }
 
     const [receitasMes, despesasMes, parceirosTotal, funcionariosAtivos, lancamentosRecentes, folhaMes] =
       await Promise.all([
@@ -110,6 +126,7 @@ export class DashboardFinanceiroService {
       filtros: {
         competencia_aplicada: formatCompetencia(refMes, refAno),
         folha_status: folhaStatus,
+        status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
       },
       latest_lancamentos: lancamentosRecentes.map((l) => ({
         ...l,
@@ -118,14 +135,21 @@ export class DashboardFinanceiroService {
     }
   }
 
-  async getSeries(organizationId: string, months = 12) {
+  async getSeries(
+    organizationId: string,
+    months = 12,
+    options?: DashboardSeriesOptions,
+  ) {
     const now = new Date()
     const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
+    const { monthStart, monthEnd, refMes, refAno } = resolveCompetenciaRange(options?.competencia)
+    const competenciaAplicada = formatCompetencia(refMes, refAno)
 
     const [lancamentos, categorias, folhas] = await Promise.all([
       prisma.lancamento.findMany({
         where: {
           organization_id: organizationId,
+          status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
           data: { gte: start },
           tipo: { in: ['RECEITA', 'DESPESA'] },
         },
@@ -135,7 +159,9 @@ export class DashboardFinanceiroService {
         by: ['categoria_id'],
         where: {
           organization_id: organizationId,
+          status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
           tipo: { in: ['RECEITA', 'DESPESA'] },
+          data: { gte: monthStart, lte: monthEnd },
         },
         _sum: { valor: true },
         _count: { _all: true },
@@ -184,6 +210,10 @@ export class DashboardFinanceiroService {
     return {
       serie_mensal: Array.from(map.values()),
       categorias: categoriasDetalhe.sort((a, b) => b.total - a.total).slice(0, 8),
+      filtros: {
+        competencia_aplicada: competenciaAplicada,
+        status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+      },
       status_folha: folhas.map((item: any) => ({
         status: item.status,
         total: item._count._all,

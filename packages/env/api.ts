@@ -9,6 +9,21 @@ export const env = createEnv({
 
     JWT_SECRET: z.string(),
 
+    AUTH_MODE: z.enum(['local', 'oidc']).default('local'),
+    OIDC_ISSUER: z.string().url().optional(),
+    OIDC_AUDIENCE: z.string().optional(),
+    OIDC_JWKS_URL: z.string().url().optional(),
+    OIDC_CLIENT_ID: z.string().optional(),
+    OIDC_CLIENT_SECRET: z.string().optional(),
+    OIDC_JIT_PROVISION: z
+      .enum(['true', 'false', '1', '0'])
+      .optional()
+      .default('true'),
+    AUTH_LOCAL_FALLBACK: z
+      .enum(['true', 'false', '1', '0'])
+      .optional()
+      .default('true'),
+
     GITHUB_OAUTH_CLIENT_ID: z.string(),
     GITHUB_OAUTH_CLIENT_SECRET: z.string(),
     GITHUB_OAUTH_CLIENT_REDIRECT_URI: z.string().url(),
@@ -49,6 +64,14 @@ export const env = createEnv({
     SERVER_PORT: process.env.SERVER_PORT,
     DATABASE_URL: process.env.DATABASE_URL,
     JWT_SECRET: process.env.JWT_SECRET,
+    AUTH_MODE: process.env.AUTH_MODE,
+    OIDC_ISSUER: process.env.OIDC_ISSUER,
+    OIDC_AUDIENCE: process.env.OIDC_AUDIENCE,
+    OIDC_JWKS_URL: process.env.OIDC_JWKS_URL,
+    OIDC_CLIENT_ID: process.env.OIDC_CLIENT_ID,
+    OIDC_CLIENT_SECRET: process.env.OIDC_CLIENT_SECRET,
+    OIDC_JIT_PROVISION: process.env.OIDC_JIT_PROVISION,
+    AUTH_LOCAL_FALLBACK: process.env.AUTH_LOCAL_FALLBACK,
     GITHUB_OAUTH_CLIENT_ID: process.env.GITHUB_OAUTH_CLIENT_ID,
     GITHUB_OAUTH_CLIENT_SECRET: process.env.GITHUB_OAUTH_CLIENT_SECRET,
     GITHUB_OAUTH_CLIENT_REDIRECT_URI: process.env.GITHUB_OAUTH_CLIENT_REDIRECT_URI,

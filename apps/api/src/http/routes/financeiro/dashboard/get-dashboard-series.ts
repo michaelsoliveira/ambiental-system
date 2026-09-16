@@ -25,7 +25,7 @@ export async function getDashboardSeries(app: FastifyInstance) {
       const { months, competencia, folha_status } = request.query
 
       const [series, folha] = await Promise.all([
-        app.dashboardFinanceiroService.getSeries(organization.id, months),
+        app.dashboardFinanceiroService.getSeries(organization.id, months, { competencia }),
         app.dashboardFinanceiroService.getFolhaResumoMes(
           organization.id,
           competencia ?? `${String(new Date().getMonth() + 1).padStart(2, '0')}/${new Date().getFullYear()}`,

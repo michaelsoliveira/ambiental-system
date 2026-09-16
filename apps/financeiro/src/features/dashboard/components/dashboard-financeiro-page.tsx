@@ -106,9 +106,9 @@ export function DashboardFinanceiroPage() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filtros do relatório</CardTitle>
           <CardDescription>
-            Competência e status da folha afetam receitas/despesas do período, o KPI &quot;Folha líquida&quot; e o
-            resumo da folha abaixo. Use &quot;Somente folhas pagas&quot; para considerar apenas competências com folha
-            marcada como paga.
+            Competência afeta receitas/despesas do período, Top categorias e o KPI &quot;Folha líquida&quot;.
+            Lançamentos entram no dashboard apenas com status <strong>PAGO</strong>. Use o filtro de status da
+            folha (ex.: &quot;Somente folhas pagas&quot;) para o líquido da folha.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 md:grid-cols-3">
@@ -305,9 +305,23 @@ export function DashboardFinanceiroPage() {
         <Card>
           <CardHeader>
             <CardTitle>Top categorias</CardTitle>
+            <CardDescription className="text-xs">
+              Lançamentos pagos na competência{' '}
+              <span className="font-medium text-foreground">
+                {filtrosAplicados?.competencia_aplicada ??
+                  seriesData?.filtros?.competencia_aplicada ??
+                  'mês atual'}
+              </span>
+              .
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {categorias.map((item: any) => (
+            {categorias.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum lançamento pago nesta competência.
+              </p>
+            ) : (
+              categorias.map((item: any) => (
               <div key={item.categoria_id} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span>{item.categoria_nome}</span>
@@ -320,7 +334,8 @@ export function DashboardFinanceiroPage() {
                   />
                 </div>
               </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
       </div>
@@ -329,7 +344,7 @@ export function DashboardFinanceiroPage() {
         <CardHeader>
           <CardTitle>Últimos lançamentos</CardTitle>
           <CardDescription className="text-xs">
-            Os 8 lançamentos mais recentes da organização (independente do filtro de competência acima).
+            Os 8 lançamentos pagos mais recentes da organização (independente do filtro de competência acima).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">

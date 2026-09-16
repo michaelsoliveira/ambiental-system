@@ -18,6 +18,7 @@ import { toast } from 'sonner';
 import * as z from 'zod';
 import GithubSignInButton from './github-auth-button';
 import GoogleSignInButton from './google-auth-button';
+import KeycloakSignInButton from './keycloak-auth-button';
 import { useAuthContext } from '@/context/AuthContext';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
@@ -175,7 +176,10 @@ export default function UserAuthForm() {
 
         <div className="my-6 text-center text-white">OU CONTINUE COM</div>
 
-        <GoogleSignInButton />
+        <div className="space-y-2">
+          <KeycloakSignInButton />
+          <GoogleSignInButton />
+        </div>
 
         <p className="text-xs text-center text-white mt-6">
           Ao clicar em entrar, você está de acordo com os nossos{' '}

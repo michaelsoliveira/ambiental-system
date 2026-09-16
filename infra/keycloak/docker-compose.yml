@@ -1,0 +1,36 @@
+# IdP compartilhado (licenças, ambiental-system, inexahub, inexahub-sst).
+# Uso: docker compose -f infra/keycloak/docker-compose.yml up -d
+# Console: http://localhost:${KEYCLOAK_PORT:-8081}  (admin / admin)
+# Issuer:  http://localhost:${KEYCLOAK_PORT:-8081}/realms/ambiental
+#
+# Em produção, troque KEYCLOAK_ADMIN_PASSWORD, os client secrets do realm
+# e exponha via Traefik em https://auth.<dominio>/ (sslRequired=external).
+#
+# Federação de usuários já existentes (iNexaHub):
+#   1. ./download-provider.sh
+#   2. docker compose up -d  (reinicie se o JAR foi adicionado depois)
+#   3. ./enable-legacy-federation.sh   (realm já importado: IGNORE_EXISTING)
+
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2
+    command: start-dev --import-realm --http-port=8080 --hostname-strict=false
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HTTP_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME: ${KC_HOSTNAME:-http://localhost:8081}
+      KC_HEALTH_ENABLED: "true"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${KEYCLOAK_PORT:-8081}:8080"
+    volumes:
+      - ./realm-ambiental.json:/opt/keycloak/data/import/realm-ambiental.json:ro
+      - ./providers:/opt/keycloak/providers:ro
+      - keycloak_data:/opt/keycloak/data
+    restart: unless-stopped
+
+volumes:
+  keycloak_data:

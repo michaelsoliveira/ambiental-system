@@ -2,7 +2,9 @@ import { NextAuthConfig } from 'next-auth';
 import CredentialProvider from 'next-auth/providers/credentials';
 import GithubProvider from 'next-auth/providers/github';
 import GoogleProvider from 'next-auth/providers/google'
+import KeycloakProvider from 'next-auth/providers/keycloak'
 import userService from '@/services/user';
+import { isKeycloakConfigured, keycloakClientEnv } from '@/lib/auth-mode';
 
 const isServer = typeof window === "undefined"
 
@@ -86,12 +88,18 @@ async function refreshAccessToken(token: any) {
 
     case 'google': {
       try {
+        const googleClientId =
+          process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID || ''
+        const googleClientSecret =
+          process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET || ''
+        if (!googleClientId || !googleClientSecret) {
+          return { ...token, error: 'RefreshAccessTokenError' as const }
+        }
         const url =
           'https://oauth2.googleapis.com/token?' +
           new URLSearchParams({
-            client_id:
-              '80208103401-2is5sf9cdimhq4ghphnn75aa4p1b4p20.apps.googleusercontent.com',
-            client_secret: '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',
+            client_id: googleClientId,
+            client_secret: googleClientSecret,
             grant_type: 'refresh_token',
             refresh_token: token.refreshToken,
           });
@@ -127,6 +135,39 @@ async function refreshAccessToken(token: any) {
       }
     }
 
+    case 'keycloak': {
+      try {
+        const { clientId, clientSecret, issuer } = keycloakClientEnv()
+        if (!clientId || !clientSecret || !issuer) {
+          return { ...token, error: 'RefreshAccessTokenError' as const }
+        }
+        const response = await fetch(
+          `${issuer.replace(/\/$/, '')}/protocol/openid-connect/token`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              grant_type: 'refresh_token',
+              client_id: clientId,
+              client_secret: clientSecret,
+              refresh_token: token.refreshToken || token.refresh_token,
+            }),
+          }
+        )
+        const refreshed = await response.json()
+        if (!response.ok) throw refreshed
+        return {
+          ...token,
+          accessToken: refreshed.access_token,
+          accessTokenExpires: Date.now() + (refreshed.expires_in || 3600) * 1000,
+          refreshToken: refreshed.refresh_token ?? token.refreshToken,
+        }
+      } catch (error: any) {
+        console.log(error)
+        return { ...token, error: 'RefreshAccessTokenError' }
+      }
+    }
+
     default: {
       return token;
     }
@@ -138,6 +179,15 @@ const authConfig = {
   providers: [
     GithubProvider({}),
     GoogleProvider({}),
+    ...(isKeycloakConfigured()
+      ? [
+          KeycloakProvider({
+            clientId: keycloakClientEnv().clientId!,
+            clientSecret: keycloakClientEnv().clientSecret!,
+            issuer: keycloakClientEnv().issuer!,
+          }),
+        ]
+      : []),
     CredentialProvider({
       credentials: {
         email: {
