@@ -426,6 +426,43 @@ export function LandingCmsEditor() {
     });
   }
 
+  /** Move dentro da mesma hierarquia (mesmo parentId / raiz). */
+  function moveSolucao(index: number, dir: -1 | 1) {
+    setDraft((prev) => {
+      if (!prev) return prev;
+      const current = prev.solucoes as { items: SolucaoItem[] };
+      const items = [...current.items];
+      const item = items[index];
+      if (!item) return prev;
+      const parentKey = item.parentId || "";
+      const peerIndices = items
+        .map((s, i) => ({ s, i }))
+        .filter(({ s }) => (s.parentId || "") === parentKey)
+        .map(({ i }) => i);
+      const pos = peerIndices.indexOf(index);
+      const targetPos = pos + dir;
+      if (pos < 0 || targetPos < 0 || targetPos >= peerIndices.length) return prev;
+      const targetIndex = peerIndices[targetPos]!;
+      [items[index], items[targetIndex]] = [items[targetIndex]!, items[index]!];
+      return { ...prev, solucoes: { ...prev.solucoes, items } };
+    });
+  }
+
+  function solucaoMoveState(index: number): { canUp: boolean; canDown: boolean } {
+    const item = solucoes.items[index];
+    if (!item) return { canUp: false, canDown: false };
+    const parentKey = item.parentId || "";
+    const peerIndices = solucoes.items
+      .map((s, i) => ({ s, i }))
+      .filter(({ s }) => (s.parentId || "") === parentKey)
+      .map(({ i }) => i);
+    const pos = peerIndices.indexOf(index);
+    return {
+      canUp: pos > 0,
+      canDown: pos >= 0 && pos < peerIndices.length - 1,
+    };
+  }
+
   function updateProvaSocial(patch: Partial<typeof provaSocial>) {
     setDraft((prev) => {
       if (!prev) return prev;
@@ -522,6 +559,37 @@ export function LandingCmsEditor() {
 
   function removeProjeto(index: number) {
     updateProjetos({ items: projetosContent.items.filter((_, i) => i !== index) });
+  }
+
+  /** Move dentro da mesma categoria (serviço). */
+  function moveProjeto(index: number, dir: -1 | 1) {
+    const items = [...projetosContent.items];
+    const item = items[index];
+    if (!item) return;
+    const peerIndices = items
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.categoria === item.categoria)
+      .map(({ i }) => i);
+    const pos = peerIndices.indexOf(index);
+    const targetPos = pos + dir;
+    if (pos < 0 || targetPos < 0 || targetPos >= peerIndices.length) return;
+    const targetIndex = peerIndices[targetPos]!;
+    [items[index], items[targetIndex]] = [items[targetIndex]!, items[index]!];
+    updateProjetos({ items });
+  }
+
+  function projetoMoveState(index: number): { canUp: boolean; canDown: boolean } {
+    const item = projetosContent.items[index];
+    if (!item) return { canUp: false, canDown: false };
+    const peerIndices = projetosContent.items
+      .map((p, i) => ({ p, i }))
+      .filter(({ p }) => p.categoria === item.categoria)
+      .map(({ i }) => i);
+    const pos = peerIndices.indexOf(index);
+    return {
+      canUp: pos > 0,
+      canDown: pos >= 0 && pos < peerIndices.length - 1,
+    };
   }
 
   return (
@@ -1297,7 +1365,8 @@ export function LandingCmsEditor() {
             <CardDescription>
               Crie, edite e remova os serviços oferecidos. O ID e o servicoParam
               precisam ser únicos e sem espaços — são usados como âncora
-              (/servicos#id) e no formulário de contato.
+              (/servicos#id) e no formulário de contato. Use ↑↓ para ordenar entre
+              irmãos (mesmo serviço pai / raiz).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1330,8 +1399,50 @@ export function LandingCmsEditor() {
               const idDup =
                 Boolean(item.id) &&
                 solucoes.items.some((other, j) => j !== index && other.id === item.id)
+              const { canUp, canDown } = solucaoMoveState(index)
               return (
               <div key={index} className="space-y-3 rounded-md border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm font-medium">
+                    {item.titulo || item.id || `Serviço ${index + 1}`}
+                    {item.parentId ? (
+                      <span className="ml-2 font-normal text-muted-foreground">
+                        (filho)
+                      </span>
+                    ) : null}
+                  </p>
+                  <div className="flex shrink-0 gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={!canUp}
+                      aria-label="Mover para cima na categoria"
+                      onClick={() => moveSolucao(index, -1)}
+                    >
+                      <ArrowUp className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={!canDown}
+                      aria-label="Mover para baixo na categoria"
+                      onClick={() => moveSolucao(index, 1)}
+                    >
+                      <ArrowDown className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remover serviço"
+                      onClick={() => removeSolucao(index)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <Field label="ID / âncora (ex.: seguranca)">
                     <Input
@@ -1381,7 +1492,7 @@ export function LandingCmsEditor() {
                   </Select>
                   <p className="mt-1 text-xs text-muted-foreground">
                     Ex.: PGR com pai &quot;seguranca&quot; aparece sob Segurança do
-                    Trabalho.
+                    Trabalho. Use ↑↓ para ordenar entre irmãos da mesma categoria.
                   </p>
                 </Field>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -1442,16 +1553,6 @@ export function LandingCmsEditor() {
                   value={item.imagem}
                   onChange={(imagem) => updateSolucaoItem(index, { imagem })}
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive"
-                  onClick={() => removeSolucao(index)}
-                >
-                  <Trash2 className="size-4" />
-                  Remover serviço
-                </Button>
               </div>
               )
             })}
@@ -1470,7 +1571,8 @@ export function LandingCmsEditor() {
             <CardTitle>Projetos (página /projetos)</CardTitle>
             <CardDescription>
               Cada projeto tem uma categoria (mesmo serviço prestado), descrição e
-              uma galeria de fotos com upload direto para o MinIO.
+              uma galeria de fotos com upload direto para o MinIO. Use ↑↓ no canto
+              superior direito para ordenar dentro da mesma categoria.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1495,8 +1597,46 @@ export function LandingCmsEditor() {
               />
             </Field>
 
-            {projetosContent.items.map((item, index) => (
+            {projetosContent.items.map((item, index) => {
+              const { canUp, canDown } = projetoMoveState(index);
+              return (
               <div key={item.id} className="space-y-3 rounded-md border p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 truncate text-sm font-medium">
+                    {item.titulo || item.id || `Projeto ${index + 1}`}
+                  </p>
+                  <div className="flex shrink-0 gap-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={!canUp}
+                      aria-label="Mover para cima na categoria"
+                      onClick={() => moveProjeto(index, -1)}
+                    >
+                      <ArrowUp className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={!canDown}
+                      aria-label="Mover para baixo na categoria"
+                      onClick={() => moveProjeto(index, 1)}
+                    >
+                      <ArrowDown className="size-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label="Remover projeto"
+                      onClick={() => removeProjeto(index)}
+                    >
+                      <Trash2 className="size-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid gap-3 md:grid-cols-2">
                   <Field label="Título do projeto">
                     <Input
@@ -1533,18 +1673,9 @@ export function LandingCmsEditor() {
                   value={item.imagens ?? []}
                   onChange={(imagens) => updateProjetoItem(index, { imagens })}
                 />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  className="text-destructive"
-                  onClick={() => removeProjeto(index)}
-                >
-                  <Trash2 className="size-4" />
-                  Remover projeto
-                </Button>
               </div>
-            ))}
+              );
+            })}
 
             <Button type="button" variant="secondary" onClick={addProjeto}>
               <Plus className="size-4" />
