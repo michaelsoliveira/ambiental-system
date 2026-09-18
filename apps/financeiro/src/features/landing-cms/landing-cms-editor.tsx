@@ -28,6 +28,13 @@ import { LANDING_CONTENT_ICONS } from "@/features/landing-cms/landing-icon-map";
 import { LandingImageFieldEditor } from "@/features/landing-cms/landing-image-field";
 import { LandingMediaFieldEditor } from "@/features/landing-cms/landing-media-field";
 import {
+  canBeParentOf,
+  flattenForSelect,
+  getSolucaoDepth,
+  getSolucaoPathLabel,
+  SOLUCAO_MAX_DEPTH,
+} from "@/features/landing-cms/solucoes-tree";
+import {
   ICON_KEYS,
   type LandingContent,
   type LandingMediaField,
@@ -1363,10 +1370,10 @@ export function LandingCmsEditor() {
           <CardHeader>
             <CardTitle>Serviços (página /servicos, dropdown do menu e bloco Soluções da home)</CardTitle>
             <CardDescription>
-              Crie, edite e remova os serviços oferecidos. O ID e o servicoParam
-              precisam ser únicos e sem espaços — são usados como âncora
-              (/servicos#id) e no formulário de contato. Use ↑↓ para ordenar entre
-              irmãos (mesmo serviço pai / raiz).
+              Crie, edite e remova os serviços oferecidos. Hierarquia de até{" "}
+              {SOLUCAO_MAX_DEPTH} níveis (categoria › subcategoria ›
+              sub-subcategoria). O ID e o servicoParam precisam ser únicos e sem
+              espaços. Use ↑↓ para ordenar entre irmãos (mesmo pai).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1400,17 +1407,22 @@ export function LandingCmsEditor() {
                 Boolean(item.id) &&
                 solucoes.items.some((other, j) => j !== index && other.id === item.id)
               const { canUp, canDown } = solucaoMoveState(index)
+              const depth = item.id ? getSolucaoDepth(solucoes.items, item.id) : 1
+              const pathLabel = item.id
+                ? getSolucaoPathLabel(solucoes.items, item.id)
+                : item.titulo || `Serviço ${index + 1}`
+              const parentOptions = flattenForSelect(
+                solucoes.items.filter((o) => o.id && o.id !== item.id),
+              ).filter((opt) => canBeParentOf(solucoes.items, opt.id, item.id || undefined))
               return (
               <div key={index} className="space-y-3 rounded-md border p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm font-medium">
-                    {item.titulo || item.id || `Serviço ${index + 1}`}
-                    {item.parentId ? (
-                      <span className="ml-2 font-normal text-muted-foreground">
-                        (filho)
-                      </span>
-                    ) : null}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{pathLabel}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Nível {Number.isFinite(depth) ? depth : "?"} / {SOLUCAO_MAX_DEPTH}
+                    </p>
+                  </div>
                   <div className="flex shrink-0 gap-1">
                     <Button
                       type="button"
@@ -1475,24 +1487,22 @@ export function LandingCmsEditor() {
                     }
                   >
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Nenhum (serviço de topo)" />
+                      <SelectValue placeholder="Nenhum (categoria de topo)" />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__root__">
-                        Nenhum (serviço de topo)
+                        Nenhum (categoria de topo)
                       </SelectItem>
-                      {solucoes.items
-                        .filter((other) => other.id && other.id !== item.id)
-                        .map((other) => (
-                          <SelectItem key={other.id} value={other.id}>
-                            {other.titulo || other.id}
-                          </SelectItem>
-                        ))}
+                      {parentOptions.map((opt) => (
+                        <SelectItem key={opt.id} value={opt.id}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Ex.: PGR com pai &quot;seguranca&quot; aparece sob Segurança do
-                    Trabalho. Use ↑↓ para ordenar entre irmãos da mesma categoria.
+                    Ex.: Segurança (raiz) → Treinamentos (nível 2) → NR-17 (nível 3).
+                    Máximo de {SOLUCAO_MAX_DEPTH} níveis.
                   </p>
                 </Field>
                 <div className="grid gap-3 md:grid-cols-2">
@@ -1570,9 +1580,10 @@ export function LandingCmsEditor() {
           <CardHeader>
             <CardTitle>Projetos (página /projetos)</CardTitle>
             <CardDescription>
-              Cada projeto tem uma categoria (mesmo serviço prestado), descrição e
-              uma galeria de fotos com upload direto para o MinIO. Use ↑↓ no canto
-              superior direito para ordenar dentro da mesma categoria.
+              Cada projeto tem uma categoria (qualquer nível da árvore de
+              serviços), descrição e galeria. Use ↑↓ para ordenar dentro da mesma
+              categoria. Na landing, filtrar por uma categoria inclui as
+              subcategorias.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -1599,12 +1610,19 @@ export function LandingCmsEditor() {
 
             {projetosContent.items.map((item, index) => {
               const { canUp, canDown } = projetoMoveState(index);
+              const catLabel = item.categoria
+                ? getSolucaoPathLabel(solucoes.items, item.categoria)
+                : "Sem categoria";
+              const categoriaOptions = flattenForSelect(solucoes.items);
               return (
               <div key={item.id} className="space-y-3 rounded-md border p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-sm font-medium">
-                    {item.titulo || item.id || `Projeto ${index + 1}`}
-                  </p>
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {item.titulo || item.id || `Projeto ${index + 1}`}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">{catLabel}</p>
+                  </div>
                   <div className="flex shrink-0 gap-1">
                     <Button
                       type="button"
@@ -1644,7 +1662,7 @@ export function LandingCmsEditor() {
                       onChange={(e) => updateProjetoItem(index, { titulo: e.target.value })}
                     />
                   </Field>
-                  <Field label="Categoria (serviço)">
+                  <Field label="Categoria (serviço / subcategoria)">
                     <Select
                       value={item.categoria}
                       onValueChange={(v) => updateProjetoItem(index, { categoria: v })}
@@ -1653,9 +1671,9 @@ export function LandingCmsEditor() {
                         <SelectValue placeholder="Categoria" />
                       </SelectTrigger>
                       <SelectContent>
-                        {solucoes.items.map((svc) => (
-                          <SelectItem key={svc.id} value={svc.id}>
-                            {svc.titulo || svc.id}
+                        {categoriaOptions.map((opt) => (
+                          <SelectItem key={opt.id} value={opt.id}>
+                            {opt.label}
                           </SelectItem>
                         ))}
                       </SelectContent>
