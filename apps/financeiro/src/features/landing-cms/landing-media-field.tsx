@@ -413,7 +413,7 @@ export function LandingMediaFieldEditor({ org, value, onChange }: Props) {
                   ) : (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
-                      src={item.url}
+                      src={item.thumbUrl || item.url}
                       alt=""
                       className="aspect-video w-full object-cover"
                     />

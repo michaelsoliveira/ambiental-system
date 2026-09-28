@@ -30,6 +30,9 @@ export type LandingMediaLibraryItem = {
   size: number;
   lastModified: string | null;
   etag?: string;
+  /** Variante WebP ~800px — preferir em cards/listagens. */
+  thumbKey?: string;
+  thumbUrl?: string;
 };
 
 export type LandingContent = {

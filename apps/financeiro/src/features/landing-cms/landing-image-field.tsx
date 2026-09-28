@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useUploadLandingMedia } from "@/hooks/use-landing-cms";
 
-export type SingleImage = { url: string; alt?: string };
+export type SingleImage = { url: string; alt?: string; thumbUrl?: string };
 
 type Props = {
   org: string;
@@ -24,7 +24,11 @@ export function LandingImageFieldEditor({ org, value, onChange }: Props) {
     if (!file) return;
     try {
       const res = await upload.mutateAsync(file);
-      onChange({ url: res.media.url, alt: value?.alt ?? "" });
+      onChange({
+        url: res.media.url,
+        thumbUrl: res.media.thumbUrl,
+        alt: value?.alt ?? "",
+      });
     } catch {
       // toast de erro já disparado no hook
     }
@@ -47,7 +51,7 @@ export function LandingImageFieldEditor({ org, value, onChange }: Props) {
         <div className="space-y-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={value.url}
+            src={value.thumbUrl || value.url}
             alt={value.alt || ""}
             className="aspect-video w-full max-w-sm rounded object-cover"
           />

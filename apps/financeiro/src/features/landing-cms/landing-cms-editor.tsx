@@ -83,7 +83,7 @@ type SolucaoItem = {
   servicoParam: string;
   /** Id do serviço pai (hierarquia). Vazio = topo. */
   parentId?: string;
-  imagem?: { url: string; alt?: string };
+  imagem?: { url: string; alt?: string; thumbUrl?: string };
 };
 
 type ProjetoItem = {
@@ -91,7 +91,7 @@ type ProjetoItem = {
   categoria: string;
   titulo: string;
   descricao: string;
-  imagens: Array<{ url: string; alt?: string }>;
+  imagens: Array<{ url: string; alt?: string; thumbUrl?: string }>;
 };
 
 type LogoClienteItem = {

@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
 import path from "node:path";
 
+import sharp from "sharp";
+
 import {
   createMinioClient,
   isMinioConfigured,
@@ -23,6 +25,10 @@ const VIDEO_MIME = new Set([
   "video/quicktime",
 ]);
 
+/** Largura máxima do thumb de listagem (cards /servicos e /projetos). */
+const THUMB_MAX_WIDTH = 800;
+const THUMB_QUALITY = 72;
+
 export type LandingMediaKind = "image" | "video";
 
 export type LandingMediaItem = {
@@ -32,6 +38,9 @@ export type LandingMediaItem = {
   size: number;
   lastModified: string | null;
   etag?: string;
+  /** Variante WebP redimensionada — preferir em grids/cards. */
+  thumbKey?: string;
+  thumbUrl?: string;
 };
 
 function sanitizeFilename(name: string): string {
@@ -49,6 +58,32 @@ function kindFromKey(key: string): LandingMediaKind {
   const ext = path.extname(key).toLowerCase();
   if ([".mp4", ".webm", ".mov"].includes(ext)) return "video";
   return "image";
+}
+
+function isThumbDerivative(key: string): boolean {
+  return key.includes(".thumb.webp") || key.endsWith(".thumb.webp");
+}
+
+function thumbKeyFor(originalKey: string): string {
+  const ext = path.extname(originalKey);
+  const base = ext ? originalKey.slice(0, -ext.length) : originalKey;
+  return `${base}.thumb.webp`;
+}
+
+async function buildThumbWebp(buffer: Buffer): Promise<Buffer | null> {
+  try {
+    return await sharp(buffer, { animated: false })
+      .rotate()
+      .resize({
+        width: THUMB_MAX_WIDTH,
+        withoutEnlargement: true,
+        fit: "inside",
+      })
+      .webp({ quality: THUMB_QUALITY })
+      .toBuffer();
+  } catch {
+    return null;
+  }
 }
 
 export class LandingMediaStorageService {
@@ -117,12 +152,35 @@ export class LandingMediaStorageService {
       "Cache-Control": "public, max-age=31536000, immutable",
     });
 
+    let thumbKey: string | undefined;
+    let thumbUrl: string | undefined;
+
+    if (kind === "image") {
+      const thumbBuffer = await buildThumbWebp(params.buffer);
+      if (thumbBuffer) {
+        thumbKey = thumbKeyFor(key);
+        await client.putObject(
+          MINIO_BUCKET,
+          thumbKey,
+          thumbBuffer,
+          thumbBuffer.length,
+          {
+            "Content-Type": "image/webp",
+            "Cache-Control": "public, max-age=31536000, immutable",
+          },
+        );
+        thumbUrl = publicObjectUrl(thumbKey);
+      }
+    }
+
     return {
       key,
       url: publicObjectUrl(key),
       kind,
       size: params.buffer.length,
       lastModified: new Date().toISOString(),
+      thumbKey,
+      thumbUrl,
     };
   }
 
@@ -137,8 +195,14 @@ export class LandingMediaStorageService {
     await new Promise<void>((resolve, reject) => {
       stream.on("data", (obj) => {
         if (!obj.name || obj.name.endsWith("/")) return;
+        // Derivativos de thumb não aparecem como itens separados na biblioteca.
+        if (isThumbDerivative(obj.name)) return;
         const itemKind = kindFromKey(obj.name);
         if (kind && itemKind !== kind) return;
+
+        const thumbKey =
+          itemKind === "image" ? thumbKeyFor(obj.name) : undefined;
+
         items.push({
           key: obj.name,
           url: publicObjectUrl(obj.name),
@@ -148,6 +212,9 @@ export class LandingMediaStorageService {
             ? new Date(obj.lastModified).toISOString()
             : null,
           etag: obj.etag,
+          ...(thumbKey
+            ? { thumbKey, thumbUrl: publicObjectUrl(thumbKey) }
+            : {}),
         });
       });
       stream.on("error", reject);
