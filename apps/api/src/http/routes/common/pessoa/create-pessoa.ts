@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { FastifyInstance } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { z } from 'zod';
@@ -157,9 +158,37 @@ export async function createPessoa(app: FastifyInstance) {
             });
           }
 
+          if (error instanceof Prisma.PrismaClientKnownRequestError) {
+            if (error.code === 'P2002') {
+              const target = String(error.meta?.target ?? '');
+              const documento = target.includes('cpf')
+                ? 'CPF'
+                : target.includes('cnpj')
+                  ? 'CNPJ'
+                  : 'documento';
+              return reply.code(409).send({
+                error: `Já existe um cadastro com este ${documento}.`,
+              });
+            }
+
+            if (error.code === 'P2003') {
+              return reply.code(400).send({
+                error: 'Município, estado ou usuário informado não existe.',
+              });
+            }
+
+            app.log.error(error);
+            return reply.code(500).send({
+              error: `Erro ao gravar pessoa (${error.code}).`,
+            });
+          }
+
           app.log.error(error);
           return reply.code(500).send({
-            error: 'Erro interno do servidor',
+            error:
+              error instanceof Error && error.message
+                ? error.message
+                : 'Erro interno do servidor',
           });
         }
       }

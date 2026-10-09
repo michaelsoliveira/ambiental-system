@@ -1,6 +1,43 @@
+import { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/prisma';
+import { BadRequestError } from '@/http/routes/_errors/bad-request-error';
 import { buildOrderBy } from '@/utils/helpers';
 import { z } from 'zod';
+
+function blankToNull(value?: string | null): string | null {
+  if (value == null) return null
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
+
+function onlyDigits(value?: string | null): string | null {
+  const text = blankToNull(value)
+  if (text == null) return null
+  const digits = text.replace(/\D/g, '')
+  return digits === '' ? null : digits
+}
+
+function parseOptionalDate(value?: string | null): Date | null {
+  const text = blankToNull(value)
+  if (text == null) return null
+  const date = new Date(text)
+  if (Number.isNaN(date.getTime())) {
+    throw new BadRequestError('Data inválida.')
+  }
+  return date
+}
+
+/** CEP no banco é varchar(9): 00000-000. Máscara solta estoura o limite e vira 500. */
+function normalizeCep(cep?: string | null): string | null {
+  if (cep == null || cep.trim() === '') return null
+  const digits = cep.replace(/\D/g, '')
+  if (digits.length === 0) return null
+  if (digits.length !== 8) {
+    throw new BadRequestError('CEP deve ter 8 dígitos.')
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`
+}
 
 type optionFieldMinType = {
   field: string,
@@ -340,11 +377,11 @@ export class PessoaService {
           if (data.endereco) {
             const endereco = await tx.endereco.create({
               data: {
-                logradouro: data.endereco.logradouro,
-                numero: data.endereco.numero,
-                complemento: data.endereco.complemento ?? null,
-                bairro: data.endereco.bairro,
-                cep: data.endereco.cep,
+                logradouro: blankToNull(data.endereco.logradouro),
+                numero: blankToNull(data.endereco.numero),
+                complemento: blankToNull(data.endereco.complemento),
+                bairro: blankToNull(data.endereco.bairro),
+                cep: normalizeCep(data.endereco.cep),
                 estado_id: data.endereco.estado_id
                   ? Number(data.endereco.estado_id)
                   : null,
@@ -360,8 +397,8 @@ export class PessoaService {
           const novaPessoa = await tx.pessoa.create({
             data: {
               tipo: data.tipo,
-              email: data.email ?? null,
-              telefone: data.telefone ?? null,
+              email: blankToNull(data.email),
+              telefone: blankToNull(data.telefone),
               endereco_id: enderecoId,
               created_by_user_id: userId,
               organization_id: data.organization_id,
@@ -385,15 +422,15 @@ export class PessoaService {
                   juridica: {
                     create: {
                       nome_fantasia: data.juridica.nome_fantasia,
-                      razao_social: data.juridica.razao_social,
-                      cnpj: data.juridica.cnpj,
-                      data_abertura: data.juridica.data_abertura
-                        ? new Date(data.juridica.data_abertura)
-                        : null,
-                      inscricao_estadual:
-                        data.juridica.inscricao_estadual ?? null,
-                      inscricao_municipal:
-                        data.juridica.inscricao_municipal ?? null,
+                      razao_social: blankToNull(data.juridica.razao_social),
+                      cnpj: onlyDigits(data.juridica.cnpj),
+                      data_abertura: parseOptionalDate(data.juridica.data_abertura),
+                      inscricao_estadual: blankToNull(
+                        data.juridica.inscricao_estadual,
+                      ),
+                      inscricao_municipal: blankToNull(
+                        data.juridica.inscricao_municipal,
+                      ),
                       organization_id: data.organization_id
                     },
                   },
@@ -423,6 +460,12 @@ export class PessoaService {
     
         return pessoa.id;
       } catch (error) {
+        if (
+          error instanceof BadRequestError ||
+          error instanceof Prisma.PrismaClientKnownRequestError
+        ) {
+          throw error
+        }
         throw new Error(
           `Erro ao criar pessoa: ${error instanceof Error ? error.message : String(error)}`
         );
@@ -473,7 +516,7 @@ export class PessoaService {
                   numero: data.endereco.numero,
                   complemento: data.endereco.complemento ?? null,
                   bairro: data.endereco.bairro,
-                  cep: data.endereco.cep,
+                  cep: normalizeCep(data.endereco.cep),
                   estado_id: data.endereco.estado_id
                     ? Number(data.endereco.estado_id)
                     : null,
@@ -490,7 +533,7 @@ export class PessoaService {
                   numero: data.endereco.numero ?? '',
                   complemento: data.endereco.complemento ?? null,
                   bairro: data.endereco.bairro ?? '',
-                  cep: data.endereco.cep ?? '',
+                  cep: normalizeCep(data.endereco.cep),
                   estado_id: data.endereco.estado_id
                     ? Number(data.endereco.estado_id)
                     : null,
@@ -544,6 +587,7 @@ export class PessoaService {
           return id;
         });
       } catch (error) {
+        if (error instanceof BadRequestError) throw error
         throw new Error(
           `Erro ao atualizar pessoa: ${error instanceof Error ? error.message : String(error)}`
         );

@@ -549,9 +549,11 @@ export function PessoaForm({ slug, initialData, onClose }: PessoaFormProps) {
                     <FormItem>
                       <FormLabel>CEP</FormLabel>
                       <FormControl>
-                        <Input
-                          disabled={loading}
+                        <InputMasked
+                          mask='_____-___'
                           placeholder='00000-000'
+                          replacement={{ _: /\d/ }}
+                          disabled={loading}
                           {...field}
                           onBlur={(e) => {
                             field.onBlur()

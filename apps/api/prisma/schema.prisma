@@ -950,7 +950,7 @@ model Tag {
 model PessoaFisica {
   pessoa_id       String    @id @db.Uuid
   nome            String
-  cpf             String?   @unique
+  cpf             String?
   data_nascimento DateTime?
   rg              String?
   organization_id String    @db.Uuid
@@ -965,7 +965,7 @@ model PessoaFisica {
 model PessoaJuridica {
   pessoa_id           String    @id @db.Uuid
   nome_fantasia       String
-  cnpj                String?   @unique
+  cnpj                String?
   razao_social        String?
   data_abertura       DateTime? @db.Date
   inscricao_estadual  String?
