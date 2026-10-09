@@ -68,6 +68,7 @@ const DEFAULT_RUBRICAS: RubricaSeed[] = [
   { nome: '13º salário', tipo_folha: TipoFolhaPagamento.FOLHA_MENSAL, tipo_item: TipoFolhaItem.OUTRO, natureza: NaturezaFolhaItem.PROVENTO, ordem: 80 },
   { nome: 'Reflexo DSR', tipo_folha: TipoFolhaPagamento.FOLHA_MENSAL, tipo_item: TipoFolhaItem.OUTRO, natureza: NaturezaFolhaItem.PROVENTO, ordem: 90 },
   { nome: 'Salário Família', tipo_folha: TipoFolhaPagamento.FOLHA_MENSAL, tipo_item: TipoFolhaItem.BENEFICIO, natureza: NaturezaFolhaItem.PROVENTO, ordem: 100 },
+  { nome: 'Consignado - Desconto', tipo_folha: TipoFolhaPagamento.FOLHA_MENSAL, tipo_item: TipoFolhaItem.DESCONTO, natureza: NaturezaFolhaItem.DESCONTO, ordem: 110 },
 
   { nome: 'Férias Proporcionais', tipo_folha: TipoFolhaPagamento.FERIAS, tipo_item: TipoFolhaItem.OUTRO, natureza: NaturezaFolhaItem.PROVENTO, ordem: 10 },
   { nome: '13º Férias', tipo_folha: TipoFolhaPagamento.FERIAS, tipo_item: TipoFolhaItem.OUTRO, natureza: NaturezaFolhaItem.PROVENTO, ordem: 20 },
