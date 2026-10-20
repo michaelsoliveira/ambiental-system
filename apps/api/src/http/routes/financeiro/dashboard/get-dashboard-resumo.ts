@@ -7,6 +7,7 @@ import { UnauthorizedError } from '@/http/routes/_errors/unauthorized-error'
 import { getUserPermissions } from '@/utils/get-user-permissions'
 
 const folhaStatusRelatorioSchema = z.enum(['TODAS', 'PAGA', 'FECHADA', 'ABERTA', 'CANCELADA'])
+const statusLancamentoRelatorioSchema = z.enum(['PAGO', 'NAO_PAGO', 'TODOS'])
 
 export async function getDashboardResumo(app: FastifyInstance) {
   app.withTypeProvider<ZodTypeProvider>().register(auth).get(
@@ -19,12 +20,13 @@ export async function getDashboardResumo(app: FastifyInstance) {
         querystring: z.object({
           competencia: z.string().optional(),
           folha_status: folhaStatusRelatorioSchema.optional().default('TODAS'),
+          status_lancamento: statusLancamentoRelatorioSchema.optional().default('PAGO'),
         }),
       },
     },
     async (request, reply) => {
       const { slug } = request.params
-      const { competencia, folha_status } = request.query
+      const { competencia, folha_status, status_lancamento } = request.query
       const userId = await request.getCurrentUserId()
       const { organization, membership } = await request.getUserMembership(slug)
       const { cannot } = getUserPermissions(userId, membership.members_roles.map((mr: any) => mr.roles.name))
@@ -32,7 +34,8 @@ export async function getDashboardResumo(app: FastifyInstance) {
 
       const result = await app.dashboardFinanceiroService.getResumo(organization.id, {
         competencia,
-        folha_status: folha_status,
+        folha_status,
+        status_lancamento,
       })
       return reply.send(result)
     },

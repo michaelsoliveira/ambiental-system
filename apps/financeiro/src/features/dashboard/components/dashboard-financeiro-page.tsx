@@ -24,11 +24,24 @@ const FOLHA_STATUS_LABEL: Record<string, string> = {
   CANCELADA: 'Somente folhas canceladas',
 }
 
+const STATUS_LANCAMENTO_LABEL: Record<string, string> = {
+  PAGO: 'Pago',
+  NAO_PAGO: 'Não pago',
+  TODOS: 'Todos (exceto cancelados)',
+}
+
+function statusLancamentoFrase(status: string) {
+  if (status === 'PAGO') return 'pagos'
+  if (status === 'NAO_PAGO') return 'não pagos'
+  return 'não cancelados'
+}
+
 export function DashboardFinanceiroPage() {
   const { slug } = useParams<{ slug: string }>()
   const [competenciaSelect, setCompetenciaSelect] = useState<string | undefined>(undefined)
   const [competenciaCustom, setCompetenciaCustom] = useState('')
   const [folhaStatusFiltro, setFolhaStatusFiltro] = useState('TODAS')
+  const [statusLancamentoFiltro, setStatusLancamentoFiltro] = useState('PAGO')
 
   const competenciaApi = useMemo(() => {
     const c = competenciaCustom.trim()
@@ -40,8 +53,9 @@ export function DashboardFinanceiroPage() {
     () => ({
       competencia: competenciaApi,
       folha_status: folhaStatusFiltro,
+      status_lancamento: statusLancamentoFiltro,
     }),
-    [competenciaApi, folhaStatusFiltro],
+    [competenciaApi, folhaStatusFiltro, statusLancamentoFiltro],
   )
 
   const { data: resumo } = useDashboardResumo(slug, relatorioParams)
@@ -71,8 +85,12 @@ export function DashboardFinanceiroPage() {
   }
 
   const filtrosAplicados = resumo?.filtros as
-    | { competencia_aplicada?: string; folha_status?: string }
+    | { competencia_aplicada?: string; folha_status?: string; status_lancamento?: string }
     | undefined
+  const statusLancamentoAplicado = filtrosAplicados?.status_lancamento ?? statusLancamentoFiltro
+  const statusLancamentoLabel =
+    STATUS_LANCAMENTO_LABEL[statusLancamentoAplicado] ?? statusLancamentoAplicado
+  const statusLancamentoTexto = statusLancamentoFrase(statusLancamentoAplicado)
 
   const serie = seriesData?.serie_mensal ?? []
   const categorias = seriesData?.categorias ?? []
@@ -107,11 +125,11 @@ export function DashboardFinanceiroPage() {
           <CardTitle className="text-base">Filtros do relatório</CardTitle>
           <CardDescription>
             Competência afeta receitas/despesas do período, Top categorias e o KPI &quot;Folha líquida&quot;.
-            Lançamentos entram no dashboard apenas com status <strong>PAGO</strong>. Use o filtro de status da
-            folha (ex.: &quot;Somente folhas pagas&quot;) para o líquido da folha.
+            O filtro de status separa lançamentos <strong>pagos</strong> dos <strong>não pagos</strong>{' '}
+            (pendente, confirmado ou atrasado). Use o filtro da folha para o líquido da folha.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-3">
+        <CardContent className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-2">
             <Label>Competência</Label>
             <Select
@@ -145,6 +163,21 @@ export function DashboardFinanceiroPage() {
             </div>
           </div>
           <div className="space-y-2">
+            <Label>Status do lançamento</Label>
+            <Select value={statusLancamentoFiltro} onValueChange={setStatusLancamentoFiltro}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(STATUS_LANCAMENTO_LABEL).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
             <Label>Status da folha no relatório</Label>
             <Select value={folhaStatusFiltro} onValueChange={setFolhaStatusFiltro}>
               <SelectTrigger>
@@ -165,6 +198,10 @@ export function DashboardFinanceiroPage() {
                 <p>
                   Período dos lançamentos:{' '}
                   <span className="font-medium text-foreground">{filtrosAplicados.competencia_aplicada}</span>
+                </p>
+                <p>
+                  Status dos lançamentos:{' '}
+                  <span className="font-medium text-foreground">{statusLancamentoLabel}</span>
                 </p>
                 <p>
                   Filtro de folha:{' '}
@@ -306,7 +343,7 @@ export function DashboardFinanceiroPage() {
           <CardHeader>
             <CardTitle>Top categorias</CardTitle>
             <CardDescription className="text-xs">
-              Lançamentos pagos na competência{' '}
+              Lançamentos {statusLancamentoTexto} na competência{' '}
               <span className="font-medium text-foreground">
                 {filtrosAplicados?.competencia_aplicada ??
                   seriesData?.filtros?.competencia_aplicada ??
@@ -318,7 +355,7 @@ export function DashboardFinanceiroPage() {
           <CardContent className="space-y-3">
             {categorias.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nenhum lançamento pago nesta competência.
+                Nenhum lançamento {statusLancamentoTexto} nesta competência.
               </p>
             ) : (
               categorias.map((item: any) => (
@@ -344,7 +381,8 @@ export function DashboardFinanceiroPage() {
         <CardHeader>
           <CardTitle>Últimos lançamentos</CardTitle>
           <CardDescription className="text-xs">
-            Os 8 lançamentos pagos mais recentes da organização (independente do filtro de competência acima).
+            Os 8 lançamentos {statusLancamentoTexto} mais recentes da organização
+            (independente do filtro de competência acima).
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">

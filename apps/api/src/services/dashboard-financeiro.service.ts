@@ -3,8 +3,19 @@ import { prisma } from '@/lib/prisma'
 /** Filtro opcional de status da folha no relatório (TODAS = sem filtro por status). */
 export type FolhaStatusRelatorio = 'TODAS' | 'PAGA' | 'FECHADA' | 'ABERTA' | 'CANCELADA'
 
-/** Dashboard financeiro: apenas lançamentos quitados entram nos KPIs/séries/categorias. */
-const STATUS_LANCAMENTO_DASHBOARD = 'PAGO' as const
+/**
+ * Filtro de quitação dos lançamentos no relatório.
+ * NAO_PAGO = em aberto (pendente, confirmado ou atrasado), sem cancelados.
+ */
+export type StatusLancamentoRelatorio = 'PAGO' | 'NAO_PAGO' | 'TODOS'
+
+const STATUS_NAO_PAGO = ['PENDENTE', 'CONFIRMADO', 'ATRASADO'] as const
+
+function statusLancamentoWhere(filtro: StatusLancamentoRelatorio) {
+  if (filtro === 'PAGO') return { status_lancamento: 'PAGO' as const }
+  if (filtro === 'NAO_PAGO') return { status_lancamento: { in: [...STATUS_NAO_PAGO] } }
+  return { status_lancamento: { not: 'CANCELADO' as const } }
+}
 
 function parseCompetencia(competencia: string): { mes: number; ano: number } | null {
   const m = /^(\d{1,2})\/(\d{4})$/.exec(competencia.trim())
@@ -49,11 +60,15 @@ export type DashboardResumoOptions = {
   competencia?: string
   /** Restringe a folha usada no KPI “folha líquida” ao status (ex.: apenas PAGA). */
   folha_status?: FolhaStatusRelatorio
+  /** Quitação dos lançamentos (default: apenas pagos). */
+  status_lancamento?: StatusLancamentoRelatorio
 }
 
 export type DashboardSeriesOptions = {
   /** MM/AAAA — filtra o card Top categorias (default: mês calendário atual). */
   competencia?: string
+  /** Quitação dos lançamentos (default: apenas pagos). */
+  status_lancamento?: StatusLancamentoRelatorio
 }
 
 export class DashboardFinanceiroService {
@@ -61,6 +76,7 @@ export class DashboardFinanceiroService {
     const { monthStart, monthEnd, refMes, refAno } = resolveCompetenciaRange(options?.competencia)
 
     const folhaStatus = options?.folha_status ?? 'TODAS'
+    const statusLancamento = options?.status_lancamento ?? 'PAGO'
     const folhaWhere: Record<string, unknown> = {
       organization_id: organizationId,
       competencia: formatCompetencia(refMes, refAno),
@@ -71,14 +87,14 @@ export class DashboardFinanceiroService {
 
     const lancamentosWhereBase = {
       organization_id: organizationId,
-      status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+      ...statusLancamentoWhere(statusLancamento),
       data: { gte: monthStart, lte: monthEnd },
     }
 
-    /** Lista rápida: últimos 8 pagos da organização (sem recorte por competência). */
+    /** Lista rápida: últimos 8 da organização no status filtrado (sem recorte por competência). */
     const latestLancamentosWhere = {
       organization_id: organizationId,
-      status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+      ...statusLancamentoWhere(statusLancamento),
     }
 
     const [receitasMes, despesasMes, parceirosTotal, funcionariosAtivos, lancamentosRecentes, folhaMes] =
@@ -126,7 +142,7 @@ export class DashboardFinanceiroService {
       filtros: {
         competencia_aplicada: formatCompetencia(refMes, refAno),
         folha_status: folhaStatus,
-        status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+        status_lancamento: statusLancamento,
       },
       latest_lancamentos: lancamentosRecentes.map((l) => ({
         ...l,
@@ -144,12 +160,14 @@ export class DashboardFinanceiroService {
     const start = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
     const { monthStart, monthEnd, refMes, refAno } = resolveCompetenciaRange(options?.competencia)
     const competenciaAplicada = formatCompetencia(refMes, refAno)
+    const statusLancamento = options?.status_lancamento ?? 'PAGO'
+    const statusWhere = statusLancamentoWhere(statusLancamento)
 
     const [lancamentos, categorias, folhas] = await Promise.all([
       prisma.lancamento.findMany({
         where: {
           organization_id: organizationId,
-          status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+          ...statusWhere,
           data: { gte: start },
           tipo: { in: ['RECEITA', 'DESPESA'] },
         },
@@ -159,7 +177,7 @@ export class DashboardFinanceiroService {
         by: ['categoria_id'],
         where: {
           organization_id: organizationId,
-          status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+          ...statusWhere,
           tipo: { in: ['RECEITA', 'DESPESA'] },
           data: { gte: monthStart, lte: monthEnd },
         },
@@ -212,7 +230,7 @@ export class DashboardFinanceiroService {
       categorias: categoriasDetalhe.sort((a, b) => b.total - a.total).slice(0, 8),
       filtros: {
         competencia_aplicada: competenciaAplicada,
-        status_lancamento: STATUS_LANCAMENTO_DASHBOARD,
+        status_lancamento: statusLancamento,
       },
       status_folha: folhas.map((item: any) => ({
         status: item.status,

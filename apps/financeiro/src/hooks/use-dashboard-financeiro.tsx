@@ -16,7 +16,7 @@ export function useDashboardResumo(org: string, params?: DashboardRelatorioParam
 
 export function useDashboardSeries(
   org: string,
-  opts?: { months?: number; competencia?: string; folha_status?: string },
+  opts?: { months?: number; competencia?: string; folha_status?: string; status_lancamento?: string },
 ) {
   return useQuery({
     queryKey: ['dashboard-financeiro-series', org, opts],

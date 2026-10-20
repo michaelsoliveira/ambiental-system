@@ -3,6 +3,7 @@ import { api } from '../api-client'
 export type DashboardRelatorioParams = {
   competencia?: string
   folha_status?: string
+  status_lancamento?: string
 }
 
 export async function getDashboardResumo(org: string, params?: DashboardRelatorioParams) {
@@ -11,6 +12,7 @@ export async function getDashboardResumo(org: string, params?: DashboardRelatori
       searchParams: {
         ...(params?.competencia ? { competencia: params.competencia } : {}),
         folha_status: params?.folha_status ?? 'TODAS',
+        status_lancamento: params?.status_lancamento ?? 'PAGO',
       },
     })
     .json<any>()
@@ -18,7 +20,7 @@ export async function getDashboardResumo(org: string, params?: DashboardRelatori
 
 export async function getDashboardSeries(
   org: string,
-  opts?: { months?: number; competencia?: string; folha_status?: string },
+  opts?: { months?: number; competencia?: string; folha_status?: string; status_lancamento?: string },
 ) {
   const months = opts?.months ?? 12
   return api
@@ -27,6 +29,7 @@ export async function getDashboardSeries(
         months,
         ...(opts?.competencia ? { competencia: opts.competencia } : {}),
         folha_status: opts?.folha_status ?? 'TODAS',
+        status_lancamento: opts?.status_lancamento ?? 'PAGO',
       },
     })
     .json<any>()
