@@ -53,7 +53,7 @@ const relatorioSchema = z.object({
   veiculo_id: z.string().optional().or(z.literal('all-veiculos')),
   parceiro_id: z.string().optional().or(z.literal('all-parceiros')),
   tipo: z.enum(['RECEITA', 'DESPESA', 'TRANSFERENCIA']).optional().or(z.literal('all-tipos')),
-  pago: z.boolean().optional(),
+  status_pagamento: z.enum(['todos', 'pago', 'nao_pago']).default('todos'),
 }).refine((data) => {
   if (data.periodo_tipo === 'datas') {
     return !!data.data_inicio && !!data.data_fim
@@ -160,6 +160,9 @@ function buildFiltrosAplicados(
     if (label) items.push(`Parceiro: ${label}`)
   }
 
+  if (filters.status_pagamento === 'pago') items.push('Status: Pago')
+  if (filters.status_pagamento === 'nao_pago') items.push('Status: Não pago')
+
   return items
 }
 
@@ -201,7 +204,12 @@ export function LancamentoRelatorioExtrato() {
         veiculo_id: filters.veiculo_id === 'all-veiculos' ? undefined : filters.veiculo_id,
         parceiro_id: filters.parceiro_id === 'all-parceiros' ? undefined : filters.parceiro_id,
         tipo: filters.tipo === 'all-tipos' ? undefined : filters.tipo as 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA' | undefined,
-        pago: filters.pago,
+        pago:
+          filters.status_pagamento === 'pago'
+            ? true
+            : filters.status_pagamento === 'nao_pago'
+              ? false
+              : undefined,
       }
       return getLancamentosRelatorio(slug!, cleanFilters)
     },
@@ -223,7 +231,7 @@ export function LancamentoRelatorioExtrato() {
       veiculo_id: 'all-veiculos',
       parceiro_id: 'all-parceiros',
       tipo: 'all-tipos',
-      pago: undefined,
+      status_pagamento: 'todos',
     },
   })
 
@@ -623,6 +631,29 @@ export function LancamentoRelatorioExtrato() {
                       isLoading={loadingCategorias}
                       onSearchChange={onCategoriaSearchChange}
                     />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="status_pagamento"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value ?? 'todos'}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="pago">Pago</SelectItem>
+                        <SelectItem value="nao_pago">Não pago</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
