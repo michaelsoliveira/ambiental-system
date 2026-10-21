@@ -46,6 +46,7 @@ export async function getLancamentosRelatorio(
     parceiro_id?: string
     tipo?: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA'
     pago?: boolean
+    status?: 'PENDENTE' | 'CONFIRMADO' | 'PAGO' | 'CANCELADO' | 'ATRASADO'
   }
 ) {
   const searchParams = new URLSearchParams()
@@ -59,6 +60,7 @@ export async function getLancamentosRelatorio(
   if (params?.parceiro_id) searchParams.append('parceiro_id', params.parceiro_id)
   if (params?.tipo) searchParams.append('tipo', params.tipo)
   if (params?.pago !== undefined) searchParams.append('pago', String(params.pago))
+  if (params?.status) searchParams.append('status', params.status)
   
   // Não enviar campos vazios ou "all-*" para evitar erros de validação
 

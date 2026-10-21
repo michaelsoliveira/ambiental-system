@@ -30,6 +30,7 @@ export async function getLancamentosRelatorio(app: FastifyInstance) {
             veiculo_id: z.string().uuid().optional(),
             parceiro_id: z.string().uuid().optional(),
             tipo: z.enum(['RECEITA', 'DESPESA', 'TRANSFERENCIA']).optional(),
+            status: z.enum(['PENDENTE', 'CONFIRMADO', 'PAGO', 'CANCELADO', 'ATRASADO']).optional(),
             pago: z.string().transform(v => v === 'true').optional(),
           }),
           response: {
@@ -67,6 +68,7 @@ export async function getLancamentosRelatorio(app: FastifyInstance) {
           veiculo_id: filters.veiculo_id,
           parceiro_id: filters.parceiro_id,
           tipo: filters.tipo,
+          status: filters.status,
           pago: filters.pago ? 'true' : filters.pago === false ? 'false' : undefined,
         }
 

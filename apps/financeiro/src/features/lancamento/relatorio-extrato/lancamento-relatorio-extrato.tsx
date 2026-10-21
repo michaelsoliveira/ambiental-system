@@ -53,7 +53,9 @@ const relatorioSchema = z.object({
   veiculo_id: z.string().optional().or(z.literal('all-veiculos')),
   parceiro_id: z.string().optional().or(z.literal('all-parceiros')),
   tipo: z.enum(['RECEITA', 'DESPESA', 'TRANSFERENCIA']).optional().or(z.literal('all-tipos')),
-  status_pagamento: z.enum(['todos', 'pago', 'nao_pago']).default('todos'),
+  status_lancamento: z
+    .enum(['todos', 'PENDENTE', 'CONFIRMADO', 'PAGO', 'CANCELADO', 'ATRASADO'])
+    .default('todos'),
 }).refine((data) => {
   if (data.periodo_tipo === 'datas') {
     return !!data.data_inicio && !!data.data_fim
@@ -160,8 +162,16 @@ function buildFiltrosAplicados(
     if (label) items.push(`Parceiro: ${label}`)
   }
 
-  if (filters.status_pagamento === 'pago') items.push('Status: Pago')
-  if (filters.status_pagamento === 'nao_pago') items.push('Status: Não pago')
+  if (filters.status_lancamento && filters.status_lancamento !== 'todos') {
+    const statusLabel: Record<string, string> = {
+      PENDENTE: 'Pendente',
+      CONFIRMADO: 'Confirmado',
+      PAGO: 'Pago',
+      CANCELADO: 'Cancelado',
+      ATRASADO: 'Atrasado',
+    }
+    items.push(`Status do Lançamento: ${statusLabel[filters.status_lancamento] ?? filters.status_lancamento}`)
+  }
 
   return items
 }
@@ -204,12 +214,10 @@ export function LancamentoRelatorioExtrato() {
         veiculo_id: filters.veiculo_id === 'all-veiculos' ? undefined : filters.veiculo_id,
         parceiro_id: filters.parceiro_id === 'all-parceiros' ? undefined : filters.parceiro_id,
         tipo: filters.tipo === 'all-tipos' ? undefined : filters.tipo as 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA' | undefined,
-        pago:
-          filters.status_pagamento === 'pago'
-            ? true
-            : filters.status_pagamento === 'nao_pago'
-              ? false
-              : undefined,
+        status:
+          filters.status_lancamento && filters.status_lancamento !== 'todos'
+            ? filters.status_lancamento
+            : undefined,
       }
       return getLancamentosRelatorio(slug!, cleanFilters)
     },
@@ -231,7 +239,7 @@ export function LancamentoRelatorioExtrato() {
       veiculo_id: 'all-veiculos',
       parceiro_id: 'all-parceiros',
       tipo: 'all-tipos',
-      status_pagamento: 'todos',
+      status_lancamento: 'todos',
     },
   })
 
@@ -638,20 +646,23 @@ export function LancamentoRelatorioExtrato() {
 
               <FormField
                 control={form.control}
-                name="status_pagamento"
+                name="status_lancamento"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Status</FormLabel>
+                    <FormLabel>Status do Lançamento</FormLabel>
                     <Select onValueChange={field.onChange} value={field.value ?? 'todos'}>
                       <FormControl>
-                        <SelectTrigger>
+                        <SelectTrigger className='w-full'>
                           <SelectValue placeholder="Todos" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="todos">Todos</SelectItem>
-                        <SelectItem value="pago">Pago</SelectItem>
-                        <SelectItem value="nao_pago">Não pago</SelectItem>
+                        <SelectItem value="PENDENTE">Pendente</SelectItem>
+                        <SelectItem value="CONFIRMADO">Confirmado</SelectItem>
+                        <SelectItem value="PAGO">Pago</SelectItem>
+                        <SelectItem value="CANCELADO">Cancelado</SelectItem>
+                        <SelectItem value="ATRASADO">Atrasado</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
