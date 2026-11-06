@@ -1,0 +1,112 @@
+name: ambiental-local
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Defina POSTGRES_USER no arquivo .env.local}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.local}
+      POSTGRES_DB: ${POSTGRES_DB:?Defina POSTGRES_DB no arquivo .env.local}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_local_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?Defina POSTGRES_USER no arquivo .env.local} -d ${POSTGRES_DB:?Defina POSTGRES_DB no arquivo .env.local}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_local_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:?Defina POSTGRES_USER no arquivo .env.local}:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env.local}@postgres:5432/${POSTGRES_DB:?Defina POSTGRES_DB no arquivo .env.local}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SERVER_PORT: "3333"
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env.local}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
+      GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
+      AUTH_MODE: ${AUTH_MODE:-local}
+      EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-http://evolution:8080}
+      EVOLUTION_API_GLOBAL_KEY: ${EVOLUTION_API_GLOBAL_KEY:-}
+      EVOLUTION_WEBHOOK_PUBLIC_URL: ${EVOLUTION_WEBHOOK_PUBLIC_URL:-http://host.docker.internal:3333}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      OC_EMAIL_FROM: ${OC_EMAIL_FROM:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-3333}:3333"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  financeiro:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.financeiro
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3333}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      INTERNAL_API_URL: http://api:3333
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
+      GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
+      AUTH_MODE: ${AUTH_MODE:-local}
+      NEXT_PUBLIC_AUTH_MODE: ${NEXT_PUBLIC_AUTH_MODE:-local}
+      NEXT_PUBLIC_AUTH_LOCAL_FALLBACK: ${NEXT_PUBLIC_AUTH_LOCAL_FALLBACK:-true}
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_started
+
+  evolution:
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.7}
+    profiles: ["evolution"]
+    restart: unless-stopped
+    environment:
+      SERVER_URL: http://localhost:${EVOLUTION_PORT:-8080}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_GLOBAL_KEY}
+      DATABASE_ENABLED: "false"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: evolution
+      TELEMETRY: "false"
+    ports:
+      - "127.0.0.1:${EVOLUTION_PORT:-8080}:8080"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_local_data:
+  redis_local_data:
