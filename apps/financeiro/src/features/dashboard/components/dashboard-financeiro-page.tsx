@@ -1,7 +1,22 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { type ComponentType, type ReactNode, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { ArrowDownRight, ArrowUpRight, BarChart3, Landmark, ReceiptText, TrendingUp, UsersRound, WalletCards } from 'lucide-react'
+import {
+  Area,
+  AreaChart,
+  Bar,
+  Cell,
+  CartesianGrid,
+  ComposedChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Heading } from '@/components/ui/heading'
@@ -14,6 +29,78 @@ import { useFolhasPagamento } from '@/hooks/use-folha-pagamento'
 
 function Money({ value }: { value: number }) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+const brlMil = (v: number) => `R$ ${Math.round(v / 1000)} mil`
+
+const CHART_SERIES = [
+  { nome: 'Receita', cor: '#22c55e' },
+  { nome: 'Despesa', cor: '#ef4444' },
+  { nome: 'Saldo', cor: '#3b82f6' },
+]
+
+const CATEGORY_COLORS = ['#8b5cf6', '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#06b6d4']
+
+function MetricCard({
+  title,
+  value,
+  icon: Icon,
+  tone,
+  detail,
+}: {
+  title: string
+  value: ReactNode
+  icon: ComponentType<{ className?: string }>
+  tone: 'emerald' | 'red' | 'blue' | 'violet' | 'amber'
+  detail: string
+}) {
+  const tones = {
+    emerald: 'bg-emerald-500/12 text-emerald-600 dark:text-emerald-400',
+    red: 'bg-red-500/12 text-red-600 dark:text-red-400',
+    blue: 'bg-sky-500/12 text-sky-600 dark:text-sky-400',
+    violet: 'bg-violet-500/12 text-violet-600 dark:text-violet-400',
+    amber: 'bg-amber-500/12 text-amber-600 dark:text-amber-400',
+  }
+
+  return (
+    <Card className="border-border/80 bg-card shadow-sm">
+      <CardContent className="flex items-start gap-3 p-4">
+        <span className={`grid size-9 shrink-0 place-items-center rounded-lg ${tones[tone]}`}>
+          <Icon className="size-5" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-medium text-muted-foreground">{title}</p>
+          <p className="mt-0.5 truncate text-lg font-bold tracking-tight">{value}</p>
+          <p className="mt-1 text-[11px] text-muted-foreground">{detail}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function formatMesEixo(mes: string) {
+  const m = /^(\d{4})-(\d{1,2})/.exec(String(mes))
+  return m ? `${m[2].padStart(2, '0')}/${m[1]}` : String(mes)
+}
+
+function EvolucaoTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  const row = payload[0].payload
+  const valores = [row.receitas, row.despesas, row.saldo]
+  return (
+    <div className="rounded-lg border border-border bg-popover p-3 text-xs text-popover-foreground shadow-xl dark:border-white/10 dark:bg-[#1a1f2b] dark:text-white">
+      <div className="mb-2 text-sm font-semibold">{formatMesEixo(label)}</div>
+      {CHART_SERIES.map((s, i) => (
+        <div key={s.nome} className="flex items-center justify-between gap-4 py-0.5">
+          <span className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full" style={{ background: s.cor }} />
+            {s.nome}:
+          </span>
+          <span className="font-semibold">{Money({ value: Number(valores[i] ?? 0) })}</span>
+        </div>
+      ))}
+    </div>
+  )
 }
 
 const FOLHA_STATUS_LABEL: Record<string, string> = {
@@ -99,28 +186,23 @@ export function DashboardFinanceiroPage() {
     | undefined
 
   const maxCategoria = Math.max(1, ...categorias.map((c: any) => c.total))
-  const serieComSinal = serie.map((item: any) => ({
+  const totalCategorias = categorias.reduce((total: number, categoria: any) => total + Number(categoria.total ?? 0), 0)
+  const serieGrafico = serie.map((item: any) => ({
     ...item,
-    receitaPositiva: Number(item.receitas ?? 0),
-    despesaNegativa: Number(item.despesas ?? 0) * -1,
+    receitas: Number(item.receitas ?? 0),
+    despesas: Number(item.despesas ?? 0),
     saldo: Number(item.saldo ?? 0),
   }))
-  const maxAbs = Math.max(
-    1,
-    ...serieComSinal.map((item: any) =>
-      Math.max(Math.abs(item.receitaPositiva), Math.abs(item.despesaNegativa), Math.abs(item.saldo)),
-    ),
-  )
 
   return (
-    <div className="flex flex-1 flex-col space-y-4 p-6">
+    <div className="flex flex-1 flex-col space-y-4 bg-background p-4 md:p-6">
       <Heading
         title="Visão Geral"
         description="Visão consolidada de receitas, despesas, parceiros, funcionários e folha de pagamento."
       />
       <Separator />
 
-      <Card>
+      <Card className="border-border/80 bg-card shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base">Filtros do relatório</CardTitle>
           <CardDescription>
@@ -231,111 +313,91 @@ export function DashboardFinanceiroPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle>Receita do mês</CardTitle>
-          </CardHeader>
-          <CardContent>{Money({ value: kpis.receita_mes })}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Despesa do mês</CardTitle>
-          </CardHeader>
-          <CardContent>{Money({ value: kpis.despesa_mes })}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Saldo do mês</CardTitle>
-          </CardHeader>
-          <CardContent>{Money({ value: kpis.saldo_mes })}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Folha líquida</CardTitle>
-            <CardDescription className="text-xs">
-              Valor da folha no período, respeitando o filtro de status (ex.: apenas pagas).
-            </CardDescription>
-          </CardHeader>
-          <CardContent>{Money({ value: kpis.folha_liquida_mes })}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Total de parceiros</CardTitle>
-          </CardHeader>
-          <CardContent>{kpis.total_parceiros}</CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Funcionários ativos</CardTitle>
-          </CardHeader>
-          <CardContent>{kpis.total_funcionarios_ativos}</CardContent>
-        </Card>
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+        <MetricCard title="Receita total" value={Money({ value: kpis.receita_mes })} icon={TrendingUp} tone="emerald" detail="Lançamentos do período" />
+        <MetricCard title="Despesa total" value={Money({ value: kpis.despesa_mes })} icon={ArrowDownRight} tone="red" detail="Lançamentos do período" />
+        <MetricCard title="Saldo do mês" value={Money({ value: kpis.saldo_mes })} icon={kpis.saldo_mes >= 0 ? ArrowUpRight : ArrowDownRight} tone={kpis.saldo_mes >= 0 ? 'emerald' : 'red'} detail={kpis.saldo_mes >= 0 ? 'Resultado positivo' : 'Resultado negativo'} />
+        <MetricCard title="Folha líquida" value={Money({ value: kpis.folha_liquida_mes })} icon={ReceiptText} tone="violet" detail="Conforme status selecionado" />
+        <MetricCard title="Parceiros" value={kpis.total_parceiros} icon={WalletCards} tone="amber" detail="Total cadastrado" />
+        <MetricCard title="Funcionários ativos" value={kpis.total_funcionarios_ativos} icon={UsersRound} tone="blue" detail="Equipe ativa" />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
+      <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr] [&>div]:border-border/80 [&>div]:bg-card [&>div]:shadow-sm">
+        <Card className="text-card-foreground dark:border-white/10! dark:bg-[#0f1420]! dark:text-white">
           <CardHeader>
-            <CardTitle>Evolução mensal (Receita x Despesa)</CardTitle>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <BarChart3 className="h-5 w-5 text-emerald-500" />
+              Evolução mensal (Receita x Despesa)
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <div className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                <span className="h-2 w-2 rounded bg-emerald-500" />
-                Receita (positiva)
-              </div>
-              <div className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                <span className="h-2 w-2 rounded bg-red-500" />
-                Despesa (negativa)
-              </div>
-              <div className="inline-flex items-center gap-1 rounded border px-2 py-1">
-                <span className="h-2 w-2 rounded bg-blue-500" />
-                Saldo
-              </div>
+          <CardContent>
+            <div className="mb-3 flex flex-wrap gap-4 text-xs text-muted-foreground dark:text-slate-300">
+              {CHART_SERIES.map((s) => (
+                <span key={s.nome} className="inline-flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 rounded-full" style={{ background: s.cor }} />
+                  {s.nome}
+                </span>
+              ))}
             </div>
 
-            {serieComSinal.map((item: any) => {
-              const receitaWidth = (Math.abs(item.receitaPositiva) / maxAbs) * 50
-              const despesaWidth = (Math.abs(item.despesaNegativa) / maxAbs) * 50
-              const saldoWidth = (Math.abs(item.saldo) / maxAbs) * 50
-
-              return (
-                <div key={item.mes} className="space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">{item.mes}</span>
-                    <span className={item.saldo >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                      {Money({ value: item.saldo })}
-                    </span>
-                  </div>
-
-                  <div className="relative h-8 rounded bg-muted/40">
-                    <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 bg-muted-foreground/40" />
-
-                    <div
-                      className="absolute bottom-1 top-1 rounded-r bg-emerald-500/80"
-                      style={{ left: '50%', width: `${receitaWidth}%` }}
-                      title={`Receita: ${Money({ value: item.receitaPositiva })}`}
-                    />
-
-                    <div
-                      className="absolute bottom-1 top-1 rounded-l bg-red-500/80"
-                      style={{ right: '50%', width: `${despesaWidth}%` }}
-                      title={`Despesa: ${Money({ value: Math.abs(item.despesaNegativa) })}`}
-                    />
-
-                    <div
-                      className={`absolute top-0 h-1 rounded ${item.saldo >= 0 ? 'bg-blue-500' : 'bg-orange-500'}`}
-                      style={{
-                        left: item.saldo >= 0 ? '50%' : undefined,
-                        right: item.saldo < 0 ? '50%' : undefined,
-                        width: `${saldoWidth}%`,
-                      }}
-                      title={`Saldo: ${Money({ value: item.saldo })}`}
-                    />
-                  </div>
-                </div>
-              )
-            })}
+            <div className="h-[320px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={serieGrafico} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gReceita" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="gDespesa" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#ef4444" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#ef4444" stopOpacity={0.02} />
+                    </linearGradient>
+                    <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.9} />
+                      <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="color-mix(in oklab, var(--foreground) 12%, transparent)" vertical={false} />
+                  <XAxis
+                    dataKey="mes"
+                    tickFormatter={formatMesEixo}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tickFormatter={brlMil}
+                    tick={{ fill: 'var(--muted-foreground)', fontSize: 12 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={80}
+                  />
+                  <Tooltip
+                    content={<EvolucaoTooltip />}
+                    cursor={{ stroke: 'color-mix(in oklab, var(--foreground) 30%, transparent)', strokeDasharray: '3 3' }}
+                  />
+                  <Bar dataKey="saldo" fill="url(#gSaldo)" radius={[4, 4, 0, 0]} barSize={32} />
+                  <Area
+                    type="monotone"
+                    dataKey="receitas"
+                    stroke="#22c55e"
+                    strokeWidth={2}
+                    fill="url(#gReceita)"
+                    dot={{ r: 4, fill: 'var(--card)', stroke: '#22c55e', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: 'var(--card)', stroke: '#22c55e', strokeWidth: 2 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="despesas"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fill="url(#gDespesa)"
+                    dot={{ r: 4, fill: 'var(--card)', stroke: '#ef4444', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: 'var(--card)', stroke: '#ef4444', strokeWidth: 2 }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
 
@@ -373,6 +435,87 @@ export function DashboardFinanceiroPage() {
               </div>
               ))
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_1fr_1fr]">
+        <Card className="border-border/80 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Landmark className="size-4 text-emerald-500" />
+              Fluxo de caixa
+            </CardTitle>
+            <CardDescription className="text-xs">Saldo mensal acumulado no período</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[230px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={serieGrafico} margin={{ top: 12, right: 8, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gFluxoCaixa" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" stopOpacity={0.38} />
+                      <stop offset="100%" stopColor="#22c55e" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="color-mix(in oklab, var(--foreground) 12%, transparent)" vertical={false} />
+                  <XAxis dataKey="mes" tickFormatter={formatMesEixo} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tickFormatter={brlMil} tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={68} />
+                  <Tooltip content={<EvolucaoTooltip />} cursor={{ stroke: 'color-mix(in oklab, var(--foreground) 30%, transparent)', strokeDasharray: '3 3' }} />
+                  <Area type="monotone" dataKey="saldo" stroke="#22c55e" strokeWidth={2.5} fill="url(#gFluxoCaixa)" dot={{ r: 3, fill: '#22c55e', strokeWidth: 0 }} activeDot={{ r: 5, fill: '#22c55e', stroke: 'var(--card)', strokeWidth: 2 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/80 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ReceiptText className="size-4 text-violet-500" />
+              Despesas por categoria
+            </CardTitle>
+            <CardDescription className="text-xs">Distribuição da competência selecionada</CardDescription>
+          </CardHeader>
+          <CardContent className="flex min-h-[230px] items-center gap-3">
+            {categorias.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Sem dados de categoria neste período.</p>
+            ) : (
+              <>
+                <div className="h-40 w-40 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={categorias} dataKey="total" nameKey="categoria_nome" cx="50%" cy="50%" innerRadius={42} outerRadius={68} paddingAngle={3} stroke="none">
+                        {categorias.map((_: any, index: number) => <Cell key={index} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />)}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="min-w-0 flex-1 space-y-2 text-xs">
+                  {categorias.slice(0, 5).map((item: any, index: number) => (
+                    <div key={item.categoria_id} className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-1.5"><i className="size-2 shrink-0 rounded-full" style={{ background: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} /><span className="truncate">{item.categoria_nome}</span></span>
+                      <span className="font-medium">{totalCategorias ? `${Math.round((Number(item.total) / totalCategorias) * 100)}%` : '0%'}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/80 bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base"><BarChart3 className="size-4 text-sky-500" />Top centros de custo</CardTitle>
+            <CardDescription className="text-xs">Categorias com maior movimentação</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {categorias.slice(0, 5).map((item: any, index: number) => (
+              <div key={item.categoria_id} className="space-y-1.5">
+                <div className="flex items-center justify-between gap-3 text-xs"><span className="truncate">{item.categoria_nome}</span><span className="shrink-0 font-medium">{Money({ value: Number(item.total) })}</span></div>
+                <div className="h-2 overflow-hidden rounded-full bg-muted"><div className="h-full rounded-full" style={{ width: `${(Number(item.total) / maxCategoria) * 100}%`, background: CATEGORY_COLORS[index % CATEGORY_COLORS.length] }} /></div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       </div>

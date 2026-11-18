@@ -1,6 +1,4 @@
 'use server'
-
-import { HTTPError } from 'ky'
 import { z } from 'zod'
 
 import { signUp } from '@/http/sign-up'
@@ -41,10 +39,8 @@ export async function signUpAction(data: FormData) {
       password,
     })
   } catch (err) {
-    if (err instanceof HTTPError) {
-      const { message } = await err.response.json()
-
-      return { success: false, message, errors: null }
+    if (err instanceof Error) {
+      return { success: false, message: err.message, errors: null }
     }
 
     console.error(err)

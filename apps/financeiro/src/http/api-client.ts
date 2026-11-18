@@ -2,6 +2,11 @@
 import { env } from '@saas/env/next'
 import ky from 'ky'
 
+const apiUrl =
+  typeof window === 'undefined'
+    ? (process.env.INTERNAL_API_URL ?? env.NEXT_PUBLIC_API_URL)
+    : env.NEXT_PUBLIC_API_URL
+
 function isMediaFetch(url: string): boolean {
   try {
     return new URL(url).pathname.endsWith('/media')
@@ -11,7 +16,7 @@ function isMediaFetch(url: string): boolean {
 }
 
 export const api = ky.create({
-  prefixUrl: env.NEXT_PUBLIC_API_URL,
+  prefixUrl: apiUrl,
   hooks: {
     beforeRequest: [
       async (request) => {

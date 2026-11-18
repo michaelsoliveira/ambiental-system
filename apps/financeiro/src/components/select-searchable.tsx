@@ -1,6 +1,6 @@
 "use client"
 
-import { Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown, Plus } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 
 import { Badge } from "@/components/ui/badge"
@@ -52,6 +52,8 @@ export type SelectItemsProps = {
   isLoadingMore?: boolean
   /** Valores sentinela (ex.: all-contas) ocultados enquanto o usuário digita busca server-side */
   sentinelValues?: Array<string | number>
+  emptyActionLabel?: string
+  onEmptyAction?: () => void
 }
 
 const isGroupedOption = (
@@ -93,6 +95,8 @@ export function SelectSearchable({
   onLoadMore,
   isLoadingMore,
   sentinelValues = [],
+  emptyActionLabel,
+  onEmptyAction,
 }: SelectItemsProps) {
   const [open, setOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
@@ -233,7 +237,17 @@ export function SelectSearchable({
             />
             <CommandList className="max-h-[12rem]">
               <CommandEmpty className="py-6 text-center text-sm text-muted-foreground">
-                {isLoading ? "Carregando..." : emptyText}
+                {isLoading ? "Carregando..." : (
+                  <div className="flex flex-col items-center gap-3">
+                    <span>{emptyText}</span>
+                    {onEmptyAction && emptyActionLabel && (
+                      <Button type="button" variant="outline" size="sm" onPointerDown={(e) => e.preventDefault()} onClick={onEmptyAction}>
+                        <Plus className="mr-2 h-4 w-4" />
+                        {emptyActionLabel}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </CommandEmpty>
 
               {hasGroupedOptions && !serverSideSearch

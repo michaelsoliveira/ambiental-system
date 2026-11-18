@@ -145,6 +145,7 @@ const app = fastify({
 
 app.setSerializerCompiler(serializerCompiler);
 app.setValidatorCompiler(validatorCompiler);
+app.setErrorHandler(errorHandler);
 
 app.decorate('pessoaService', new PessoaService());
 app.decorate('categoriaFinanceiraService', new CategoriaFinanceiraService());
