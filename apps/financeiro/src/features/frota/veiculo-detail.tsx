@@ -1,10 +1,19 @@
-'use client'
+'use client';
 
-import { ArrowLeft, CalendarDays, Fuel, Pencil, Route, Trash2, Wrench } from 'lucide-react'
-import Link from 'next/link'
-import { useParams, useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { toast } from 'sonner'
+import {
+  ArrowLeft,
+  CalendarDays,
+  Fuel,
+  LoaderCircle,
+  Pencil,
+  Route,
+  Trash2,
+  Wrench,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -15,29 +24,29 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { Heading } from '@/components/ui/heading'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@/components/ui/dialog';
+import { Heading } from '@/components/ui/heading';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select'
-import { Separator } from '@/components/ui/separator'
-import { Switch } from '@/components/ui/switch'
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -45,11 +54,11 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
-import { Textarea } from '@/components/ui/textarea'
-import { useCategorias } from '@/hooks/use-categoria'
-import { useCentrosCusto } from '@/hooks/use-centro-custo'
-import { useContas } from '@/hooks/use-conta'
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+import { useCategorias } from '@/hooks/use-categoria';
+import { useCentrosCusto } from '@/hooks/use-centro-custo';
+import { useContas } from '@/hooks/use-conta';
 import {
   useDeleteAbastecimento,
   useDeleteDisponibilidade,
@@ -66,25 +75,40 @@ import {
   usePutViagem,
   useUpdateVeiculo,
   useVeiculo,
-} from '@/hooks/use-frota'
-import { formatCurrency, formatDateShort, toDatetimeLocalValue } from '@/lib/format'
+} from '@/hooks/use-frota';
+import {
+  formatCurrency,
+  formatDateShort,
+  toDatetimeLocalValue,
+} from '@/lib/format';
 
 function money(v: unknown) {
-  if (v == null) return '—'
-  const n = typeof v === 'string' ? parseFloat(v) : Number(v)
-  if (Number.isNaN(n)) return '—'
-  return formatCurrency(n)
+  if (v == null) return '—';
+  const n = typeof v === 'string' ? parseFloat(v) : Number(v);
+  if (Number.isNaN(n)) return '—';
+  return formatCurrency(n);
 }
 
 /** Lançamento é a fonte de verdade financeira; o registro operacional pode ficar com snapshot antigo. */
 function valorFinanceiroFrota(op: {
-  valor: unknown
-  lancamento?: { valor: unknown } | null
+  valor: unknown;
+  lancamento?: { valor: unknown } | null;
 }) {
-  return op.lancamento?.valor ?? op.valor
+  return op.lancamento?.valor ?? op.valor;
 }
 
-type Tab = 'abastecimentos' | 'manutencoes' | 'viagens' | 'agenda' | 'dados'
+function parseBrazilianNumber(value: string): number | null {
+  const normalized = value.trim().replace(/\s/g, '');
+  if (!normalized) return null;
+
+  const canonical = normalized.includes(',')
+    ? normalized.replace(/\./g, '').replace(',', '.')
+    : normalized;
+  const parsed = Number(canonical);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+type Tab = 'abastecimentos' | 'manutencoes' | 'viagens' | 'agenda' | 'dados';
 const WEEK_DAYS = [
   { label: 'Dom', value: 0 },
   { label: 'Seg', value: 1 },
@@ -93,60 +117,61 @@ const WEEK_DAYS = [
   { label: 'Qui', value: 4 },
   { label: 'Sex', value: 5 },
   { label: 'Sab', value: 6 },
-]
+];
 
 export function VeiculoDetail() {
-  const { slug, id } = useParams<{ slug: string; id: string }>()
-  const router = useRouter()
-  const { data: v, isLoading, error } = useVeiculo(slug!, id!)
-  const [tab, setTab] = useState<Tab>('abastecimentos')
+  const { slug, id } = useParams<{ slug: string; id: string }>();
+  const router = useRouter();
+  const { data: v, isLoading, error } = useVeiculo(slug!, id!);
+  const [tab, setTab] = useState<Tab>('abastecimentos');
 
   // API: limit máx. 100 em categorias / contas / centros-custo
   const { data: catDesp } = useCategorias(slug!, {
     tipo: 'DESPESA',
     limit: 100,
-  })
+  });
   const { data: catRec } = useCategorias(slug!, {
     tipo: 'RECEITA',
     limit: 100,
-  })
-  const { data: contasData } = useContas(slug!, { limit: 100, ativo: true })
-  const { data: ccData } = useCentrosCusto(slug!, { limit: 100, ativo: true })
+  });
+  const { data: contasData } = useContas(slug!, { limit: 100, ativo: true });
+  const { data: ccData } = useCentrosCusto(slug!, { limit: 100, ativo: true });
 
-  const categoriasDesp = catDesp?.categorias ?? []
-  const categoriasRec = catRec?.categorias ?? []
-  const contas = contasData?.contas ?? []
-  const centros = ccData?.centros ?? []
+  const categoriasDesp = catDesp?.categorias ?? [];
+  const categoriasRec = catRec?.categorias ?? [];
+  const contas = contasData?.contas ?? [];
+  const centros = ccData?.centros ?? [];
 
-  const del = useDeleteVeiculo(slug!)
-  const [confirmDel, setConfirmDel] = useState(false)
+  const del = useDeleteVeiculo(slug!);
+  const [confirmDel, setConfirmDel] = useState(false);
 
-  const mutAbs = usePostAbastecimento(slug!, id!)
-  const mutMan = usePostManutencao(slug!, id!)
-  const mutVia = usePostViagem(slug!, id!)
-  const mutPutAbs = usePutAbastecimento(slug!, id!)
-  const mutDelAbs = useDeleteAbastecimento(slug!, id!)
-  const mutPutMan = usePutManutencao(slug!, id!)
-  const mutDelMan = useDeleteManutencao(slug!, id!)
-  const mutPutVia = usePutViagem(slug!, id!)
-  const mutDelVia = useDeleteViagem(slug!, id!)
-  const mutPostInd = usePostDisponibilidade(slug!, id!)
-  const mutPutInd = usePutDisponibilidade(slug!, id!)
-  const mutDelInd = useDeleteDisponibilidade(slug!, id!)
-  const mutUp = useUpdateVeiculo(slug!, id!)
+  const mutAbs = usePostAbastecimento(slug!, id!);
+  const mutMan = usePostManutencao(slug!, id!);
+  const mutVia = usePostViagem(slug!, id!);
+  const mutPutAbs = usePutAbastecimento(slug!, id!);
+  const mutDelAbs = useDeleteAbastecimento(slug!, id!);
+  const mutPutMan = usePutManutencao(slug!, id!);
+  const mutDelMan = useDeleteManutencao(slug!, id!);
+  const mutPutVia = usePutViagem(slug!, id!);
+  const mutDelVia = useDeleteViagem(slug!, id!);
+  const mutPostInd = usePostDisponibilidade(slug!, id!);
+  const mutPutInd = usePutDisponibilidade(slug!, id!);
+  const mutDelInd = useDeleteDisponibilidade(slug!, id!);
+  const mutUp = useUpdateVeiculo(slug!, id!);
 
-  const [dlgAbs, setDlgAbs] = useState(false)
-  const [dlgMan, setDlgMan] = useState(false)
-  const [dlgVia, setDlgVia] = useState(false)
-  const [dlgInd, setDlgInd] = useState(false)
-  const [dlgDados, setDlgDados] = useState(false)
-  const [absEditId, setAbsEditId] = useState<string | null>(null)
-  const [manEditId, setManEditId] = useState<string | null>(null)
-  const [viaEditId, setViaEditId] = useState<string | null>(null)
-  const [dispEditId, setDispEditId] = useState<string | null>(null)
-  const [confirmItemDel, setConfirmItemDel] = useState<
-    { kind: 'ab' | 'man' | 'via' | 'disp'; id: string } | null
-  >(null)
+  const [dlgAbs, setDlgAbs] = useState(false);
+  const [dlgMan, setDlgMan] = useState(false);
+  const [dlgVia, setDlgVia] = useState(false);
+  const [dlgInd, setDlgInd] = useState(false);
+  const [dlgDados, setDlgDados] = useState(false);
+  const [absEditId, setAbsEditId] = useState<string | null>(null);
+  const [manEditId, setManEditId] = useState<string | null>(null);
+  const [viaEditId, setViaEditId] = useState<string | null>(null);
+  const [dispEditId, setDispEditId] = useState<string | null>(null);
+  const [confirmItemDel, setConfirmItemDel] = useState<{
+    kind: 'ab' | 'man' | 'via' | 'disp';
+    id: string;
+  } | null>(null);
 
   // form abastecimento
   const [absData, setAbsData] = useState({
@@ -158,7 +183,7 @@ export function VeiculoDetail() {
     contaBancariaId: '',
     centroCustoId: '',
     pago: false,
-  })
+  });
 
   const [manData, setManData] = useState({
     tipo: '',
@@ -169,7 +194,7 @@ export function VeiculoDetail() {
     contaBancariaId: '',
     centroCustoId: '',
     pago: false,
-  })
+  });
 
   const [viaData, setViaData] = useState({
     tipoRegistro: 'SIMPLES' as 'SIMPLES' | 'RECORRENTE',
@@ -185,7 +210,7 @@ export function VeiculoDetail() {
     contaBancariaId: '',
     centroCustoId: '',
     pago: false,
-  })
+  });
 
   const [editData, setEditData] = useState({
     placa: '',
@@ -195,22 +220,25 @@ export function VeiculoDetail() {
     tipo: '',
     km_atual: '',
     ativo: true,
-  })
+  });
 
   const [indData, setIndData] = useState({
     tipo: 'PRODUCAO' as 'PRODUCAO' | 'MANUTENCAO',
     inicio: toDatetimeLocalValue(new Date().toISOString()),
-    fim: toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
+    fim: toDatetimeLocalValue(
+      new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    ),
     motivo: '',
-  })
+  });
 
-  if (isLoading) return <p className="p-6 text-muted-foreground">Carregando…</p>
+  if (isLoading)
+    return <p className="text-muted-foreground p-6">Carregando…</p>;
   if (error || !v)
     return (
-      <p className="p-6 text-destructive">
+      <p className="text-destructive p-6">
         Veículo não encontrado ou sem permissão.
       </p>
-    )
+    );
 
   const openEdit = () => {
     setEditData({
@@ -221,9 +249,9 @@ export function VeiculoDetail() {
       tipo: v.tipo ?? '',
       km_atual: v.km_atual?.toString() ?? '',
       ativo: v.ativo,
-    })
-    setDlgDados(true)
-  }
+    });
+    setDlgDados(true);
+  };
 
   const defaultAbsForm = () => ({
     data: toDatetimeLocalValue(new Date().toISOString()),
@@ -234,17 +262,17 @@ export function VeiculoDetail() {
     contaBancariaId: '',
     centroCustoId: '',
     pago: false,
-  })
+  });
 
   const openNewAbs = () => {
-    setAbsEditId(null)
-    setAbsData(defaultAbsForm())
-    setDlgAbs(true)
-  }
+    setAbsEditId(null);
+    setAbsData(defaultAbsForm());
+    setDlgAbs(true);
+  };
 
   const openEditAbs = (a: (typeof v)['abastecimentos'][number]) => {
-    const val = valorFinanceiroFrota(a)
-    const n = Number(val)
+    const val = valorFinanceiroFrota(a);
+    const n = Number(val);
     setAbsData({
       data: toDatetimeLocalValue(String(a.data)),
       litros: String(a.litros),
@@ -254,13 +282,13 @@ export function VeiculoDetail() {
       contaBancariaId: a.lancamento?.conta_bancaria_id ?? '',
       centroCustoId: a.lancamento?.centro_custo_id ?? '',
       pago: a.lancamento?.pago ?? false,
-    })
-    setAbsEditId(a.id)
-    setDlgAbs(true)
-  }
+    });
+    setAbsEditId(a.id);
+    setDlgAbs(true);
+  };
 
   const openNewMan = () => {
-    setManEditId(null)
+    setManEditId(null);
     setManData({
       tipo: '',
       descricao: '',
@@ -270,13 +298,13 @@ export function VeiculoDetail() {
       contaBancariaId: '',
       centroCustoId: '',
       pago: false,
-    })
-    setDlgMan(true)
-  }
+    });
+    setDlgMan(true);
+  };
 
   const openEditMan = (m: (typeof v)['manutencoes'][number]) => {
-    const val = valorFinanceiroFrota(m)
-    const n = Number(val)
+    const val = valorFinanceiroFrota(m);
+    const n = Number(val);
     setManData({
       tipo: m.tipo,
       descricao: m.descricao ?? '',
@@ -286,13 +314,13 @@ export function VeiculoDetail() {
       contaBancariaId: m.lancamento?.conta_bancaria_id ?? '',
       centroCustoId: m.lancamento?.centro_custo_id ?? '',
       pago: m.lancamento?.pago ?? false,
-    })
-    setManEditId(m.id)
-    setDlgMan(true)
-  }
+    });
+    setManEditId(m.id);
+    setDlgMan(true);
+  };
 
   const openNewVia = () => {
-    setViaEditId(null)
+    setViaEditId(null);
     setViaData({
       tipoRegistro: 'SIMPLES',
       origem: '',
@@ -307,13 +335,13 @@ export function VeiculoDetail() {
       contaBancariaId: '',
       centroCustoId: '',
       pago: false,
-    })
-    setDlgVia(true)
-  }
+    });
+    setDlgVia(true);
+  };
 
   const openEditVia = (x: (typeof v)['viagens'][number]) => {
-    const val = valorFinanceiroFrota(x)
-    const n = Number(val)
+    const val = valorFinanceiroFrota(x);
+    const n = Number(val);
     setViaData({
       tipoRegistro: 'SIMPLES',
       origem: x.origem,
@@ -328,32 +356,34 @@ export function VeiculoDetail() {
       contaBancariaId: x.lancamento?.conta_bancaria_id ?? '',
       centroCustoId: x.lancamento?.centro_custo_id ?? '',
       pago: x.lancamento?.pago ?? false,
-    })
-    setViaEditId(x.id)
-    setDlgVia(true)
-  }
+    });
+    setViaEditId(x.id);
+    setDlgVia(true);
+  };
 
   const openNewInd = () => {
-    setDispEditId(null)
+    setDispEditId(null);
     setIndData({
       tipo: 'PRODUCAO',
       inicio: toDatetimeLocalValue(new Date().toISOString()),
-      fim: toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000).toISOString()),
+      fim: toDatetimeLocalValue(
+        new Date(Date.now() + 60 * 60 * 1000).toISOString()
+      ),
       motivo: '',
-    })
-    setDlgInd(true)
-  }
+    });
+    setDlgInd(true);
+  };
 
   const openEditInd = (x: (typeof v)['disponibilidades'][number]) => {
-    setDispEditId(x.id)
+    setDispEditId(x.id);
     setIndData({
       tipo: x.tipo,
       inicio: toDatetimeLocalValue(x.inicio),
       fim: toDatetimeLocalValue(x.fim),
       motivo: x.motivo ?? '',
-    })
-    setDlgInd(true)
-  }
+    });
+    setDlgInd(true);
+  };
 
   const submitAbs = () => {
     const payload = {
@@ -365,21 +395,21 @@ export function VeiculoDetail() {
       contaBancariaId: absData.contaBancariaId,
       centroCustoId: absData.centroCustoId || null,
       pago: absData.pago,
-    }
+    };
     if (absEditId) {
       mutPutAbs.mutate(
         { abastecimentoId: absEditId, data: payload },
         {
           onSuccess: () => {
-            setDlgAbs(false)
-            setAbsEditId(null)
+            setDlgAbs(false);
+            setAbsEditId(null);
           },
         }
-      )
+      );
     } else {
-      mutAbs.mutate(payload, { onSuccess: () => setDlgAbs(false) })
+      mutAbs.mutate(payload, { onSuccess: () => setDlgAbs(false) });
     }
-  }
+  };
 
   const submitMan = () => {
     const payload = {
@@ -391,101 +421,127 @@ export function VeiculoDetail() {
       contaBancariaId: manData.contaBancariaId,
       centroCustoId: manData.centroCustoId || null,
       pago: manData.pago,
-    }
+    };
     if (manEditId) {
       mutPutMan.mutate(
         { manutencaoId: manEditId, data: payload },
         {
           onSuccess: () => {
-            setDlgMan(false)
-            setManEditId(null)
+            setDlgMan(false);
+            setManEditId(null);
           },
         }
-      )
+      );
     } else {
-      mutMan.mutate(payload, { onSuccess: () => setDlgMan(false) })
+      mutMan.mutate(payload, { onSuccess: () => setDlgMan(false) });
     }
-  }
+  };
 
   const submitVia = () => {
-    if (!viaData.origem || !viaData.destino || !viaData.dataInicio) return
-    const valorReceita = viaData.valorReceita ? parseFloat(viaData.valorReceita) : null
+    if (!viaData.origem.trim()) {
+      toast.error('Informe a origem da viagem.');
+      return;
+    }
+    if (!viaData.destino.trim()) {
+      toast.error('Informe o destino da viagem.');
+      return;
+    }
+    if (!viaData.dataInicio) {
+      toast.error('Informe a data e hora de in\u00edcio.');
+      return;
+    }
+
+    const valorReceita = parseBrazilianNumber(viaData.valorReceita);
+    if (
+      viaData.valorReceita.trim() &&
+      (valorReceita == null || valorReceita <= 0)
+    ) {
+      toast.error('Informe um valor de receita v\u00e1lido.');
+      return;
+    }
+    const kmRodado = parseBrazilianNumber(viaData.kmRodado);
+    if (viaData.kmRodado.trim() && (kmRodado == null || kmRodado < 0)) {
+      toast.error('Informe uma quilometragem v\u00e1lida.');
+      return;
+    }
     if (valorReceita != null && valorReceita > 0) {
       if (!viaData.categoriaId || !viaData.contaBancariaId) {
         toast.error(
-          'Para gerar lançamento financeiro da receita, selecione categoria e conta bancária.',
-        )
-        return
+          'Para gerar lançamento financeiro da receita, selecione categoria e conta bancária.'
+        );
+        return;
       }
     }
     if (viaData.tipoRegistro === 'RECORRENTE') {
       if (!viaData.recorrenciaFim) {
-        toast.error('Informe a data final da recorrência.')
-        return
+        toast.error('Informe a data final da recorrência.');
+        return;
       }
       if (!viaData.diasSemana.length) {
-        toast.error('Selecione ao menos um dia da semana.')
-        return
+        toast.error('Selecione ao menos um dia da semana.');
+        return;
       }
     }
 
-    const sentinel = (v: string) => (v.includes(':') ? v + ':00' : v + 'T00:00:00')
+    const sentinel = (v: string) =>
+      v.includes(':') ? v + ':00' : v + 'T00:00:00';
     const payload = {
-      origem: viaData.origem,
-      destino: viaData.destino,
+      origem: viaData.origem.trim(),
+      destino: viaData.destino.trim(),
       dataInicio: sentinel(viaData.dataInicio),
       dataFim: viaData.dataFim ? sentinel(viaData.dataFim) : null,
-      kmRodado: viaData.kmRodado ? parseFloat(viaData.kmRodado) : null,
+      kmRodado,
       valorReceita,
       categoriaId: viaData.categoriaId || null,
       contaBancariaId: viaData.contaBancariaId || null,
       centroCustoId: viaData.centroCustoId || null,
       pago: viaData.pago,
       tipoRegistro: viaData.tipoRegistro,
-      diasSemana: viaData.tipoRegistro === 'RECORRENTE' ? viaData.diasSemana : [],
+      diasSemana:
+        viaData.tipoRegistro === 'RECORRENTE' ? viaData.diasSemana : [],
       recorrenciaFim:
         viaData.tipoRegistro === 'RECORRENTE' && viaData.recorrenciaFim
           ? sentinel(viaData.recorrenciaFim)
           : null,
-    }
+    };
     if (viaEditId) {
       mutPutVia.mutate(
         { viagemId: viaEditId, data: payload },
         {
           onSuccess: () => {
-            setDlgVia(false)
-            setViaEditId(null)
+            setDlgVia(false);
+            setViaEditId(null);
           },
         }
-      )
+      );
     } else {
-      mutVia.mutate(payload, { onSuccess: () => setDlgVia(false) })
+      mutVia.mutate(payload, { onSuccess: () => setDlgVia(false) });
     }
-  }
+  };
 
   const submitInd = () => {
-    if (!indData.inicio || !indData.fim) return
+    if (!indData.inicio || !indData.fim) return;
     const payload = {
       tipo: indData.tipo,
       inicio: indData.inicio + ':00',
       fim: indData.fim + ':00',
       motivo: indData.motivo || null,
-    }
+    };
 
     if (dispEditId) {
       mutPutInd.mutate(
         { disponibilidadeId: dispEditId, data: payload },
         {
           onSuccess: () => {
-            setDlgInd(false)
-            setDispEditId(null)
+            setDlgInd(false);
+            setDispEditId(null);
           },
-        },
-      )
+        }
+      );
     } else {
-      mutPostInd.mutate(payload, { onSuccess: () => setDlgInd(false) })
+      mutPostInd.mutate(payload, { onSuccess: () => setDlgInd(false) });
     }
-  }
+  };
 
   const saveDados = () => {
     mutUp.mutate(
@@ -499,8 +555,8 @@ export function VeiculoDetail() {
         ativo: editData.ativo,
       },
       { onSuccess: () => setDlgDados(false) }
-    )
-  }
+    );
+  };
 
   const tabBtn = (t: Tab, label: string, icon: React.ReactNode) => (
     <Button
@@ -512,7 +568,7 @@ export function VeiculoDetail() {
       {icon}
       {label}
     </Button>
-  )
+  );
 
   return (
     <div className="space-y-6 p-6">
@@ -552,7 +608,7 @@ export function VeiculoDetail() {
         )}
         {v.tipo && <Badge variant="secondary">{v.tipo}</Badge>}
         {v.km_atual != null && (
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             Km: {v.km_atual.toLocaleString('pt-BR')}
           </span>
         )}
@@ -562,7 +618,11 @@ export function VeiculoDetail() {
 
       <div className="grid gap-6 lg:grid-cols-[200px_1fr]">
         <div className="flex flex-col gap-1">
-          {tabBtn('abastecimentos', 'Abastecimentos', <Fuel className="h-4 w-4" />)}
+          {tabBtn(
+            'abastecimentos',
+            'Abastecimentos',
+            <Fuel className="h-4 w-4" />
+          )}
           {tabBtn('manutencoes', 'Manutenções', <Wrench className="h-4 w-4" />)}
           {tabBtn('viagens', 'Viagens', <Route className="h-4 w-4" />)}
           {tabBtn('agenda', 'Agenda', <CalendarDays className="h-4 w-4" />)}
@@ -582,7 +642,9 @@ export function VeiculoDetail() {
                     <TableHead>Litros</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Lançamento</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
+                    <TableHead className="w-[100px] text-right">
+                      Ações
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -594,7 +656,7 @@ export function VeiculoDetail() {
                         <TableCell className="text-right">
                           {money(valorFinanceiroFrota(a))}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className="text-muted-foreground font-mono text-xs">
                           {a.lancamento?.numero ?? '—'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -616,7 +678,7 @@ export function VeiculoDetail() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              className="text-destructive hover:text-destructive h-8 w-8"
                               onClick={() =>
                                 setConfirmItemDel({ kind: 'ab', id: a.id })
                               }
@@ -652,7 +714,9 @@ export function VeiculoDetail() {
                     <TableHead>Tipo</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Lançamento</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
+                    <TableHead className="w-[100px] text-right">
+                      Ações
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -664,7 +728,7 @@ export function VeiculoDetail() {
                         <TableCell className="text-right">
                           {money(valorFinanceiroFrota(m))}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className="text-muted-foreground font-mono text-xs">
                           {m.lancamento?.numero ?? '—'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -686,7 +750,7 @@ export function VeiculoDetail() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              className="text-destructive hover:text-destructive h-8 w-8"
                               onClick={() =>
                                 setConfirmItemDel({ kind: 'man', id: m.id })
                               }
@@ -722,7 +786,9 @@ export function VeiculoDetail() {
                     <TableHead>Rota</TableHead>
                     <TableHead className="text-right">Valor</TableHead>
                     <TableHead>Lançamento</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
+                    <TableHead className="w-[100px] text-right">
+                      Ações
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -741,7 +807,7 @@ export function VeiculoDetail() {
                         <TableCell className="text-right">
                           {money(valorFinanceiroFrota(x))}
                         </TableCell>
-                        <TableCell className="font-mono text-xs text-muted-foreground">
+                        <TableCell className="text-muted-foreground font-mono text-xs">
                           {x.lancamento?.numero ?? '—'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -763,7 +829,7 @@ export function VeiculoDetail() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
+                              className="text-destructive hover:text-destructive h-8 w-8"
                               onClick={() =>
                                 setConfirmItemDel({ kind: 'via', id: x.id })
                               }
@@ -798,7 +864,9 @@ export function VeiculoDetail() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Período</TableHead>
                     <TableHead>Motivo</TableHead>
-                    <TableHead className="w-[100px] text-right">Ações</TableHead>
+                    <TableHead className="w-[100px] text-right">
+                      Ações
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -806,8 +874,16 @@ export function VeiculoDetail() {
                     v.disponibilidades.map((x) => (
                       <TableRow key={x.id}>
                         <TableCell>
-                          <Badge variant={x.tipo === 'MANUTENCAO' ? 'destructive' : 'secondary'}>
-                            {x.tipo === 'MANUTENCAO' ? 'Manutenção' : 'Produção'}
+                          <Badge
+                            variant={
+                              x.tipo === 'MANUTENCAO'
+                                ? 'destructive'
+                                : 'secondary'
+                            }
+                          >
+                            {x.tipo === 'MANUTENCAO'
+                              ? 'Manutenção'
+                              : 'Produção'}
                           </Badge>
                         </TableCell>
                         <TableCell className="whitespace-nowrap text-sm">
@@ -830,8 +906,10 @@ export function VeiculoDetail() {
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => setConfirmItemDel({ kind: 'disp', id: x.id })}
+                              className="text-destructive hover:text-destructive h-8 w-8"
+                              onClick={() =>
+                                setConfirmItemDel({ kind: 'disp', id: x.id })
+                              }
                               title="Excluir"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -853,7 +931,7 @@ export function VeiculoDetail() {
           )}
 
           {tab === 'dados' && (
-            <div className="rounded-lg border p-4 text-sm space-y-2">
+            <div className="space-y-2 rounded-lg border p-4 text-sm">
               <p>
                 <span className="text-muted-foreground">Placa:</span>{' '}
                 <span className="font-mono font-semibold">{v.placa}</span>
@@ -867,7 +945,7 @@ export function VeiculoDetail() {
                   <span className="text-muted-foreground">Ano:</span> {v.ano}
                 </p>
               )}
-              <p className="pt-2 text-muted-foreground">
+              <p className="text-muted-foreground pt-2">
                 Os valores financeiros ficam em{' '}
                 <Link
                   href={`/org/${slug}/lancamento`}
@@ -875,7 +953,8 @@ export function VeiculoDetail() {
                 >
                   Lançamentos
                 </Link>
-                . Filtre por veículo quando o filtro estiver disponível na listagem.
+                . Filtre por veículo quando o filtro estiver disponível na
+                listagem.
               </p>
             </div>
           )}
@@ -885,8 +964,8 @@ export function VeiculoDetail() {
       <Dialog
         open={dlgAbs}
         onOpenChange={(open) => {
-          setDlgAbs(open)
-          if (!open) setAbsEditId(null)
+          setDlgAbs(open);
+          if (!open) setAbsEditId(null);
         }}
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -982,7 +1061,8 @@ export function VeiculoDetail() {
                 onValueChange={(centroCustoId) =>
                   setAbsData((s) => ({
                     ...s,
-                    centroCustoId: centroCustoId === '_none' ? '' : centroCustoId,
+                    centroCustoId:
+                      centroCustoId === '_none' ? '' : centroCustoId,
                   }))
                 }
               >
@@ -1002,9 +1082,7 @@ export function VeiculoDetail() {
             <div className="flex items-center gap-2">
               <Switch
                 checked={absData.pago}
-                onCheckedChange={(pago) =>
-                  setAbsData((s) => ({ ...s, pago }))
-                }
+                onCheckedChange={(pago) => setAbsData((s) => ({ ...s, pago }))}
               />
               <Label>Já pago</Label>
             </div>
@@ -1031,8 +1109,8 @@ export function VeiculoDetail() {
       <Dialog
         open={dlgMan}
         onOpenChange={(open) => {
-          setDlgMan(open)
-          if (!open) setManEditId(null)
+          setDlgMan(open);
+          if (!open) setManEditId(null);
         }}
       >
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -1127,7 +1205,8 @@ export function VeiculoDetail() {
                 onValueChange={(centroCustoId) =>
                   setManData((s) => ({
                     ...s,
-                    centroCustoId: centroCustoId === '_none' ? '' : centroCustoId,
+                    centroCustoId:
+                      centroCustoId === '_none' ? '' : centroCustoId,
                   }))
                 }
               >
@@ -1147,9 +1226,7 @@ export function VeiculoDetail() {
             <div className="flex items-center gap-2">
               <Switch
                 checked={manData.pago}
-                onCheckedChange={(pago) =>
-                  setManData((s) => ({ ...s, pago }))
-                }
+                onCheckedChange={(pago) => setManData((s) => ({ ...s, pago }))}
               />
               <Label>Já pago</Label>
             </div>
@@ -1176,8 +1253,8 @@ export function VeiculoDetail() {
       <Dialog
         open={dlgVia}
         onOpenChange={(open) => {
-          setDlgVia(open)
-          if (!open) setViaEditId(null)
+          setDlgVia(open);
+          if (!open) setViaEditId(null);
         }}
       >
         <DialogContent className="max-h-[94vh] overflow-y-auto md:max-w-2xl">
@@ -1256,7 +1333,10 @@ export function VeiculoDetail() {
                     type="date"
                     value={viaData.recorrenciaFim}
                     onChange={(e) =>
-                      setViaData((s) => ({ ...s, recorrenciaFim: e.target.value }))
+                      setViaData((s) => ({
+                        ...s,
+                        recorrenciaFim: e.target.value,
+                      }))
                     }
                   />
                 </div>
@@ -1264,7 +1344,7 @@ export function VeiculoDetail() {
                   <Label>Dias da semana</Label>
                   <div className="flex flex-wrap items-center gap-3 pt-2">
                     {WEEK_DAYS.map((day) => {
-                      const checked = viaData.diasSemana.includes(day.value)
+                      const checked = viaData.diasSemana.includes(day.value);
                       return (
                         <label
                           key={day.value}
@@ -1276,14 +1356,16 @@ export function VeiculoDetail() {
                               setViaData((s) => ({
                                 ...s,
                                 diasSemana: value
-                                  ? [...s.diasSemana, day.value].sort((a, b) => a - b)
+                                  ? [...s.diasSemana, day.value].sort(
+                                      (a, b) => a - b
+                                    )
                                   : s.diasSemana.filter((d) => d !== day.value),
                               }))
                             }
                           />
                           {day.label}
                         </label>
-                      )
+                      );
                     })}
                   </div>
                 </div>
@@ -1291,24 +1373,24 @@ export function VeiculoDetail() {
             )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
-              <Label>Km rodado</Label>
-              <Input
-                value={viaData.kmRodado}
-                onChange={(e) =>
-                  setViaData((s) => ({ ...s, kmRodado: e.target.value }))
-                }
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Valor da receita (opcional)</Label>
-              <Input
-                value={viaData.valorReceita}
-                onChange={(e) =>
-                  setViaData((s) => ({ ...s, valorReceita: e.target.value }))
-                }
-                placeholder="Se preenchido, gera lançamento de receita"
-              />
-            </div>
+                <Label>Km rodado</Label>
+                <Input
+                  value={viaData.kmRodado}
+                  onChange={(e) =>
+                    setViaData((s) => ({ ...s, kmRodado: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Valor da receita (opcional)</Label>
+                <Input
+                  value={viaData.valorReceita}
+                  onChange={(e) =>
+                    setViaData((s) => ({ ...s, valorReceita: e.target.value }))
+                  }
+                  placeholder="Se preenchido, gera lançamento de receita"
+                />
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label>Categoria (receita) — se houver valor</Label>
@@ -1387,9 +1469,7 @@ export function VeiculoDetail() {
             <div className="flex items-center gap-2">
               <Switch
                 checked={viaData.pago}
-                onCheckedChange={(pago) =>
-                  setViaData((s) => ({ ...s, pago }))
-                }
+                onCheckedChange={(pago) => setViaData((s) => ({ ...s, pago }))}
               />
               <Label>Receita já recebida</Label>
             </div>
@@ -1402,7 +1482,16 @@ export function VeiculoDetail() {
               onClick={submitVia}
               disabled={mutVia.isPending || mutPutVia.isPending}
             >
-              {viaEditId ? 'Salvar' : 'Registrar'}
+              {mutVia.isPending || mutPutVia.isPending ? (
+                <>
+                  <LoaderCircle className="mr-2 size-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : viaEditId ? (
+                'Salvar'
+              ) : (
+                'Registrar'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1411,8 +1500,8 @@ export function VeiculoDetail() {
       <Dialog
         open={dlgInd}
         onOpenChange={(open) => {
-          setDlgInd(open)
-          if (!open) setDispEditId(null)
+          setDlgInd(open);
+          if (!open) setDispEditId(null);
         }}
       >
         <DialogContent className="sm:max-w-lg">
@@ -1588,24 +1677,24 @@ export function VeiculoDetail() {
                 mutDelInd.isPending
               }
               onClick={() => {
-                if (!confirmItemDel) return
-                const { kind, id } = confirmItemDel
+                if (!confirmItemDel) return;
+                const { kind, id } = confirmItemDel;
                 if (kind === 'ab') {
                   mutDelAbs.mutate(id, {
                     onSuccess: () => setConfirmItemDel(null),
-                  })
+                  });
                 } else if (kind === 'man') {
                   mutDelMan.mutate(id, {
                     onSuccess: () => setConfirmItemDel(null),
-                  })
+                  });
                 } else if (kind === 'disp') {
                   mutDelInd.mutate(id, {
                     onSuccess: () => setConfirmItemDel(null),
-                  })
+                  });
                 } else {
                   mutDelVia.mutate(id, {
                     onSuccess: () => setConfirmItemDel(null),
-                  })
+                  });
                 }
               }}
             >
@@ -1620,9 +1709,9 @@ export function VeiculoDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir veículo?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove o cadastro e os registros operacionais vinculados.
-              Lançamentos financeiros permanecem no sistema (sem vínculo ao
-              veículo).
+              Esta ação remove o cadastro e os registros operacionais
+              vinculados. Lançamentos financeiros permanecem no sistema (sem
+              vínculo ao veículo).
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1630,8 +1719,7 @@ export function VeiculoDetail() {
             <AlertDialogAction
               onClick={() =>
                 del.mutate(id!, {
-                  onSuccess: () =>
-                    router.push(`/org/${slug}/frota/veiculos`),
+                  onSuccess: () => router.push(`/org/${slug}/frota/veiculos`),
                 })
               }
             >
@@ -1641,5 +1729,5 @@ export function VeiculoDetail() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

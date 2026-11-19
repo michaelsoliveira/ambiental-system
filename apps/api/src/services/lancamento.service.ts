@@ -1,177 +1,205 @@
-import { Prisma, Lancamento } from '@prisma/client'
-import { Decimal } from '@prisma/client/runtime/library'
-import { prisma } from '@/lib/prisma'
-import { BadRequestError } from '@/http/routes/_errors/bad-request-error'
-import { AsaasService } from '@/services/asaas.service'
+import { Prisma, Lancamento } from '@prisma/client';
+import { Decimal } from '@prisma/client/runtime/library';
+import { prisma } from '@/lib/prisma';
+import { BadRequestError } from '@/http/routes/_errors/bad-request-error';
+import { AsaasService } from '@/services/asaas.service';
 import {
   parseBrazilDateTime,
   parseDateOnlyEnd,
   parseDateOnlyStart,
-} from '@/utils/date-only'
+} from '@/utils/date-only';
 
 export interface LancamentoFilters {
-  search?: string
+  search?: string;
   /** Filtro dedicado por descrição (contains, case-insensitive). */
-  descricao?: string
-  tipo?: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA' | 'todos'
-  status?: 'PENDENTE' | 'CONFIRMADO' | 'PAGO' | 'CANCELADO' | 'ATRASADO' | 'todos'
-  pago?: 'true' | 'false' | 'todos'
-  filtrar_por?: 'data' | 'data_vencimento' | 'data_pagamento'
-  data_inicio?: string
-  data_fim?: string
-  categoria_id?: string
-  conta_bancaria_id?: string
-  centro_custo_id?: string
-  veiculo_id?: string
-  parceiro_id?: string
-  forma_parcelamento?: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'RECORRENTE' | 'todos'
-  valor_min?: string
-  valor_max?: string
-  apenas_vencidos?: boolean
-  apenas_a_vencer?: boolean
-  page?: number
-  limit?: number
-  orderBy?: string
-  order?: 'asc' | 'desc'
+  descricao?: string;
+  tipo?: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA' | 'todos';
+  status?:
+    | 'PENDENTE'
+    | 'CONFIRMADO'
+    | 'PAGO'
+    | 'CANCELADO'
+    | 'ATRASADO'
+    | 'todos';
+  pago?: 'true' | 'false' | 'todos';
+  filtrar_por?: 'data' | 'data_vencimento' | 'data_pagamento';
+  data_inicio?: string;
+  data_fim?: string;
+  categoria_id?: string;
+  conta_bancaria_id?: string;
+  centro_custo_id?: string;
+  veiculo_id?: string;
+  parceiro_id?: string;
+  forma_parcelamento?:
+    | 'UNICA'
+    | 'FIXA'
+    | 'PROGRESSIVA'
+    | 'RECORRENTE'
+    | 'todos';
+  valor_min?: string;
+  valor_max?: string;
+  apenas_vencidos?: boolean;
+  apenas_a_vencer?: boolean;
+  page?: number;
+  limit?: number;
+  orderBy?: string;
+  order?: 'asc' | 'desc';
 }
 
 export interface ParcelaInput {
   /** Presente ao editar parcelas já salvas no banco */
-  id?: string
-  numero_parcela: number
-  data_vencimento: string
-  valor: number
-  pago?: boolean
-  status_parcela?: 'PENDENTE' | 'PAGA' | 'CANCELADA' | 'ATRASADA'
-  observacoes?: string
+  id?: string;
+  numero_parcela: number;
+  data_vencimento: string;
+  valor: number;
+  pago?: boolean;
+  status_parcela?: 'PENDENTE' | 'PAGA' | 'CANCELADA' | 'ATRASADA';
+  observacoes?: string;
 }
 
 export interface CreateLancamentoData {
-  numero: string
-  tipo: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA'
-  data: string
-  data_vencimento?: string
-  data_competencia?: string // MM/YYYY
-  descricao: string
-  observacoes?: string
-  valor: number
-  forma_parcelamento: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'RECORRENTE'
-  numero_parcelas: number
-  categoria_id: string
-  conta_bancaria_id: string
-  centro_custo_id?: string
-  veiculo_id?: string
-  parceiro_id?: string
-  pago: boolean
-  status_lancamento: 'PENDENTE' | 'CONFIRMADO' | 'PAGO' | 'CANCELADO' | 'ATRASADO'
-  valor_pago?: number
-  data_pagamento?: string
+  numero: string;
+  tipo: 'RECEITA' | 'DESPESA' | 'TRANSFERENCIA';
+  data: string;
+  data_vencimento?: string;
+  data_competencia?: string; // MM/YYYY
+  descricao: string;
+  observacoes?: string;
+  valor: number;
+  forma_parcelamento: 'UNICA' | 'FIXA' | 'PROGRESSIVA' | 'RECORRENTE';
+  numero_parcelas: number;
+  categoria_id: string;
+  conta_bancaria_id: string;
+  centro_custo_id?: string;
+  veiculo_id?: string;
+  parceiro_id?: string;
+  pago: boolean;
+  status_lancamento:
+    | 'PENDENTE'
+    | 'CONFIRMADO'
+    | 'PAGO'
+    | 'CANCELADO'
+    | 'ATRASADO';
+  valor_pago?: number;
+  data_pagamento?: string;
   // Controle interno e integração Asaas
-  controle_interno?: boolean
-  gerar_boleto?: boolean
-  permitir_pix?: boolean
+  controle_interno?: boolean;
+  gerar_boleto?: boolean;
+  permitir_pix?: boolean;
   // Recorrência
-  tipo_repeticao?: 'NENHUMA' | 'RECORRENTE' | 'PARCELADO'
-  periodicidade?: 'DIARIA' | 'SEMANAL' | 'QUINZENAL' | 'MENSAL' | 'BIMESTRAL' | 'TRIMESTRAL' | 'SEMESTRAL' | 'ANUAL'
-  data_fim_repeticao?: string
+  tipo_repeticao?: 'NENHUMA' | 'RECORRENTE' | 'PARCELADO';
+  periodicidade?:
+    | 'DIARIA'
+    | 'SEMANAL'
+    | 'QUINZENAL'
+    | 'MENSAL'
+    | 'BIMESTRAL'
+    | 'TRIMESTRAL'
+    | 'SEMESTRAL'
+    | 'ANUAL';
+  data_fim_repeticao?: string;
   /** Parcelas editadas no formulário (datas e valores customizados) */
-  parcelas?: ParcelaInput[]
+  parcelas?: ParcelaInput[];
 }
 
 export interface UpdateLancamentoData extends Partial<CreateLancamentoData> {}
 
 export interface LancamentoWithRelations extends Lancamento {
   parceiro?: {
-    id: string
+    id: string;
     pessoa: {
-      tipo: 'F' | 'J'
-      fisica?: { nome: string } | null
-      juridica?: { nome_fantasia: string } | null
-    }
-  } | null
+      tipo: 'F' | 'J';
+      fisica?: { nome: string } | null;
+      juridica?: { nome_fantasia: string } | null;
+    };
+  } | null;
   conta_bancaria?: {
-    id: string
-    nome: string
-  }
+    id: string;
+    nome: string;
+  };
   categoria?: {
-    id: string
-    nome: string
-    tipo: string
-  }
+    id: string;
+    nome: string;
+    tipo: string;
+  };
   centro_custo?: {
-    id: string
-    nome: string
-  } | null
+    id: string;
+    nome: string;
+  } | null;
   veiculo?: {
-    id: string
-    placa: string
-    modelo: string
-    marca: string
-  } | null
+    id: string;
+    placa: string;
+    modelo: string;
+    marca: string;
+  } | null;
 }
 
 export class LancamentoService {
-  private static readonly TOLERANCIA_SOMA_PARCELAS = 0.02
+  private static readonly TOLERANCIA_SOMA_PARCELAS = 0.02;
 
-  private static buildParcelasPadrao(data: CreateLancamentoData): ParcelaInput[] {
-    const numeroParcelas = data.numero_parcelas || 1
+  private static buildParcelasPadrao(
+    data: CreateLancamentoData
+  ): ParcelaInput[] {
+    const numeroParcelas = data.numero_parcelas || 1;
     const valorPorParcela =
       data.forma_parcelamento === 'RECORRENTE'
         ? data.valor
-        : data.valor / numeroParcelas
+        : data.valor / numeroParcelas;
     const dataBase = data.data_vencimento
       ? new Date(data.data_vencimento)
-      : new Date(data.data)
+      : new Date(data.data);
 
-    const parcelas: ParcelaInput[] = []
+    const parcelas: ParcelaInput[] = [];
     for (let i = 1; i <= numeroParcelas; i++) {
-      const dataVencimentoParcela = new Date(dataBase)
-      dataVencimentoParcela.setMonth(dataVencimentoParcela.getMonth() + (i - 1))
+      const dataVencimentoParcela = new Date(dataBase);
+      dataVencimentoParcela.setMonth(
+        dataVencimentoParcela.getMonth() + (i - 1)
+      );
       parcelas.push({
         numero_parcela: i,
         data_vencimento: dataVencimentoParcela.toISOString().split('T')[0]!,
         valor: Math.round(valorPorParcela * 100) / 100,
         pago: false,
         status_parcela: 'PENDENTE',
-      })
+      });
     }
-    return parcelas
+    return parcelas;
   }
 
   private static resolveParcelas(data: CreateLancamentoData): ParcelaInput[] {
-    if (data.forma_parcelamento === 'UNICA') return []
+    if (data.forma_parcelamento === 'UNICA') return [];
 
-    const fromForm = (data.parcelas ?? []).filter((p) => p.numero_parcela > 0)
+    const fromForm = (data.parcelas ?? []).filter((p) => p.numero_parcela > 0);
     if (fromForm.length > 0) {
       return fromForm
         .sort((a, b) => a.numero_parcela - b.numero_parcela)
         .map((p, index) => ({
           ...p,
           numero_parcela: index + 1,
-        }))
+        }));
     }
     if (data.numero_parcelas > 1) {
-      return this.buildParcelasPadrao(data)
+      return this.buildParcelasPadrao(data);
     }
-    return []
+    return [];
   }
 
   private static validateParcelas(
     data: CreateLancamentoData,
-    parcelas: ParcelaInput[],
+    parcelas: ParcelaInput[]
   ) {
-    if (!parcelas.length) return
+    if (!parcelas.length) return;
 
-    const soma = parcelas.reduce((acc, p) => acc + p.valor, 0)
+    const soma = parcelas.reduce((acc, p) => acc + p.valor, 0);
     const esperado =
       data.forma_parcelamento === 'RECORRENTE'
         ? data.valor * parcelas.length
-        : data.valor
+        : data.valor;
 
     if (Math.abs(soma - esperado) > this.TOLERANCIA_SOMA_PARCELAS) {
       throw new BadRequestError(
-        `A soma das parcelas (${soma.toFixed(2)}) deve ser igual ao valor esperado (${esperado.toFixed(2)}).`,
-      )
+        `A soma das parcelas (${soma.toFixed(2)}) deve ser igual ao valor esperado (${esperado.toFixed(2)}).`
+      );
     }
   }
 
@@ -179,10 +207,11 @@ export class LancamentoService {
     organizationId: string,
     lancamentoId: string,
     parcelas: ParcelaInput[],
+    client: Prisma.TransactionClient | typeof prisma = prisma
   ) {
-    if (!parcelas.length) return
+    if (!parcelas.length) return;
 
-    await prisma.parcela.createMany({
+    await client.parcela.createMany({
       data: parcelas.map((p) => ({
         lancamento_id: lancamentoId,
         organization_id: organizationId,
@@ -193,18 +222,18 @@ export class LancamentoService {
         status_parcela: p.status_parcela ?? 'PENDENTE',
         observacoes: p.observacoes ?? null,
       })),
-    })
+    });
   }
 
   private static async syncParcelas(
     organizationId: string,
     lancamentoId: string,
-    parcelas: ParcelaInput[],
+    parcelas: ParcelaInput[]
   ) {
     const existing = await prisma.parcela.findMany({
       where: { lancamento_id: lancamentoId, organization_id: organizationId },
-    })
-    const keepIds: string[] = []
+    });
+    const keepIds: string[] = [];
 
     for (const parcela of parcelas) {
       const payload = {
@@ -214,15 +243,15 @@ export class LancamentoService {
         pago: parcela.pago ?? false,
         status_parcela: parcela.status_parcela ?? 'PENDENTE',
         observacoes: parcela.observacoes ?? null,
-      }
+      };
 
       if (parcela.id && existing.some((row) => row.id === parcela.id)) {
         await prisma.parcela.update({
           where: { id: parcela.id },
           data: payload,
-        })
-        keepIds.push(parcela.id)
-        continue
+        });
+        keepIds.push(parcela.id);
+        continue;
       }
 
       const created = await prisma.parcela.create({
@@ -231,8 +260,8 @@ export class LancamentoService {
           lancamento_id: lancamentoId,
           organization_id: organizationId,
         },
-      })
-      keepIds.push(created.id)
+      });
+      keepIds.push(created.id);
     }
 
     await prisma.parcela.deleteMany({
@@ -241,20 +270,28 @@ export class LancamentoService {
         organization_id: organizationId,
         ...(keepIds.length > 0 ? { id: { notIn: keepIds } } : {}),
       },
-    })
+    });
   }
 
-  private static addPeriod(date: Date, periodicidade: NonNullable<CreateLancamentoData['periodicidade']>, index: number) {
-    const next = new Date(date)
-    if (periodicidade === 'DIARIA') next.setDate(next.getDate() + index)
-    if (periodicidade === 'SEMANAL') next.setDate(next.getDate() + 7 * index)
-    if (periodicidade === 'QUINZENAL') next.setDate(next.getDate() + 15 * index)
-    if (periodicidade === 'MENSAL') next.setMonth(next.getMonth() + index)
-    if (periodicidade === 'BIMESTRAL') next.setMonth(next.getMonth() + 2 * index)
-    if (periodicidade === 'TRIMESTRAL') next.setMonth(next.getMonth() + 3 * index)
-    if (periodicidade === 'SEMESTRAL') next.setMonth(next.getMonth() + 6 * index)
-    if (periodicidade === 'ANUAL') next.setFullYear(next.getFullYear() + index)
-    return next
+  private static addPeriod(
+    date: Date,
+    periodicidade: NonNullable<CreateLancamentoData['periodicidade']>,
+    index: number
+  ) {
+    const next = new Date(date);
+    if (periodicidade === 'DIARIA') next.setDate(next.getDate() + index);
+    if (periodicidade === 'SEMANAL') next.setDate(next.getDate() + 7 * index);
+    if (periodicidade === 'QUINZENAL')
+      next.setDate(next.getDate() + 15 * index);
+    if (periodicidade === 'MENSAL') next.setMonth(next.getMonth() + index);
+    if (periodicidade === 'BIMESTRAL')
+      next.setMonth(next.getMonth() + 2 * index);
+    if (periodicidade === 'TRIMESTRAL')
+      next.setMonth(next.getMonth() + 3 * index);
+    if (periodicidade === 'SEMESTRAL')
+      next.setMonth(next.getMonth() + 6 * index);
+    if (periodicidade === 'ANUAL') next.setFullYear(next.getFullYear() + index);
+    return next;
   }
 
   /**
@@ -266,7 +303,7 @@ export class LancamentoService {
   ): Prisma.LancamentoWhereInput {
     const where: Prisma.LancamentoWhereInput = {
       organization_id: organizationId,
-    }
+    };
 
     // Filtro de busca (search)
     if (filters.search) {
@@ -278,21 +315,24 @@ export class LancamentoService {
           parceiro: {
             pessoa: {
               fisica: {
-                nome: { contains: filters.search, mode: 'insensitive' }
+                nome: { contains: filters.search, mode: 'insensitive' },
               },
-            }
-          }
+            },
+          },
         },
         {
           parceiro: {
             pessoa: {
               juridica: {
-                nome_fantasia: { contains: filters.search, mode: 'insensitive' }
+                nome_fantasia: {
+                  contains: filters.search,
+                  mode: 'insensitive',
+                },
               },
-            }
-          }
+            },
+          },
         },
-      ]
+      ];
     }
 
     // Filtro dedicado por descrição
@@ -300,112 +340,109 @@ export class LancamentoService {
       where.descricao = {
         contains: filters.descricao.trim(),
         mode: 'insensitive',
-      }
+      };
     }
 
     // Filtro de tipo
     if (filters.tipo && filters.tipo !== 'todos') {
-      where.tipo = filters.tipo
+      where.tipo = filters.tipo;
     }
 
     // Filtro de status
     if (filters.status && filters.status !== 'todos') {
-      where.status_lancamento = filters.status
+      where.status_lancamento = filters.status;
     }
 
     // Filtro de pagamento
     if (filters.pago && filters.pago !== 'todos') {
-      where.pago = filters.pago === 'true'
+      where.pago = filters.pago === 'true';
     }
 
     // Filtros de data (parse civil local — evita off-by-one com UTC)
     if (filters.data_inicio || filters.data_fim) {
-      const dateField = filters.filtrar_por || 'data'
-      const dateFilter: any = {}
+      const dateField = filters.filtrar_por || 'data';
+      const dateFilter: any = {};
 
       if (filters.data_inicio) {
-        dateFilter.gte = parseDateOnlyStart(filters.data_inicio)
+        dateFilter.gte = parseDateOnlyStart(filters.data_inicio);
       }
       if (filters.data_fim) {
-        dateFilter.lte = parseDateOnlyEnd(filters.data_fim)
+        dateFilter.lte = parseDateOnlyEnd(filters.data_fim);
       }
 
       if (dateField === 'data') {
-        where.data = dateFilter
+        where.data = dateFilter;
       } else if (dateField === 'data_vencimento') {
-        where.data_vencimento = dateFilter
+        where.data_vencimento = dateFilter;
       } else if (dateField === 'data_pagamento') {
-        where.data_pagamento = dateFilter
+        where.data_pagamento = dateFilter;
       }
     }
 
     // Filtro de categoria
     if (filters.categoria_id) {
-      where.categoria_id = filters.categoria_id
+      where.categoria_id = filters.categoria_id;
     }
 
     // Filtro de conta bancária
     if (filters.conta_bancaria_id) {
-      where.conta_bancaria_id = filters.conta_bancaria_id
+      where.conta_bancaria_id = filters.conta_bancaria_id;
     }
 
     // Filtro de centro de custo
     if (filters.centro_custo_id) {
-      where.centro_custo_id = filters.centro_custo_id
+      where.centro_custo_id = filters.centro_custo_id;
     }
 
     // Filtro de parceiro
     if (filters.parceiro_id) {
-      where.parceiro_id = filters.parceiro_id
+      where.parceiro_id = filters.parceiro_id;
     }
 
     if (filters.veiculo_id) {
-      where.veiculo_id = filters.veiculo_id
+      where.veiculo_id = filters.veiculo_id;
     }
 
     // Filtro de forma de parcelamento
     if (filters.forma_parcelamento && filters.forma_parcelamento !== 'todos') {
-      where.forma_parcelamento = filters.forma_parcelamento
+      where.forma_parcelamento = filters.forma_parcelamento;
     }
 
     // Filtros de valor
     if (filters.valor_min || filters.valor_max) {
-      where.valor = {}
+      where.valor = {};
       if (filters.valor_min) {
-        where.valor.gte = new Decimal(filters.valor_min)
+        where.valor.gte = new Decimal(filters.valor_min);
       }
       if (filters.valor_max) {
-        where.valor.lte = new Decimal(filters.valor_max)
+        where.valor.lte = new Decimal(filters.valor_max);
       }
     }
 
     // Filtro de apenas vencidos
     if (filters.apenas_vencidos) {
-      where.data_vencimento = { lt: new Date() }
-      where.pago = false
+      where.data_vencimento = { lt: new Date() };
+      where.pago = false;
     }
 
     // Filtro de apenas a vencer
     if (filters.apenas_a_vencer) {
-      where.data_vencimento = { gte: new Date() }
-      where.pago = false
+      where.data_vencimento = { gte: new Date() };
+      where.pago = false;
     }
 
-    return where
+    return where;
   }
 
   /**
    * Lista lançamentos com filtros e paginação
    */
-  static async list(
-    organizationId: string,
-    filters: LancamentoFilters = {}
-  ) {
-    const page = filters.page || 1
-    const limit = Math.min(filters.limit || 20, 100)
-    const skip = (page - 1) * limit
+  static async list(organizationId: string, filters: LancamentoFilters = {}) {
+    const page = filters.page || 1;
+    const limit = Math.min(filters.limit || 20, 100);
+    const skip = (page - 1) * limit;
 
-    const where = this.buildWhereClause(organizationId, filters)
+    const where = this.buildWhereClause(organizationId, filters);
 
     const [lancamentos, total] = await Promise.all([
       prisma.lancamento.findMany({
@@ -454,16 +491,17 @@ export class LancamentoService {
             },
           },
         },
-        orderBy: filters.orderBy === 'data' 
-          ? { data: filters.order === 'asc' ? 'asc' : 'desc' }
-          : { data: 'desc' },
+        orderBy:
+          filters.orderBy === 'data'
+            ? { data: filters.order === 'asc' ? 'asc' : 'desc' }
+            : { data: 'desc' },
         skip,
         take: limit,
       }),
       prisma.lancamento.count({ where }),
-    ])
+    ]);
 
-    const pages = Math.ceil(total / limit)
+    const pages = Math.ceil(total / limit);
 
     return {
       lancamentos: lancamentos.map((l: any) => ({
@@ -481,7 +519,7 @@ export class LancamentoService {
         current_page: page,
         per_page: limit,
       },
-    }
+    };
   }
 
   /**
@@ -525,10 +563,10 @@ export class LancamentoService {
         },
         documentos: true,
       },
-    })
+    });
 
     if (!lancamento) {
-      throw new BadRequestError('Lançamento não encontrado.')
+      throw new BadRequestError('Lançamento não encontrado.');
     }
 
     return {
@@ -544,7 +582,7 @@ export class LancamentoService {
         valor: p.valor.toNumber(),
         valorPago: p.valorPago?.toNumber() ?? null,
       })),
-    }
+    };
   }
 
   /**
@@ -554,7 +592,7 @@ export class LancamentoService {
     organizationId: string,
     data: CreateLancamentoData | UpdateLancamentoData
   ) {
-    const validations = []
+    const validations = [];
 
     if (data.categoria_id) {
       validations.push(
@@ -567,11 +605,11 @@ export class LancamentoService {
           })
           .then((result) => {
             if (!result) {
-              throw new BadRequestError('Categoria financeira não encontrada.')
+              throw new BadRequestError('Categoria financeira não encontrada.');
             }
-            return result
+            return result;
           })
-      )
+      );
     }
 
     if (data.conta_bancaria_id) {
@@ -585,11 +623,11 @@ export class LancamentoService {
           })
           .then((result) => {
             if (!result) {
-              throw new BadRequestError('Conta bancária não encontrada.')
+              throw new BadRequestError('Conta bancária não encontrada.');
             }
-            return result
+            return result;
           })
-      )
+      );
     }
 
     if (data.centro_custo_id) {
@@ -603,11 +641,11 @@ export class LancamentoService {
           })
           .then((result) => {
             if (!result) {
-              throw new BadRequestError('Centro de custo não encontrado.')
+              throw new BadRequestError('Centro de custo não encontrado.');
             }
-            return result
+            return result;
           })
-      )
+      );
     }
 
     if (data.parceiro_id) {
@@ -621,11 +659,11 @@ export class LancamentoService {
           })
           .then((result) => {
             if (!result) {
-              throw new BadRequestError('Parceiro não encontrado.')
+              throw new BadRequestError('Parceiro não encontrado.');
             }
-            return result
+            return result;
           })
-      )
+      );
     }
 
     if (data.veiculo_id) {
@@ -639,30 +677,37 @@ export class LancamentoService {
           })
           .then((result) => {
             if (!result) {
-              throw new BadRequestError('Veículo não encontrado.')
+              throw new BadRequestError('Veículo não encontrado.');
             }
-            return result
+            return result;
           })
-      )
+      );
     }
 
-    await Promise.all(validations)
+    await Promise.all(validations);
   }
 
   /**
    * Cria um novo lançamento (único, parcelado ou recorrente)
    */
-  static async create(organizationId: string, data: CreateLancamentoData) {
-    await this.validateRelatedRecords(organizationId, data)
+  static async create(
+    organizationId: string,
+    data: CreateLancamentoData,
+    client: Prisma.TransactionClient | typeof prisma = prisma
+  ) {
+    await this.validateRelatedRecords(organizationId, data);
 
-    const tipoRepeticao = data.tipo_repeticao || 'NENHUMA'
+    const tipoRepeticao = data.tipo_repeticao || 'NENHUMA';
 
-    if (data.forma_parcelamento === 'RECORRENTE' || tipoRepeticao === 'RECORRENTE') {
-      return this.createLancamentoRecorrente(organizationId, data)
+    if (
+      data.forma_parcelamento === 'RECORRENTE' ||
+      tipoRepeticao === 'RECORRENTE'
+    ) {
+      return this.createLancamentoRecorrente(organizationId, data);
     } else if (tipoRepeticao === 'PARCELADO') {
-      return this.createLancamentoParcelado(organizationId, data)
+      return this.createLancamentoParcelado(organizationId, data);
     } else {
-      return this.createLancamentoUnico(organizationId, data)
+      return this.createLancamentoUnico(organizationId, data, client);
     }
   }
 
@@ -671,16 +716,17 @@ export class LancamentoService {
    */
   private static async createLancamentoUnico(
     organizationId: string,
-    data: CreateLancamentoData
+    data: CreateLancamentoData,
+    client: Prisma.TransactionClient | typeof prisma = prisma
   ) {
     const dataLancamento = data.data.includes('T')
       ? data.data.split('T')[0]!
-      : data.data
-    const parcelas = this.resolveParcelas(data)
-    this.validateParcelas(data, parcelas)
-    const primeiraParcela = parcelas[0]
+      : data.data;
+    const parcelas = this.resolveParcelas(data);
+    this.validateParcelas(data, parcelas);
+    const primeiraParcela = parcelas[0];
 
-    const lancamento = await prisma.lancamento.create({
+    const lancamento = await client.lancamento.create({
       data: {
         numero: data.numero,
         tipo: data.tipo,
@@ -713,13 +759,13 @@ export class LancamentoService {
         gerar_boleto: data.gerar_boleto ?? false,
         permitir_pix: data.permitir_pix ?? false,
       },
-    })
+    });
 
     // Integração Asaas: criar cobrança quando não for controle interno e for receita
     const deveCriarCobranca =
       !(data.controle_interno ?? false) &&
       data.tipo === 'RECEITA' &&
-      ((data.gerar_boleto ?? false) || (data.permitir_pix ?? false))
+      ((data.gerar_boleto ?? false) || (data.permitir_pix ?? false));
 
     if (deveCriarCobranca && data.parceiro_id && data.data_vencimento) {
       try {
@@ -727,7 +773,7 @@ export class LancamentoService {
           organizationId,
           lancamento,
           data
-        )
+        );
         if (asaasResult) {
           await prisma.lancamento.update({
             where: { id: lancamento.id },
@@ -736,33 +782,47 @@ export class LancamentoService {
               invoice_url: asaasResult.invoiceUrl ?? null,
               boleto_url: asaasResult.bankSlipUrl ?? null,
               boleto_linha_digitavel: asaasResult.identificationField ?? null,
-              pix_qrcode_url: asaasResult.billingType === 'PIX' ? asaasResult.invoiceUrl ?? null : null,
+              pix_qrcode_url:
+                asaasResult.billingType === 'PIX'
+                  ? (asaasResult.invoiceUrl ?? null)
+                  : null,
             },
-          })
+          });
         }
       } catch (err) {
-        console.error('[LancamentoService] Erro ao criar cobrança Asaas:', err)
+        console.error('[LancamentoService] Erro ao criar cobrança Asaas:', err);
         // Não falha a criação - lançamento é salvo sem integração
       }
     }
 
-    await this.persistParcelas(organizationId, lancamento.id, parcelas)
+    await this.persistParcelas(organizationId, lancamento.id, parcelas, client);
 
-    return prisma.lancamento.findUniqueOrThrow({
+    return client.lancamento.findUniqueOrThrow({
       where: { id: lancamento.id },
-    })
+    });
   }
 
   private static async criarCobrancaAsaas(
     organizationId: string,
-    lancamento: { id: string; valor: any; descricao: string; data_vencimento: Date | null },
+    lancamento: {
+      id: string;
+      valor: any;
+      descricao: string;
+      data_vencimento: Date | null;
+    },
     data: CreateLancamentoData
-  ): Promise<{ id: string; invoiceUrl?: string; bankSlipUrl?: string; identificationField?: string; billingType: string } | null> {
+  ): Promise<{
+    id: string;
+    invoiceUrl?: string;
+    bankSlipUrl?: string;
+    identificationField?: string;
+    billingType: string;
+  } | null> {
     const config = await prisma.configuracaoFinanceira.findUnique({
       where: { organization_id: organizationId },
-    })
-    const asaasApiKey = config?.asaas_api_key ?? process.env.ASAAS_API_KEY
-    if (!asaasApiKey) return null
+    });
+    const asaasApiKey = config?.asaas_api_key ?? process.env.ASAAS_API_KEY;
+    if (!asaasApiKey) return null;
 
     const parceiro = await prisma.parceiro.findFirst({
       where: { id: data.parceiro_id!, organization_id: organizationId },
@@ -775,32 +835,44 @@ export class LancamentoService {
           },
         },
       },
-    })
-    if (!parceiro?.pessoa) return null
+    });
+    if (!parceiro?.pessoa) return null;
 
-    const asaas = new AsaasService(asaasApiKey, (process.env.ASAAS_ENV as 'sandbox' | 'production') || 'sandbox')
+    const asaas = new AsaasService(
+      asaasApiKey,
+      (process.env.ASAAS_ENV as 'sandbox' | 'production') || 'sandbox'
+    );
 
-    let customerId = parceiro.pessoa.asaas_customer_id
+    let customerId = parceiro.pessoa.asaas_customer_id;
     if (!customerId) {
-      const nome = parceiro.pessoa.fisica?.nome ?? parceiro.pessoa.juridica?.nome_fantasia ?? parceiro.pessoa.juridica?.razao_social ?? 'Cliente'
-      const cpfCnpj = parceiro.pessoa.fisica?.cpf ?? parceiro.pessoa.juridica?.cnpj ?? undefined
+      const nome =
+        parceiro.pessoa.fisica?.nome ??
+        parceiro.pessoa.juridica?.nome_fantasia ??
+        parceiro.pessoa.juridica?.razao_social ??
+        'Cliente';
+      const cpfCnpj =
+        parceiro.pessoa.fisica?.cpf ??
+        parceiro.pessoa.juridica?.cnpj ??
+        undefined;
       const { id } = await asaas.criarCliente({
         name: nome,
         email: parceiro.pessoa.email ?? undefined,
         cpfCnpj: cpfCnpj ?? undefined,
         phone: parceiro.pessoa.telefone ?? undefined,
-      })
-      customerId = id
+      });
+      customerId = id;
       await prisma.pessoa.update({
         where: { id: parceiro.pessoa_id },
         data: { asaas_customer_id: id },
-      })
+      });
     }
 
-    const billingType = (data.gerar_boleto ? 'BOLETO' : 'PIX') as 'BOLETO' | 'PIX'
+    const billingType = (data.gerar_boleto ? 'BOLETO' : 'PIX') as
+      | 'BOLETO'
+      | 'PIX';
     const dueDate =
       (data.data_vencimento ?? '').split('T')[0] ??
-      new Date().toISOString().split('T')[0]!
+      new Date().toISOString().split('T')[0]!;
     const response = await asaas.criarCobranca({
       customer: customerId,
       value: data.valor,
@@ -808,7 +880,7 @@ export class LancamentoService {
       description: data.descricao,
       billingType,
       externalReference: lancamento.id,
-    })
+    });
 
     return {
       id: response.id,
@@ -816,7 +888,7 @@ export class LancamentoService {
       bankSlipUrl: response.bankSlipUrl,
       identificationField: response.identificationField,
       billingType: response.billingType,
-    }
+    };
   }
 
   /**
@@ -826,10 +898,12 @@ export class LancamentoService {
     organizationId: string,
     data: CreateLancamentoData
   ) {
-    const numeroParcelas = data.numero_parcelas || 1
-    const valorTotal = new Decimal(data.valor)
-    const valorParcela = valorTotal.dividedBy(numeroParcelas)
-    const dataVencimento = data.data_vencimento ? new Date(data.data_vencimento) : new Date()
+    const numeroParcelas = data.numero_parcelas || 1;
+    const valorTotal = new Decimal(data.valor);
+    const valorParcela = valorTotal.dividedBy(numeroParcelas);
+    const dataVencimento = data.data_vencimento
+      ? new Date(data.data_vencimento)
+      : new Date();
 
     // Criar lançamento origem
     const lancamentoOrigem = await prisma.lancamento.create({
@@ -853,13 +927,15 @@ export class LancamentoService {
         parceiro_id: data.parceiro_id ?? null,
         veiculo_id: data.veiculo_id ?? null,
       },
-    })
+    });
 
     // Criar parcelas
-    const parcelas = []
+    const parcelas = [];
     for (let i = 1; i <= numeroParcelas; i++) {
-      const dataVencimentoParcela = new Date(dataVencimento)
-      dataVencimentoParcela.setMonth(dataVencimentoParcela.getMonth() + (i - 1))
+      const dataVencimentoParcela = new Date(dataVencimento);
+      dataVencimentoParcela.setMonth(
+        dataVencimentoParcela.getMonth() + (i - 1)
+      );
 
       const parcela = await prisma.lancamento.create({
         data: {
@@ -883,11 +959,11 @@ export class LancamentoService {
           parceiro_id: data.parceiro_id ?? null,
           veiculo_id: data.veiculo_id ?? null,
         },
-      })
-      parcelas.push(parcela)
+      });
+      parcelas.push(parcela);
     }
 
-    return lancamentoOrigem
+    return lancamentoOrigem;
   }
 
   /**
@@ -897,12 +973,18 @@ export class LancamentoService {
     organizationId: string,
     data: CreateLancamentoData
   ) {
-    const periodicidade = data.periodicidade ?? 'MENSAL'
-    const numeroParcelas = data.numero_parcelas || 1
-    const dataInicio = data.data_vencimento ? new Date(data.data_vencimento) : new Date(data.data)
+    const periodicidade = data.periodicidade ?? 'MENSAL';
+    const numeroParcelas = data.numero_parcelas || 1;
+    const dataInicio = data.data_vencimento
+      ? new Date(data.data_vencimento)
+      : new Date(data.data);
     const dataFim = data.data_fim_repeticao
       ? new Date(data.data_fim_repeticao)
-      : LancamentoService.addPeriod(dataInicio, periodicidade, numeroParcelas - 1)
+      : LancamentoService.addPeriod(
+          dataInicio,
+          periodicidade,
+          numeroParcelas - 1
+        );
 
     // Criar configuração de recorrência
     const lancamentoRecorrente = await prisma.lancamentoRecorrente.create({
@@ -921,31 +1003,41 @@ export class LancamentoService {
         parceiro_id: data.parceiro_id ?? null,
         ativo: true,
       },
-    })
+    });
 
-    const parcelasForm = this.resolveParcelas(data)
-    this.validateParcelas(data, parcelasForm)
+    const parcelasForm = this.resolveParcelas(data);
+    this.validateParcelas(data, parcelasForm);
 
-    let primeiroLancamento: Lancamento | null = null
+    let primeiroLancamento: Lancamento | null = null;
     for (let i = 1; i <= numeroParcelas; i++) {
-      const parcelaCfg = parcelasForm[i - 1]
+      const parcelaCfg = parcelasForm[i - 1];
       const dataVencimentoParcela = parcelaCfg
         ? new Date(parcelaCfg.data_vencimento)
-        : LancamentoService.addPeriod(dataInicio, periodicidade, i - 1)
-      const valorParcela = parcelaCfg?.valor ?? data.valor
+        : LancamentoService.addPeriod(dataInicio, periodicidade, i - 1);
+      const valorParcela = parcelaCfg?.valor ?? data.valor;
       const lancamento = await prisma.lancamento.create({
         data: {
-          numero: numeroParcelas === 1 ? data.numero : `${data.numero}-${i}/${numeroParcelas}`,
+          numero:
+            numeroParcelas === 1
+              ? data.numero
+              : `${data.numero}-${i}/${numeroParcelas}`,
           tipo: data.tipo,
           data: new Date(data.data.split('T')[0]!),
           data_vencimento: dataVencimentoParcela,
           data_competencia: data.data_competencia || null,
-          descricao: numeroParcelas === 1 ? data.descricao : `${data.descricao} - Recorrência ${i}/${numeroParcelas}`,
+          descricao:
+            numeroParcelas === 1
+              ? data.descricao
+              : `${data.descricao} - Recorrência ${i}/${numeroParcelas}`,
           observacoes: data.observacoes ?? null,
           valor: new Decimal(valorParcela),
-          valor_pago: i === 1 && data.valor_pago ? new Decimal(data.valor_pago) : null,
+          valor_pago:
+            i === 1 && data.valor_pago ? new Decimal(data.valor_pago) : null,
           pago: i === 1 ? data.pago : false,
-          data_pagamento: i === 1 && data.data_pagamento ? new Date(data.data_pagamento) : null,
+          data_pagamento:
+            i === 1 && data.data_pagamento
+              ? new Date(data.data_pagamento)
+              : null,
           forma_parcelamento: 'RECORRENTE',
           numero_parcelas: numeroParcelas,
           status_lancamento: i === 1 ? data.status_lancamento : 'PENDENTE',
@@ -964,12 +1056,12 @@ export class LancamentoService {
           gerar_boleto: data.gerar_boleto ?? false,
           permitir_pix: data.permitir_pix ?? false,
         },
-      })
+      });
 
-      if (!primeiroLancamento) primeiroLancamento = lancamento
+      if (!primeiroLancamento) primeiroLancamento = lancamento;
     }
 
-    return primeiroLancamento!
+    return primeiroLancamento!;
   }
 
   /**
@@ -985,67 +1077,71 @@ export class LancamentoService {
         id: lancamentoId,
         organization_id: organizationId,
       },
-    })
+    });
 
     if (!lancamentoExistente) {
-      throw new BadRequestError('Lançamento não encontrado.')
+      throw new BadRequestError('Lançamento não encontrado.');
     }
 
-    await this.validateRelatedRecords(organizationId, data)
+    await this.validateRelatedRecords(organizationId, data);
 
-    const updateData: Prisma.LancamentoUncheckedUpdateInput = {}
+    const updateData: Prisma.LancamentoUncheckedUpdateInput = {};
 
-    if (data.numero !== undefined) updateData.numero = data.numero
-    if (data.tipo !== undefined) updateData.tipo = data.tipo
+    if (data.numero !== undefined) updateData.numero = data.numero;
+    if (data.tipo !== undefined) updateData.tipo = data.tipo;
     if (data.data !== undefined) {
       const dataLancamento = data.data.includes('T')
         ? data.data.split('T')[0]!
-        : data.data
-      updateData.data = parseDateOnlyStart(dataLancamento)
+        : data.data;
+      updateData.data = parseDateOnlyStart(dataLancamento);
     }
     if (data.data_vencimento !== undefined) {
       updateData.data_vencimento = data.data_vencimento
         ? parseBrazilDateTime(data.data_vencimento)
-        : null
+        : null;
     }
-    if (data.descricao !== undefined) updateData.descricao = data.descricao
+    if (data.descricao !== undefined) updateData.descricao = data.descricao;
     if (data.observacoes !== undefined)
-      updateData.observacoes = data.observacoes ?? null
-    if (data.valor !== undefined) updateData.valor = new Decimal(data.valor)
+      updateData.observacoes = data.observacoes ?? null;
+    if (data.valor !== undefined) updateData.valor = new Decimal(data.valor);
     if (data.valor_pago !== undefined)
-      updateData.valor_pago = data.valor_pago ? new Decimal(data.valor_pago) : null
+      updateData.valor_pago = data.valor_pago
+        ? new Decimal(data.valor_pago)
+        : null;
     if (data.forma_parcelamento !== undefined)
-      updateData.forma_parcelamento = data.forma_parcelamento
+      updateData.forma_parcelamento = data.forma_parcelamento;
     if (data.numero_parcelas !== undefined)
-      updateData.numero_parcelas = data.numero_parcelas
+      updateData.numero_parcelas = data.numero_parcelas;
     if (data.status_lancamento !== undefined)
-      updateData.status_lancamento = data.status_lancamento
-    if (data.pago !== undefined) updateData.pago = data.pago
+      updateData.status_lancamento = data.status_lancamento;
+    if (data.pago !== undefined) updateData.pago = data.pago;
     if (data.data_pagamento !== undefined)
       updateData.data_pagamento = data.data_pagamento
         ? parseBrazilDateTime(data.data_pagamento)
-        : null
+        : null;
     if (data.categoria_id !== undefined)
-      updateData.categoria_id = data.categoria_id
+      updateData.categoria_id = data.categoria_id;
     if (data.conta_bancaria_id !== undefined)
-      updateData.conta_bancaria_id = data.conta_bancaria_id
+      updateData.conta_bancaria_id = data.conta_bancaria_id;
     if (data.centro_custo_id !== undefined)
-      updateData.centro_custo_id = data.centro_custo_id ?? null
+      updateData.centro_custo_id = data.centro_custo_id ?? null;
     if (data.parceiro_id !== undefined)
-      updateData.parceiro_id = data.parceiro_id ?? null
+      updateData.parceiro_id = data.parceiro_id ?? null;
     if (data.veiculo_id !== undefined)
-      updateData.veiculo_id = data.veiculo_id ?? null
+      updateData.veiculo_id = data.veiculo_id ?? null;
 
     if (Array.isArray(data.parcelas)) {
       const formaParcelamento =
-        data.forma_parcelamento ?? lancamentoExistente.forma_parcelamento
+        data.forma_parcelamento ?? lancamentoExistente.forma_parcelamento;
       const merged: CreateLancamentoData = {
         numero: data.numero ?? lancamentoExistente.numero,
-        tipo: (data.tipo ?? lancamentoExistente.tipo) as CreateLancamentoData['tipo'],
+        tipo: (data.tipo ??
+          lancamentoExistente.tipo) as CreateLancamentoData['tipo'],
         data: data.data ?? lancamentoExistente.data.toISOString(),
         valor: data.valor ?? lancamentoExistente.valor.toNumber(),
         forma_parcelamento: formaParcelamento,
-        numero_parcelas: data.numero_parcelas ?? lancamentoExistente.numero_parcelas,
+        numero_parcelas:
+          data.numero_parcelas ?? lancamentoExistente.numero_parcelas,
         descricao: data.descricao ?? lancamentoExistente.descricao,
         categoria_id: data.categoria_id ?? lancamentoExistente.categoria_id,
         conta_bancaria_id:
@@ -1054,38 +1150,41 @@ export class LancamentoService {
         status_lancamento:
           data.status_lancamento ?? lancamentoExistente.status_lancamento,
         parcelas: data.parcelas,
-      }
+      };
 
-      const parcelas = this.resolveParcelas(merged)
-      this.validateParcelas(merged, parcelas)
+      const parcelas = this.resolveParcelas(merged);
+      this.validateParcelas(merged, parcelas);
 
       if (formaParcelamento !== 'UNICA') {
-        await this.syncParcelas(organizationId, lancamentoId, parcelas)
+        await this.syncParcelas(organizationId, lancamentoId, parcelas);
         if (parcelas[0]) {
-          updateData.data_vencimento = new Date(parcelas[0].data_vencimento)
+          updateData.data_vencimento = new Date(parcelas[0].data_vencimento);
         }
         if (formaParcelamento !== 'RECORRENTE' && parcelas.length > 0) {
-          const soma = parcelas.reduce((acc, p) => acc + p.valor, 0)
-          updateData.valor = new Decimal(soma)
+          const soma = parcelas.reduce((acc, p) => acc + p.valor, 0);
+          updateData.valor = new Decimal(soma);
         }
       } else {
         await prisma.parcela.deleteMany({
-          where: { lancamento_id: lancamentoId, organization_id: organizationId },
-        })
+          where: {
+            lancamento_id: lancamentoId,
+            organization_id: organizationId,
+          },
+        });
       }
     }
 
     const lancamento = await prisma.lancamento.update({
       where: { id: lancamentoId },
       data: updateData,
-    })
+    });
 
     await LancamentoService.syncFrotaValorFromLancamento(
       lancamento.id,
-      lancamento.valor,
-    )
+      lancamento.valor
+    );
 
-    return lancamento
+    return lancamento;
   }
 
   /**
@@ -1093,7 +1192,7 @@ export class LancamentoService {
    */
   private static async syncFrotaValorFromLancamento(
     lancamentoId: string,
-    valor: Decimal,
+    valor: Decimal
   ) {
     await prisma.$transaction([
       prisma.abastecimento.updateMany({
@@ -1108,7 +1207,7 @@ export class LancamentoService {
         where: { lancamento_id: lancamentoId },
         data: { valor },
       }),
-    ])
+    ]);
   }
 
   /**
@@ -1120,15 +1219,15 @@ export class LancamentoService {
         id: lancamentoId,
         organization_id: organizationId,
       },
-    })
+    });
 
     if (!lancamento) {
-      throw new BadRequestError('Lançamento não encontrado.')
+      throw new BadRequestError('Lançamento não encontrado.');
     }
 
     await prisma.lancamento.delete({
       where: { id: lancamentoId },
-    })
+    });
   }
 
   /**
@@ -1138,7 +1237,7 @@ export class LancamentoService {
     organizationId: string,
     filters: Omit<LancamentoFilters, 'page' | 'limit'> = {}
   ) {
-    const where = this.buildWhereClause(organizationId, filters)
+    const where = this.buildWhereClause(organizationId, filters);
 
     const [totalReceitas, totalDespesas, totalPendentes, totalPagos] =
       await Promise.all([
@@ -1156,15 +1255,16 @@ export class LancamentoService {
         prisma.lancamento.count({
           where: { ...where, pago: true },
         }),
-      ])
+      ]);
 
     return {
       total_receitas: totalReceitas._sum.valor?.toNumber() ?? 0,
       total_despesas: totalDespesas._sum.valor?.toNumber() ?? 0,
-      saldo: (totalReceitas._sum.valor?.toNumber() ?? 0) -
+      saldo:
+        (totalReceitas._sum.valor?.toNumber() ?? 0) -
         (totalDespesas._sum.valor?.toNumber() ?? 0),
       total_pendentes: totalPendentes,
       total_pagos: totalPagos,
-    }
+    };
   }
 }

@@ -2,7 +2,7 @@
 
 import { type ComponentType, type ReactNode, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { ArrowDownRight, ArrowUpRight, BarChart3, Landmark, ReceiptText, TrendingUp, UsersRound, WalletCards } from 'lucide-react'
+import { ArrowDownRight, ArrowUpRight, BarChart3, Landmark, ReceiptText, Settings2, TrendingUp, UsersRound, WalletCards } from 'lucide-react'
 import {
   Area,
   AreaChart,
@@ -187,6 +187,15 @@ export function DashboardFinanceiroPage() {
 
   const maxCategoria = Math.max(1, ...categorias.map((c: any) => c.total))
   const totalCategorias = categorias.reduce((total: number, categoria: any) => total + Number(categoria.total ?? 0), 0)
+  const custoPorNome = (termo: string) =>
+    categorias
+      .filter((categoria: any) => {
+        const nome = String(categoria.categoria_nome ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+        return categoria.tipo === 'DESPESA' && nome.includes(termo)
+      })
+      .reduce((total: number, categoria: any) => total + Number(categoria.total ?? 0), 0)
+  const custoFixo = custoPorNome('fix')
+  const custoOperacional = custoPorNome('operacional')
   const serieGrafico = serie.map((item: any) => ({
     ...item,
     receitas: Number(item.receitas ?? 0),
@@ -313,13 +322,15 @@ export function DashboardFinanceiroPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-8">
         <MetricCard title="Receita total" value={Money({ value: kpis.receita_mes })} icon={TrendingUp} tone="emerald" detail="Lançamentos do período" />
         <MetricCard title="Despesa total" value={Money({ value: kpis.despesa_mes })} icon={ArrowDownRight} tone="red" detail="Lançamentos do período" />
         <MetricCard title="Saldo do mês" value={Money({ value: kpis.saldo_mes })} icon={kpis.saldo_mes >= 0 ? ArrowUpRight : ArrowDownRight} tone={kpis.saldo_mes >= 0 ? 'emerald' : 'red'} detail={kpis.saldo_mes >= 0 ? 'Resultado positivo' : 'Resultado negativo'} />
         <MetricCard title="Folha líquida" value={Money({ value: kpis.folha_liquida_mes })} icon={ReceiptText} tone="violet" detail="Conforme status selecionado" />
         <MetricCard title="Parceiros" value={kpis.total_parceiros} icon={WalletCards} tone="amber" detail="Total cadastrado" />
         <MetricCard title="Funcionários ativos" value={kpis.total_funcionarios_ativos} icon={UsersRound} tone="blue" detail="Equipe ativa" />
+        <MetricCard title="Custo fixo" value={Money({ value: custoFixo })} icon={Landmark} tone="violet" detail="Categorias de despesa fixa" />
+        <MetricCard title="Custo operacional" value={Money({ value: custoOperacional })} icon={Settings2} tone="amber" detail="Categorias operacionais" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1.3fr_1fr] [&>div]:border-border/80 [&>div]:bg-card [&>div]:shadow-sm">
