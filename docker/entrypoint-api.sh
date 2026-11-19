@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+
 cd /app/apps/api
 
 ROLE="${OC_PROCESS:-api}"

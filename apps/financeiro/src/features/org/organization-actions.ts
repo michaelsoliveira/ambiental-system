@@ -15,7 +15,8 @@ const organizationSchema = z
       .min(4, { message: 'Please, incluide at least 4 characters.' }),
     domain: z
       .string()
-      .nullable()
+      .transform((value) => value.trim().toLowerCase())
+      .transform((value) => value || null)
       .refine(
         (value) => {
           if (value) {
@@ -66,7 +67,7 @@ export async function createOrganizationAction(data: FormData) {
     await createOrganization({
       name,
       domain,
-      shouldAttachDomain,
+      shouldAttachUsersByDomain: shouldAttachDomain,
     })
 
     revalidateTag('organizations')
@@ -111,7 +112,7 @@ export async function updateOrganizationAction(data: FormData) {
       org: currentOrg!,
       name,
       domain,
-      shouldAttachDomain,
+      shouldAttachUsersByDomain: shouldAttachDomain,
     })
 
     revalidateTag('organizations')

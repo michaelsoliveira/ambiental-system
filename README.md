@@ -1,135 +1,128 @@
-# Turborepo starter
+# Ambiental System
 
-This Turborepo starter is maintained by the Turborepo core team.
+Sistema de gestao ambiental e financeira, composto por uma API Fastify, interface Next.js, PostgreSQL/PostGIS, Redis e integracao opcional com a Evolution API (WhatsApp).
 
-## Using this example
+## Portas
 
-Run the following command:
+| Servico | Porta local | Endereco |
+| --- | ---: | --- |
+| Financeiro (web) | 3000 | http://localhost:3000 |
+| API e documentacao | 3333 | http://localhost:3333/docs |
+| PostgreSQL/PostGIS | 5432 | `localhost:5432` |
+| Redis | 6379 | `localhost:6379` |
+| Evolution API (opcional) | 8080 | http://localhost:8080 |
 
-```sh
-npx create-turbo@latest
+As portas podem ser alteradas no arquivo `.env.local`. Elas ficam expostas somente em `127.0.0.1`, portanto nao ficam acessiveis por outros equipamentos da rede local.
+
+## Instalacao local (Docker — recomendada)
+
+### Requisitos
+
+- Docker Desktop 4+ com Docker Compose v2;
+- ao menos 4 GB de memoria disponivel para o Docker.
+
+1. Crie o arquivo de configuracao local:
+
+   ```powershell
+   Copy-Item .env.local.example .env.local
+   ```
+
+   Abra `.env.local` e preencha `POSTGRES_PASSWORD` e `JWT_SECRET` com valores locais fortes antes de continuar.
+
+2. Inicie a aplicacao:
+
+   ```powershell
+   npm run docker:local
+   ```
+
+   Na primeira execucao a imagem pode levar alguns minutos para ser criada. As migracoes do banco sao aplicadas automaticamente pela API.
+
+3. Acesse http://localhost:3000. A documentacao da API esta em http://localhost:3333/docs.
+
+4. Para acompanhar a inicializacao:
+
+   ```powershell
+   npm run docker:local:logs
+   ```
+
+5. Para parar os containers, preservando os dados:
+
+   ```powershell
+   npm run docker:local:down
+   ```
+
+### Banco de dados local
+
+O banco e iniciado vazio. Se precisar da massa de desenvolvimento apos os containers estarem saudaveis, execute:
+
+```powershell
+docker compose --env-file .env.local -f docker-compose.local.yml exec api /seed-api.sh
 ```
 
-## What's inside?
+O seed de desenvolvimento recria usuarios e dados de exemplo. Nao o execute em uma base que voce queira preservar.
+O usuario inicial criado pelo seed e `michaelsoliveira@gmail.com`, com senha `secret`; altere-o ou remova-o em qualquer ambiente compartilhado.
 
-This Turborepo includes the following packages/apps:
+## Desenvolvimento sem Docker para Node.js
 
-### Apps and Packages
+Use o Docker apenas para PostgreSQL e Redis, e execute API/web no host:
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+```powershell
+pnpm install
+pnpm --filter @saas/api dev
+pnpm --filter @saas/financeiro dev
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+Nesse modo, configure no `.env` uma `DATABASE_URL` apontando para `localhost:5432`, `REDIS_URL=redis://localhost:6379/0`, `NEXT_PUBLIC_API_URL=http://localhost:3333` e `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
+## Instalacao em servidor (producao)
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
+### Requisitos
 
-### Develop
+- Linux com Docker Engine e Docker Compose v2;
+- DNS dos dominios apontando para o servidor;
+- portas 80 e 443 liberadas no firewall (quando usar o gateway deste repositorio);
+- uma rede Docker do MinIO ja existente, caso os arquivos de midia do CMS sejam utilizados.
 
-To develop all apps and packages, run the following command:
+1. No servidor, obtenha o codigo e crie o arquivo de ambiente:
 
-```
-cd my-turborepo
+   ```bash
+   git clone <URL_DO_REPOSITORIO> ambiental-system
+   cd ambiental-system
+   cp docker/env.example .env
+   ```
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
+2. Edite `.env`. Troque todas as senhas e chaves de exemplo e informe, no minimo, `POSTGRES_PASSWORD`, `JWT_SECRET`, `NEXT_PUBLIC_API_URL` e `NEXT_PUBLIC_APP_URL`. As URLs devem ser os dominios HTTPS definitivos.
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
+3. Se usar o MinIO de outro projeto na mesma maquina, confirme que a rede indicada em `MINIO_DOCKER_NETWORK` existe. Caso nao use MinIO, crie essa rede para permitir a subida da stack:
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+   ```bash
+   docker network create app_network
+   ```
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
+4. Suba a aplicacao:
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
+   ```bash
+   npm run docker:prod
+   ```
 
-### Remote Caching
+   A API e o frontend nao publicam portas diretamente na producao; eles ficam acessiveis somente pela rede Docker. As migracoes sao aplicadas automaticamente.
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+5. Para servidor sem outro proxy ocupando as portas 80/443, configure os arquivos de Nginx em `docker/nginx/`, emita o certificado conforme `docker/README-GATEWAY.txt` e suba o gateway:
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+   ```bash
+   npm run docker:prod:gateway
+   ```
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+   Se ja houver um Nginx/reverse proxy no servidor, mantenha `docker:prod` e direcione o proxy para os containers `api:3333` e `financeiro:3000` na rede `bomanejo_ambiental`. O guia de integracao com um gateway existente esta em `docker/README-GATEWAY.txt`.
 
-```
-cd my-turborepo
+## Operacao
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+```bash
+# Logs da producao
+npm run docker:prod:logs
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+# Estado dos servicos locais
+docker compose --env-file .env.local -f docker-compose.local.yml ps
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+Nunca versione `.env` ou `.env.local`: eles podem conter senhas, tokens e chaves de integracoes externas.

@@ -1,7 +1,8 @@
 'use client'
 
 import { Plus } from 'lucide-react'
-import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Suspense, useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -15,8 +16,15 @@ import { Separator } from '@/components/ui/separator'
 import { ContaForm } from '@/features/conta/conta-form'
 import ContaListingPage from '@/features/conta/conta-listing'
 
-export default function ContasPage() {
+function ContasPageContent() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get('nova') === 'true') {
+      setIsDialogOpen(true)
+    }
+  }, [searchParams])
 
   return (
     <div className="space-y-6 p-6">
@@ -44,5 +52,13 @@ export default function ContasPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+export default function ContasPage() {
+  return (
+    <Suspense>
+      <ContasPageContent />
+    </Suspense>
   )
 }

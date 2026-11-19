@@ -4,7 +4,7 @@ interface UpdateOrganizationRequest {
   org: string
   name: string
   domain: string | null
-  shouldAttachDomain: boolean
+  shouldAttachUsersByDomain: boolean
 }
 
 type UpdateOrganizationResponse = void
@@ -13,13 +13,13 @@ export async function updateOrganization({
   org,
   name,
   domain,
-  shouldAttachDomain,
+  shouldAttachUsersByDomain,
 }: UpdateOrganizationRequest): Promise<UpdateOrganizationResponse> {
   await api.put(`organizations/${org}`, {
     json: {
       name,
       domain,
-      shouldAttachDomain,
+      shouldAttachUsersByDomain,
     },
   })
 }

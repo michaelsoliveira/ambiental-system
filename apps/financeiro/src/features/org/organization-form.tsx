@@ -65,13 +65,13 @@ export function OrganizationForm({
       </div>
 
       <div className="space-y-1">
-        <Label htmlFor="domain">E-mail domain</Label>
+        <Label htmlFor="domain">Domínio de e-mail (opcional)</Label>
         <Input
           name="domain"
           type="text"
           id="domain"
           inputMode="url"
-          placeholder="example.com"
+          placeholder="exemplo.com"
           defaultValue={initialData?.domain ?? undefined}
         />
 
@@ -86,25 +86,26 @@ export function OrganizationForm({
         <div className="flex items-start space-x-2">
           <div className="translate-y-0.5">
             <Checkbox
-              name="shouldAttachUsersByDomain"
-              id="shouldAttachUsersByDomain"
+              name="shouldAttachDomain"
+              id="shouldAttachDomain"
               defaultChecked={initialData?.shouldAttachDomain}
             />
           </div>
-          <label htmlFor="shouldAttachUsersByDomain" className="space-y-1">
+          <label htmlFor="shouldAttachDomain" className="space-y-1">
             <span className="text-sm font-medium leading-none">
-              Auto-join new members
+              Adicionar membros automaticamente pelo domínio
             </span>
             <p className="text-sm text-muted-foreground">
-              This will automatically invite all members with same e-mail domain
-              to this organization.
+              Ative somente se quiser adicionar automaticamente pessoas com o
+              mesmo domínio. E-mails comuns, como Gmail e Hotmail, continuam
+              permitidos.
             </p>
           </label>
         </div>
 
-        {errors?.shouldAttachUsersByDomain && (
+        {errors?.shouldAttachDomain && (
           <p className="text-xs font-medium text-red-500 dark:text-red-400">
-            {errors.shouldAttachUsersByDomain[0]}
+            {errors.shouldAttachDomain[0]}
           </p>
         )}
       </div>

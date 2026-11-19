@@ -49,9 +49,18 @@ export async function createOrganization(app: FastifyInstance) {
           }
         }
 
-        const roleAdmin = await prisma.role.findFirst({
-            where: { name: 'admin' }
+        let roleAdmin = await prisma.role.findFirst({
+          where: { name: 'admin' },
         })
+
+        if (!roleAdmin) {
+          roleAdmin = await prisma.role.create({
+            data: {
+              name: 'admin',
+              description: 'Administrador com permissões elevadas',
+            },
+          })
+        }
 
         const organization = await prisma.organization.create({
           data: {
@@ -65,9 +74,9 @@ export async function createOrganization(app: FastifyInstance) {
                 user_id: userId,
                 members_roles: {
                     create: {
-                        role_id: roleAdmin?.id!
-                    }
-                }
+                    role_id: roleAdmin.id,
+                  },
+                },
               },
             },
           },

@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { useFormContext } from "react-hook-form"
 
 import { gerarParcelasPadrao } from "@/features/lancamento/utils/parcelas"
@@ -36,6 +36,7 @@ export function DadosLancamentoTab({
   const form = useFormContext()
   const { watch, setValue } = form
   const { slug: org } = useParams<{ slug: string }>()
+  const router = useRouter()
   const parceiroId = watch('parceiro_id')
   const categoriaId = watch('categoria_id')
   const centroCustoId = watch('centro_custo_id')
@@ -312,6 +313,8 @@ export function DadosLancamentoTab({
                   onValueChange={field.onChange}
                   placeholder="Selecione conta"
                   emptyText="Nenhuma conta encontrada"
+                  emptyActionLabel="Cadastrar conta bancária"
+                  onEmptyAction={() => router.push(`/org/${org}/contas?nova=true`)}
                   truncate={true}
                   truncateWidth="100px"
                   searchPlaceholder="Buscar conta..."

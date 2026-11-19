@@ -3,7 +3,7 @@ import { api } from './api-client'
 interface CreateOrganizationRequest {
   name: string
   domain: string | null
-  shouldAttachDomain: boolean
+  shouldAttachUsersByDomain: boolean
 }
 
 type CreateOrganizationResponse = void
@@ -11,13 +11,13 @@ type CreateOrganizationResponse = void
 export async function createOrganization({
   name,
   domain,
-  shouldAttachDomain,
+  shouldAttachUsersByDomain,
 }: CreateOrganizationRequest): Promise<CreateOrganizationResponse> {
   await api.post('organizations', {
     json: {
       name,
       domain,
-      shouldAttachDomain,
+      shouldAttachUsersByDomain,
     },
   })
 }
