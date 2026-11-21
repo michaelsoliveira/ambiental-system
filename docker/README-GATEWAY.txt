@@ -80,8 +80,18 @@ Cenário 2 — Mesma VPS do licencas (nginx deles já usa 80 e 443)
      (confira o nome com: docker ps.)
      Assim o proxy_pass http://api:3333 e http://financeiro:3000 passam a resolver.
 
+Portainer (mesma VPS do licencas)
+---------------------------------
+  Use o stack Compose (imagens no registry, sem build na VPS):
+
+    deploy/portainer/ambiental-stack.portainer.yml
+    deploy/portainer/README.md
+
+  Não suba docker-compose.gateway.yml nesse cenário.
+
 Arquivos úteis
 --------------
   docker/nginx/default.conf          — bootstrap (só HTTP, ACME; 503 no resto até ter SSL)
   docker/nginx/default.ssl.conf      — produção com TLS (após certbot)
   docker/setup-certbot-financeiro.sh — primeiro certificado SAN (api-financeiro + financeiro)
+  deploy/portainer/ambiental-stack.portainer.yml — stack Portainer (Compose)

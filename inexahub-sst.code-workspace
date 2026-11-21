@@ -1,0 +1,59 @@
+{
+	"folders": [
+		{
+			"path": "../inexahub-sst"
+		},
+		{
+			"path": "../inexahub"
+		},
+		{
+			"path": "../licencas"
+		},
+		{
+			"path": "."
+		},
+		{
+			"path": "../clinic"
+		},
+		{
+			"path": "../manejo"
+		},
+		{
+			"path": "../ambiental-landing"
+		},
+		{
+			"path": "../../../Downloads/store-api"
+		},
+		{
+			"path": "../programacao-2"
+		},
+		{
+			"path": "../redeprotege"
+		},
+		{
+			"path": "../../../Downloads/RedeProtege_LaTeX_Completo_165h"
+		},
+		{
+			"path": "../pos-db"
+		},
+		{
+			"path": "../lab-backend-2026"
+		},
+		{
+			"path": "../../unifap-digital"
+		},
+		{
+			"path": "../../RSC"
+		},
+		{
+			"path": "../../projeto-educanorte"
+		},
+		{
+			"path": "../aula-pln"
+		},
+		{
+			"path": "../visao-comp"
+		}
+	],
+	"settings": {}
+}

@@ -1,0 +1,304 @@
+# =============================================================================
+# Ambiental System — stack Portainer (Compose)
+# =============================================================================
+# Portainer → Stacks → Add stack
+#   Name: ambiental
+#   Build method: Web editor → cole ESTE arquivo
+#   Em "Environment variables", defina as variáveis listadas no final.
+#
+# Domínios (proxy no nginx do licencas — NÃO sobe nginx neste stack):
+#   https://api-financeiro.bomanejo.com.br  → api:3333
+#   https://financeiro.bomanejo.com.br      → financeiro:3000
+#
+# Pré-requisitos na VPS:
+#   1. Rede do MinIO (licencas): docker network ls | grep app_network
+#   2. Imagens no registry (build/push local ou CI):
+#        docker build -f docker/Dockerfile.api -t michaelsoliveira/ambiental_api:TAG .
+#        docker build -f docker/Dockerfile.financeiro \
+#          --build-arg NEXT_PUBLIC_API_URL=https://api-financeiro.bomanejo.com.br \
+#          --build-arg NEXT_PUBLIC_APP_URL=https://financeiro.bomanejo.com.br \
+#          -t michaelsoliveira/ambiental_financeiro:TAG .
+#        docker push michaelsoliveira/ambiental_api:TAG
+#        docker push michaelsoliveira/ambiental_financeiro:TAG
+#   3. Depois do primeiro up: conectar o nginx do licencas à rede deste stack
+#        docker network connect bomanejo_ambiental <container_nginx>
+#
+# NÃO cole secrets reais no Git — use Environment variables do Portainer.
+# =============================================================================
+
+name: ambiental
+
+x-api-env: &api-env
+  NODE_ENV: production
+  DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@ambiental-postgres:5432/${POSTGRES_DB:-ambiental}
+  REDIS_URL: redis://ambiental-redis:6379/0
+  SERVER_PORT: "3333"
+  JWT_SECRET: ${JWT_SECRET}
+  GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
+  GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
+  GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
+  NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-financeiro.bomanejo.com.br}
+  ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+  ASAAS_ENV: ${ASAAS_ENV:-sandbox}
+  ASAAS_WEBHOOK_TOKEN: ${ASAAS_WEBHOOK_TOKEN:-}
+  MINIO_ENDPOINT: ${MINIO_ENDPOINT:-minio}
+  MINIO_PORT: ${MINIO_PORT:-9000}
+  MINIO_USE_SSL: ${MINIO_USE_SSL:-false}
+  MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+  MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+  MINIO_BUCKET: ${MINIO_BUCKET:-landing-media}
+  MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-https://s3.bomanejo.com.br/landing-media}
+  EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-http://evolution:8080}
+  EVOLUTION_API_GLOBAL_KEY: ${EVOLUTION_API_GLOBAL_KEY}
+  EVOLUTION_WEBHOOK_PUBLIC_URL: ${EVOLUTION_WEBHOOK_PUBLIC_URL:-http://api:3333}
+  EVOLUTION_WEBHOOK_SECRET: ${EVOLUTION_WEBHOOK_SECRET:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  OC_WORKER_CONCURRENCY: ${OC_WORKER_CONCURRENCY:-2}
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: ambiental-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-ambiental}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ambiental}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    networks:
+      ambiental:
+        aliases:
+          - ambiental-postgres
+
+  redis:
+    image: redis:7-alpine
+    container_name: ambiental-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    networks:
+      ambiental:
+        aliases:
+          - ambiental-redis
+
+  api:
+    image: michaelsoliveira/ambiental_api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      SKIP_MIGRATE: ${SKIP_MIGRATE:-0}
+      OC_PROCESS: api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "3333"
+    networks:
+      - ambiental
+      - minio_ext
+
+  oc-worker:
+    image: michaelsoliveira/ambiental_api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      SKIP_MIGRATE: "1"
+      OC_PROCESS: worker
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_started
+      evolution:
+        condition: service_started
+    networks:
+      - ambiental
+
+  oc-beat:
+    image: michaelsoliveira/ambiental_api:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      SKIP_MIGRATE: "1"
+      OC_PROCESS: beat
+    depends_on:
+      redis:
+        condition: service_healthy
+      oc-worker:
+        condition: service_started
+    networks:
+      - ambiental
+
+  evolution-db-init:
+    image: postgres:16-alpine
+    restart: "no"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGUSER: ${POSTGRES_USER:-postgres}
+      PGHOST: ambiental-postgres
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ambiental
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -e
+        until pg_isready -h ambiental-postgres; do sleep 1; done
+        exists=$$(psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='evolution'")
+        if [ "$$exists" != "1" ]; then
+          psql -d postgres -c "CREATE DATABASE evolution"
+        fi
+
+  evolution:
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:v2.3.7}
+    restart: unless-stopped
+    volumes:
+      - evolution_instances:/evolution/instances
+    environment:
+      SERVER_URL: ${EVOLUTION_SERVER_URL:-http://evolution:8080}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_API_GLOBAL_KEY}
+      AUTHENTICATION_EXPOSE_IN_FETCH_INSTANCES: "true"
+      DEL_INSTANCE: "false"
+      LANGUAGE: pt-BR
+      CONFIG_SESSION_PHONE_CLIENT: Ambiental
+      CONFIG_SESSION_PHONE_NAME: Chrome
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD}@ambiental-postgres:5432/evolution
+      DATABASE_CONNECTION_CLIENT_NAME: evolution
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "true"
+      DATABASE_SAVE_MESSAGE_UPDATE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_LABELS: "true"
+      DATABASE_SAVE_DATA_HISTORIC: "true"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://ambiental-redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: evolution
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+      RABBITMQ_ENABLED: "false"
+      S3_ENABLED: "false"
+      WEBSOCKET_ENABLED: "false"
+      SQS_ENABLED: "false"
+      PROVIDER_ENABLED: "false"
+      TELEMETRY: "false"
+      N8N_ENABLED: "false"
+      EVOAI_ENABLED: "false"
+      OPENAI_ENABLED: "false"
+      DIFY_ENABLED: "false"
+      TYPEBOT_ENABLED: "false"
+      CHATWOOT_ENABLED: "false"
+      WEBHOOK_GLOBAL_ENABLED: "false"
+    expose:
+      - "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      evolution-db-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://127.0.0.1:8080/',r=>process.exit(r.statusCode>=200&&r.statusCode<300?0:1)).on('error',()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    networks:
+      - ambiental
+
+  financeiro:
+    image: michaelsoliveira/ambiental_financeiro:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      PORT: "3000"
+      APP_URL: ${NEXT_PUBLIC_APP_URL:-https://financeiro.bomanejo.com.br}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://api-financeiro.bomanejo.com.br}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://financeiro.bomanejo.com.br}
+      INTERNAL_API_URL: http://api:3333
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET}
+      GITHUB_OAUTH_CLIENT_REDIRECT_URI: ${GITHUB_OAUTH_CLIENT_REDIRECT_URI}
+    depends_on:
+      - api
+    expose:
+      - "3000"
+    networks:
+      - ambiental
+
+volumes:
+  postgres_data:
+  redis_data:
+  evolution_instances:
+
+networks:
+  ambiental:
+    name: bomanejo_ambiental
+    driver: bridge
+  minio_ext:
+    external: true
+    name: ${MINIO_DOCKER_NETWORK:-app_network}
+
+# =============================================================================
+# Environment variables (Portainer → Stack → Environment variables)
+# =============================================================================
+# Obrigatórias:
+#   POSTGRES_PASSWORD
+#   JWT_SECRET
+#   GITHUB_OAUTH_CLIENT_ID
+#   GITHUB_OAUTH_CLIENT_SECRET
+#   GITHUB_OAUTH_CLIENT_REDIRECT_URI=https://financeiro.bomanejo.com.br/api/auth/callback
+#   MINIO_ACCESS_KEY
+#   MINIO_SECRET_KEY
+#   EVOLUTION_API_GLOBAL_KEY
+#   IMAGE_TAG=v0.0.1
+#
+# Recomendadas / defaults:
+#   POSTGRES_USER=postgres
+#   POSTGRES_DB=ambiental
+#   NEXT_PUBLIC_API_URL=https://api-financeiro.bomanejo.com.br
+#   NEXT_PUBLIC_APP_URL=https://financeiro.bomanejo.com.br
+#   MINIO_DOCKER_NETWORK=app_network
+#   MINIO_ENDPOINT=minio
+#   MINIO_PORT=9000
+#   MINIO_USE_SSL=false
+#   MINIO_BUCKET=landing-media
+#   MINIO_PUBLIC_URL=https://s3.bomanejo.com.br/landing-media
+#   EVOLUTION_API_BASE_URL=http://evolution:8080
+#   EVOLUTION_WEBHOOK_PUBLIC_URL=http://api:3333
+#   SKIP_MIGRATE=0
+#
+# Opcionais:
+#   ASAAS_API_KEY / ASAAS_ENV / ASAAS_WEBHOOK_TOKEN
+#   OPENAI_API_KEY / OC_WORKER_CONCURRENCY
+#   EVOLUTION_WEBHOOK_SECRET / EVOLUTION_IMAGE
+# =============================================================================
